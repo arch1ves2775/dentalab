@@ -7636,12 +7636,11 @@ function U3D_applyModeToUI(){
     ? 'A carregar scan...'
     : 'Selecione Upper e Lower para ver em oclus\u00e3o.';
 
-  // 'Trocar arquivos' only makes sense for the local-file arch picker
-  // (PROTOTYPE-ONLY mechanism) -- single-file mode re-fetches its one
-  // real URL automatically and has nothing to "swap" locally, and the
-  // Upper toolbar toggle is meaningless with a single combined mesh.
+  // Manual file swapping was only useful in the prototype. Real cases
+  // now load their STL/PLY/OBJ files from Supabase Storage, so the
+  // viewer never exposes an upload picker after "Ver STL".
   var swapBtn = document.getElementById('u3d-swap-btn');
-  if (swapBtn) swapBtn.style.display = isSingle ? 'none' : 'inline-block';
+  if (swapBtn) swapBtn.style.display = 'none';
   var upperBtn = document.getElementById('u3d-btn-upper');
   if (upperBtn && isSingle) upperBtn.style.display = 'none';
 }
@@ -7666,15 +7665,11 @@ function U3D_loadSingleFromUrl(url, displayName){
 
   U3D_fetchAsFile(url, 'Scan').then(function(result){
     if (!result.mesh) {
-      // File not available (mock path, no backend yet) -- stop the spinner
-      // and fall back to the normal local-file picker so the user isn't stuck.
+      // File not available in storage/network. Do not show the old
+      // prototype upload picker; the case must be fixed at the source.
       if (loadEl) loadEl.style.display = 'none';
-      U3D_log('loadSingleFromUrl: ficheiro nao disponivel (' + (result.error || 'desconhecido') + ') -- a mostrar picker local');
-      // Switch to arch mode so Upper/Lower picker is fully visible
-      U3D_mode = 'arch';
-      U3D_applyModeToUI();
-      U3D_showPicker();
-      showToast('Ficheiro n\u00e3o dispon\u00edvel. Selecione um ficheiro local.');
+      U3D_log('loadSingleFromUrl: ficheiro nao disponivel (' + (result.error || 'desconhecido') + ')');
+      showToast('Ficheiro 3D n\u00e3o dispon\u00edvel no caso.');
       return;
     }
     U3D_meshes.upper = U3D_forceSolidMaterial(result.mesh, 'scan');
@@ -7724,7 +7719,7 @@ function U3D_showPicker(){
   var loadEl = document.getElementById('u3d-loading');
   var emptyEl = document.getElementById('u3d-empty');
   if (loadEl) loadEl.style.display = 'none';
-  if (emptyEl) emptyEl.style.display = 'flex';
+  if (emptyEl) emptyEl.style.display = 'none';
   U3D_updateFileStatusLabels();
 }
 
@@ -7759,16 +7754,11 @@ function U3D_updateFileStatusLabels(){
     }
   });
 
-  // Once the required mesh(es) are actually rendered, hide the picker
-  // panel entirely -- this is what was overlapping the model on iPhone.
-  // 'arch' mode requires BOTH Upper and Lower; 'single' mode only ever
-  // needs the one scan (loaded automatically by U3D_loadSingleFromUrl,
-  // which already hides #u3d-empty itself on success). A discrete
-  // "Trocar arquivos" button in the toolbar remains the only way back
-  // to the picker in arch mode.
+  // The prototype upload panel is no longer part of the viewer. Files
+  // must arrive from the case record/storage, so keep it hidden even
+  // when one arch is missing.
   var emptyEl = document.getElementById('u3d-empty');
-  var ready = (U3D_mode === 'single') ? !!U3D_meshes.upper : (!!U3D_meshes.upper && !!U3D_meshes.lower);
-  if (emptyEl) emptyEl.style.display = ready ? 'none' : 'flex';
+  if (emptyEl) emptyEl.style.display = 'none';
 }
 
 function U3D_onFileChosen(slot, fileInput){
@@ -7891,7 +7881,7 @@ function U3D_updateToggleButtons(){
 
     var btn = document.getElementById('u3d-btn-'+slot);
     if (btn) {
-      btn.style.display = has ? 'inline-block' : 'none';
+      btn.style.display = 'none';
       btn.classList.toggle('on', isOn);
     }
 
@@ -7907,18 +7897,15 @@ function U3D_updateToggleButtons(){
     if (label) label.style.color = isOn ? '#E8F0FA' : '#5A6B82';
   });
 
-  // The compact "Modelos" header button replaces the always-visible
-  // corner panel -- show it once anything is loaded, but keep the
-  // dropdown panel itself closed until tapped. In single mode there is
-  // nothing to toggle (only one mesh), so the button never appears.
+  // Keep the Upper/Lower visibility controls as a fixed floating stack
+  // in the upper-left of the viewer. In single-scan mode there is no
+  // arch pairing to toggle, so the stack stays hidden.
   var hasAny = (U3D_mode === 'single') ? !!U3D_meshes.upper : !!(U3D_meshes.upper || U3D_meshes.lower);
-  var showModelsBtn = hasAny && U3D_mode !== 'single';
+  var showModelsBtn = false;
   var modelsBtn = document.getElementById('u3d-models-btn');
-  if (modelsBtn) modelsBtn.style.display = showModelsBtn ? 'flex' : 'none';
-  if (!showModelsBtn) {
-    var panel = document.getElementById('u3d-models-panel');
-    if (panel) panel.style.display = 'none';
-  }
+  if (modelsBtn) modelsBtn.style.display = 'none';
+  var panel = document.getElementById('u3d-models-panel');
+  if (panel) panel.style.display = (hasAny && U3D_mode !== 'single') ? 'flex' : 'none';
 }
 
 // Opens/closes the compact Upper/Lower visibility dropdown anchored
@@ -9046,7 +9033,7 @@ create table if not exists pending_issues (
 </script>
 
 
-<style>@keyframes stlvspin{to{transform:rotate(360deg)}}</style>
+<style>@keyframes stlvspin{to{transform:rotate(360deg)}}#u3d-swap-btn,#u3d-btn-upper,#u3d-btn-lower,#u3d-models-btn{display:none!important}</style>
 
 <!-- ── STL MULTI-FILE VIEWER OVERLAY (Upper/Lower/Bite, joint occlusion) ── -->
 <div id="u3d-overlay" style="display:none;position:fixed;inset:0;z-index:2000;background:#0D1520;flex-direction:column">
@@ -9080,7 +9067,7 @@ create table if not exists pending_issues (
          entirely from the UI per spec point 3 -- the underlying Bite
          loading code path/input still exists (untouched, point 6) but
          is never exposed to the user anymore. -->
-    <div id="u3d-empty" style="position:absolute;top:0;left:0;right:0;z-index:6;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px;pointer-events:none">
+    <div id="u3d-empty" style="display:none;position:absolute;top:0;left:0;right:0;z-index:6;flex-direction:column;align-items:flex-start;gap:8px;padding:14px;pointer-events:none">
       <div style="background:rgba(17,24,39,.94);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;width:100%;max-width:280px;pointer-events:auto">
         <p style="font-size:12px;color:#4A6FA5;line-height:1.5;margin:0 0 12px">Selecione Upper e Lower para ver em oclusão.</p>
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -9109,18 +9096,18 @@ create table if not exists pending_issues (
          "Modelos" button in the header. Replaces the old always-visible
          Exocad-style corner panel, which is what overlapped the model
          on small/iPhone screens. -->
-    <div id="u3d-models-panel" style="display:none;position:absolute;top:8px;right:8px;z-index:8;background:rgba(17,24,39,.96);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;min-width:128px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
-      <div id="u3d-row-upper" onclick="U3D_toggleVisibility('upper')" style="display:none;align-items:center;gap:8px;padding:6px 0;cursor:pointer">
+    <div id="u3d-models-panel" style="display:none;position:absolute;top:10px;left:10px;z-index:8;flex-direction:column;gap:8px">
+      <div id="u3d-row-upper" onclick="U3D_toggleVisibility('upper')" style="display:none;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;background:rgba(17,24,39,.92);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.32);min-width:118px">
         <span id="u3d-check-upper" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #3B82F6;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#3B82F6">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
         </span>
-        <span id="u3d-label-upper" style="font-size:12.5px;font-weight:600;color:#E8F0FA">Upper</span>
+        <span id="u3d-label-upper" style="font-size:12.5px;font-weight:700;color:#E8F0FA">Maxila</span>
       </div>
-      <div id="u3d-row-lower" onclick="U3D_toggleVisibility('lower')" style="display:none;align-items:center;gap:8px;padding:6px 0;cursor:pointer">
+      <div id="u3d-row-lower" onclick="U3D_toggleVisibility('lower')" style="display:none;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;background:rgba(17,24,39,.92);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.32);min-width:118px">
         <span id="u3d-check-lower" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #3B82F6;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#3B82F6">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
         </span>
-        <span id="u3d-label-lower" style="font-size:12.5px;font-weight:600;color:#E8F0FA">Lower</span>
+        <span id="u3d-label-lower" style="font-size:12.5px;font-weight:700;color:#E8F0FA">Mandíbula</span>
       </div>
     </div>
   </div>
@@ -9129,10 +9116,10 @@ create table if not exists pending_issues (
        controls, never wraps to a second row, never overlaps the model
        (point 5). "Trocar arquivos" is PROTOTYPE-ONLY (removed once
        Supabase lands, together with #u3d-empty above). -->
-  <div style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:8px 10px calc(env(safe-area-inset-bottom,0px)+8px);background:var(--surface);border-top:1px solid var(--border)">
+  <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px calc(env(safe-area-inset-bottom,0px)+8px);background:var(--surface);border-top:1px solid var(--border)">
     <button class="stlv-btn" id="u3d-btn-upper" onclick="U3D_toggleVisibility('upper')" style="flex:1;min-width:0;padding:8px 6px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);border-radius:12px;color:#C0D0E0;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Upper</button>
     <button class="stlv-btn" id="u3d-btn-lower" onclick="U3D_toggleVisibility('lower')" style="flex:1;min-width:0;padding:8px 6px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);border-radius:12px;color:#C0D0E0;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Lower</button>
-    <button class="stlv-btn" onclick="U3D_resetCam()" style="flex:1;min-width:0;padding:8px 6px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);border-radius:12px;color:#C0D0E0;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">&#8635; Reset</button>
+    <button class="stlv-btn" onclick="U3D_resetCam()" style="width:110px;max-width:45%;padding:8px 6px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);border-radius:12px;color:#C0D0E0;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">&#8635; Reset</button>
     <label id="u3d-swap-btn" style="flex:1;min-width:0;padding:8px 6px;border:1px dashed rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#8BA3C0;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" for="u3d-fi-upper" title="PROTOTYPE: troca manual de arquivos enquanto não há storage">Trocar arquivos</label>
   </div>
 </div>

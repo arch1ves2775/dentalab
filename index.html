@@ -2349,6 +2349,19 @@ function safeEl(id){
   return el;
 }
 
+function isIOSLikeDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function setup3DFilePicker(input) {
+  input.type = 'file';
+  input.accept = isIOSLikeDevice()
+    ? ''
+    : '.stl,.ply,.obj,model/stl,model/ply,model/obj,application/octet-stream';
+  input.style.display = 'none';
+}
+
 
 
 // ── ROLE SYSTEM ──────────────────────────────────────────────────────────
@@ -3095,7 +3108,7 @@ function svcApply(name){
 // ── SCANNER SLOTS ──
 function ncPickScannerSlot(slot){
   var input = document.createElement('input');
-  input.type = 'file'; input.accept = '.stl,.ply,.obj'; input.style.display = 'none';
+  setup3DFilePicker(input);
   document.body.appendChild(input);
   input.addEventListener('change', async function(){
     var file = this.files && this.files[0];
@@ -4445,9 +4458,7 @@ function sendScan(){
   closeModal('modal-attach');
   // FIX P0-1: accept both .stl and .ply (was .stl only)
   var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.stl,.ply,.obj';
-  input.style.display = 'none';
+  setup3DFilePicker(input);
   document.body.appendChild(input);
   input.addEventListener('change', function(){
     document.body.removeChild(input);
@@ -5021,9 +5032,7 @@ function cdmUploadScannerSlot(which, slotLabel) {
   var field = (which === 'inicial' ? 'scannerInicial' : 'scannerFinal') + slotLabel;
 
   var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.stl,.ply,.obj';
-  input.style.display = 'none';
+  setup3DFilePicker(input);
   document.body.appendChild(input);
 
   input.addEventListener('change', function() {
@@ -6796,9 +6805,7 @@ function mcUploadScannerSlot(which, slotLabel) {
   if (!rec) return;
 
   var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.stl,.ply,.obj';
-  input.style.display = 'none';
+  setup3DFilePicker(input);
   document.body.appendChild(input);
 
   input.addEventListener('change', function() {
@@ -6972,9 +6979,7 @@ function mcFormRemovePhotos(which) {
 // discards the choice.
 function mcFormPickStl(which) {
   var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.stl,.ply,.obj';
-  input.style.display = 'none';
+  setup3DFilePicker(input);
   document.body.appendChild(input);
   input.addEventListener('change', function() {
     var file = this.files && this.files[0];
@@ -9123,9 +9128,9 @@ create table if not exists pending_issues (
     <label id="u3d-swap-btn" style="flex:1;min-width:0;padding:8px 6px;border:1px dashed rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#8BA3C0;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" for="u3d-fi-upper" title="PROTOTYPE: troca manual de arquivos enquanto não há storage">Trocar arquivos</label>
   </div>
 </div>
-<input type="file" id="u3d-fi-upper" accept=".stl,.ply,.obj" style="display:none">
-<input type="file" id="u3d-fi-lower" accept=".stl,.ply,.obj" style="display:none">
-<input type="file" id="u3d-fi-bite"  accept=".stl,.ply,.obj" style="display:none">
+<input type="file" id="u3d-fi-upper" style="display:none">
+<input type="file" id="u3d-fi-lower" style="display:none">
+<input type="file" id="u3d-fi-bite"  style="display:none">
 
 
 <!-- CDM Photo Lightbox -->

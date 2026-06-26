@@ -502,7 +502,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .nc-photo-thumb{width:72px;height:72px;border-radius:10px;object-fit:cover;display:block;position:relative}
 .nc-photo-slot{width:72px;height:72px;border-radius:10px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;overflow:hidden}
 .nc-photo-slot img{width:100%;height:100%;object-fit:cover;display:block}
-.nc-photo-remove{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.75);border:none;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;z-index:2}
+.nc-photo-remove{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.75);border:none;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;z-index:2}
 .nc-add-photo-btn{width:72px;height:72px;border-radius:10px;background:none;border:1.5px dashed var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;transition:border-color .15s}
 .nc-add-photo-btn:active{border-color:var(--accent)}
 
@@ -562,6 +562,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .cdm-stl-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:8px}
 .cdm-stl-icon{width:44px;height:44px;background:rgba(96,165,250,.15);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .cdm-stl-btn{margin-left:auto;background:var(--accent-light);color:var(--accent);border:1px solid rgba(37,99,235,.2);border-radius:10px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.cdm-stl-card{position:relative}
+.dl-corner-btn{position:absolute;top:6px;right:6px;width:28px;height:28px;border:none;border-radius:50%;background:rgba(17,24,39,.82);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.22)}
+.dl-corner-btn:active{transform:scale(.94)}
 .cdm-footer{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 .cdm-btn{flex:1;padding:13px 10px;border-radius:var(--radius-pill);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;transition:all .15s;box-shadow:var(--shadow-xs)}
 .cdm-btn.pri{background:var(--accent-gradient);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(37,99,235,.28)}
@@ -736,7 +739,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 /* ── CDM: Fotos clínicas ── */
 .cdm-photos-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .cdm-photos-scroll::-webkit-scrollbar{display:none}
-.cdm-photo-tile{width:80px;height:80px;flex-shrink:0;border-radius:10px;overflow:hidden;cursor:pointer;background:var(--surface2);border:1px solid var(--border);transition:opacity .15s}
+.cdm-photo-tile{width:80px;height:80px;flex-shrink:0;border-radius:10px;overflow:hidden;cursor:pointer;background:var(--surface2);border:1px solid var(--border);transition:opacity .15s;position:relative}
 .cdm-photo-tile:active{opacity:.78}
 .cdm-photo-tile img{width:100%;height:100%;object-fit:cover;display:block}
 #cdm-lightbox{display:none;position:fixed;inset:0;z-index:1100;background:rgba(2,5,12,.97);align-items:center;justify-content:center;flex-direction:column}
@@ -2017,6 +2020,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
       <div class="cdm-section">
         <div class="cdm-section-title">🦷 Scanner Inicial</div>
         <div class="cdm-stl-card" id="cdm-stl-inicial-card" style="display:none">
+          <button class="dl-corner-btn" onclick="event.stopPropagation();cdmDownloadScanner('inicial')" title="Baixar scanner" aria-label="Baixar scanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></button>
           <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="cdmOpenStl('inicial')">
             <div class="cdm-stl-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.6" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg></div>
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;word-break:break-all" id="cdm-stl-inicial-name">scan.stl</div><div style="font-size:11px;color:#4A6FA5" id="cdm-stl-inicial-sub">Toque para visualizar<span class="mc-scanner-format" id="cdm-stl-inicial-fmt">STL</span></div></div>
@@ -2112,6 +2116,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
       <div class="cdm-section">
         <div class="cdm-section-title">🦷 Scanner Inicial</div>
         <div class="cdm-stl-card" id="mcd-stl-inicial-card" style="display:none">
+          <button class="dl-corner-btn" onclick="event.stopPropagation();mcDownloadScanner('inicial')" title="Baixar scanner" aria-label="Baixar scanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></button>
           <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="mcOpenStl('inicial')">
             <div class="cdm-stl-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.6" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg></div>
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;word-break:break-all" id="mcd-stl-inicial-name">scan.stl</div><div style="font-size:11px;color:#4A6FA5" id="mcd-stl-inicial-sub">Toque para visualizar<span class="mc-scanner-format" id="mcd-stl-inicial-fmt">STL</span></div></div>
@@ -2141,6 +2146,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
       <div class="cdm-section">
         <div class="cdm-section-title">🦷 Scanner Final</div>
         <div class="cdm-stl-card" id="mcd-stl-final-card" style="display:none">
+          <button class="dl-corner-btn" onclick="event.stopPropagation();mcDownloadScanner('final')" title="Baixar scanner" aria-label="Baixar scanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></button>
           <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="mcOpenStl('final')">
             <div class="cdm-stl-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.6" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg></div>
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;word-break:break-all" id="mcd-stl-final-name">scan.stl</div><div style="font-size:11px;color:#4A6FA5" id="mcd-stl-final-sub">Toque para visualizar<span class="mc-scanner-format" id="mcd-stl-final-fmt">STL</span></div></div>
@@ -2360,6 +2366,41 @@ function setup3DFilePicker(input) {
     ? ''
     : '.stl,.ply,.obj,model/stl,model/ply,model/obj,application/octet-stream';
   input.style.display = 'none';
+}
+
+function dlSafeName(name, fallback) {
+  return (name || fallback || 'arquivo').replace(/[\\/:*?"<>|]+/g, '_');
+}
+
+function dlSource(source, name) {
+  if (!source) {
+    showToast('Arquivo original nao disponivel para baixar.');
+    return;
+  }
+  var url = '';
+  var revoke = false;
+  var filename = dlSafeName(name || (source && source.name) || '', 'arquivo');
+  if (source instanceof File || source instanceof Blob) {
+    url = URL.createObjectURL(source);
+    revoke = true;
+    filename = dlSafeName(name || source.name || '', filename);
+  } else {
+    url = String(source);
+  }
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  if (revoke) setTimeout(function(){ URL.revokeObjectURL(url); }, 1200);
+}
+
+function dlIconButton(action, title) {
+  return '<button class="dl-corner-btn" onclick="event.stopPropagation();' + action + '" title="' + (title || 'Baixar') + '" aria-label="Baixar">'
+    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>'
+    + '</button>';
 }
 
 
@@ -3151,12 +3192,19 @@ function ncAddPhotos(){
   input.click();
 }
 function ncRemovePhoto(idx){ NC_PHOTOS.splice(idx,1); ncRenderPhotos(); }
+function ncDownloadPhoto(idx){
+  var p = NC_PHOTOS[idx];
+  if (!p) return;
+  dlSource(p.file || p.dataUrl, (p.file && p.file.name) || ('foto-' + (idx + 1) + '.jpg'));
+}
 function ncRenderPhotos(){
   var grid = document.getElementById('nc-photos-grid');
   if (!grid) return;
   var html = '';
   NC_PHOTOS.forEach(function(p,i){
-    html += '<div class="nc-photo-slot"><img src="'+p.dataUrl+'" alt="foto '+(i+1)+'"><button class="nc-photo-remove" onclick="ncRemovePhoto('+i+')" aria-label="Remover">\u00D7</button></div>';
+    html += '<div class="nc-photo-slot"><img src="'+p.dataUrl+'" alt="foto '+(i+1)+'">'
+         + dlIconButton('ncDownloadPhoto('+i+')', 'Baixar foto')
+         + '<button class="nc-photo-remove" onclick="ncRemovePhoto('+i+')" aria-label="Remover">\u00D7</button></div>';
   });
   html += '<button class="nc-add-photo-btn" onclick="ncAddPhotos()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3"/></svg>Adicionar</button>';
   grid.innerHTML = html;
@@ -5166,6 +5214,31 @@ function cdmConfirmarRecebimento(caseId) {
 
 var _cdmCurrentPhotos = [];
 
+function cdmDownloadScanner(which) {
+  var c = _cdmActive;
+  if (!c) return;
+  var prefix = which === 'inicial' ? 'scannerInicial' : 'scannerFinal';
+  var localUpper = CDM_LOCAL_FILES[c.num + ':' + which + ':Upper'] || null;
+  var localLower = CDM_LOCAL_FILES[c.num + ':' + which + ':Lower'] || null;
+  if (localUpper) { dlSource(localUpper, localUpper.name); return; }
+  if (localLower) { dlSource(localLower, localLower.name); return; }
+  var storageUpper = c._storage && which === 'inicial' ? c._storage.upperUrl : '';
+  var storageLower = c._storage && which === 'inicial' ? c._storage.lowerUrl : '';
+  var upperName = c[prefix + 'Upper'] || '';
+  var lowerName = c[prefix + 'Lower'] || '';
+  var legacyName = (which === 'inicial' && c.hasSTL) ? (c.stlFileName || '') : '';
+  if (storageUpper) { dlSource(storageUpper, upperName || 'scanner-upper.stl'); return; }
+  if (storageLower) { dlSource(storageLower, lowerName || 'scanner-lower.stl'); return; }
+  if (c.stlMockPath) { dlSource(c.stlMockPath, legacyName || c.stlFileName || 'scanner.stl'); return; }
+  showToast('Arquivo original nao disponivel para baixar.');
+}
+
+function cdmDownloadPhoto(idx) {
+  var p = _cdmCurrentPhotos[idx];
+  if (!p) return;
+  dlSource(p.file || p.dataUrl || (p.fileRecord && (p.fileRecord.file_url || p.fileRecord.storage_path)), p.name || ('foto-' + (idx + 1) + '.jpg'));
+}
+
 function cdmRenderPhotos(photos) {
   _cdmCurrentPhotos = (photos || []).filter(function(p){ return !!p.dataUrl; });
   var grid = document.getElementById('cdm-photos-grid');
@@ -5181,6 +5254,7 @@ function cdmRenderPhotos(photos) {
   var tilesHtml = _cdmCurrentPhotos.map(function(p, i) {
     var name = p.name || ('Foto ' + (i + 1));
     return '<div class="cdm-photo-tile" onclick="cdmLightboxOpen(' + i + ')" title="' + name + '">'
+         + dlIconButton('cdmDownloadPhoto(' + i + ')', 'Baixar foto')
          + '<img src="' + p.dataUrl + '" alt="' + name + '" loading="lazy">'
          + '</div>';
   }).join('');
@@ -6642,6 +6716,28 @@ function mcOpenDetail(id) {
 // Renders the Scanner Inicial/Final section for a MyCase: the summary
 // card (clickable -> mcOpenStl, which decides single-file vs Upper/
 // Lower viewer) plus the empty state when no file is on record.
+function mcDownloadScanner(which) {
+  var rec = _mcActiveId ? MC_DATA[_mcActiveId] : null;
+  if (!rec) return;
+  var prefix = which === 'inicial' ? 'scannerInicial' : 'scannerFinal';
+  var upper = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Upper'] || null;
+  var lower = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Lower'] || null;
+  var flat = rec[prefix + 'File'] || null;
+  if (upper) { dlSource(upper, upper.name); return; }
+  if (lower) { dlSource(lower, lower.name); return; }
+  if (flat) { dlSource(flat, flat.name); return; }
+  showToast('Arquivo original nao disponivel para baixar.');
+}
+
+function mcDownloadPhoto(slot, index) {
+  var rec = _mcActiveId ? MC_DATA[_mcActiveId] : null;
+  if (!rec) return;
+  var key = slot === 'antes' ? 'fotosAntesFiles' : 'fotosDepoisFiles';
+  var file = rec[key] && rec[key][index - 1];
+  if (file) { dlSource(file, file.name); return; }
+  showToast('Arquivo original nao disponivel para baixar.');
+}
+
 // Renders a Scanner Inicial/Final section for MyCases: Upper (Maxila)
 // and Lower (Mandibula) only, no Bite (per spec). Both file rows are
 // ALWAYS shown with their own independent "+ Adicionar" button, so
@@ -6699,7 +6795,9 @@ function mcRenderPhotoGrid(elId, count, slot, pacienteName) {
   var html = '';
   for (var i = 0; i < n; i++) {
     var color = MC_PHOTO_COLORS[i % MC_PHOTO_COLORS.length];
-    html += '<button class="mc-photo-slot" type="button" style="background:' + color + '" onclick="mcOpenLightbox(\'' + slot + '\',' + (i+1) + ',\'' + (pacienteName||'').replace(/'/g,"") + '\')">Foto ' + (i+1) + '</button>';
+    html += '<div class="mc-photo-slot" role="button" tabindex="0" style="background:' + color + '" onclick="mcOpenLightbox(\'' + slot + '\',' + (i+1) + ',\'' + (pacienteName||'').replace(/'/g,"") + '\')">'
+         + dlIconButton('mcDownloadPhoto(\'' + slot + '\',' + (i+1) + ')', 'Baixar foto')
+         + 'Foto ' + (i+1) + '</div>';
   }
   html += '<button class="mc-add-photo-btn" type="button" onclick="mcQuickAddPhoto(\'' + slot + '\')">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
@@ -6722,6 +6820,8 @@ function mcQuickAddPhoto(slot) {
     var n = input.files ? input.files.length : 0;
     if (!n) return;
     var field = slot === 'antes' ? 'fotosAntes' : 'fotosDepois';
+    var fileField = slot === 'antes' ? 'fotosAntesFiles' : 'fotosDepoisFiles';
+    rec[fileField] = (rec[fileField] || []).concat(Array.from(input.files));
     rec[field] = (rec[field] || 0) + n;
     rec.ultimaAlteracao = mcTodayBR();
     showToast('Foto ' + (slot === 'antes' ? 'Antes' : 'Depois') + ' adicionada.');
@@ -7036,6 +7136,10 @@ function mcSaveForm() {
     scannerInicialFormato: _mcFormDraft.scannerInicial ? 'stl' : '',
     scannerFinal: _mcFormDraft.scannerFinal,
     scannerFinalFormato: _mcFormDraft.scannerFinal ? 'stl' : '',
+    fotosAntesFiles: (_mcFormDraft.fotosAntesFiles || []).slice(),
+    fotosDepoisFiles: (_mcFormDraft.fotosDepoisFiles || []).slice(),
+    scannerInicialFile: _mcFormDraft.scannerInicialFile || null,
+    scannerFinalFile: _mcFormDraft.scannerFinalFile || null,
     ultimaAlteracao: nowBR
   };
 

@@ -302,7 +302,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 /* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .22s;backdrop-filter:blur(4px)}
 #modal-status{z-index:900!important}
-#modal-lab-info{z-index:5000!important;position:fixed!important}
+#modal-lab-info{z-index:2147483647!important;position:fixed!important;transform:translateZ(0);-webkit-transform:translateZ(0)}
+#modal-lab-info.show{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important}
+#modal-case-detail.cdm-under-lab-info{visibility:hidden!important;pointer-events:none!important}
 #modal-cdm-shade-picker{z-index:1300!important}
 .modal-overlay.show{opacity:1;pointer-events:all}
 .modal-sheet{background:#FFFFFF;border-radius:24px 24px 0 0;border-top:1px solid var(--border);padding:18px 18px calc(env(safe-area-inset-bottom,18px)+18px);width:100%;transform:translateY(40px);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:90dvh;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,.10)}
@@ -4323,11 +4325,19 @@ function closeChat(){
 // -- MODALS --
 function openModal(id){
   var el = document.getElementById(id);
+  if (id === 'modal-lab-info') {
+    var detail = document.getElementById('modal-case-detail');
+    if (detail) detail.classList.add('cdm-under-lab-info');
+  }
   if (el) { el.classList.add('show'); } else { console.warn('Elemento n\u00e3o encontrado:', id); }
 }
 function closeModal(id){
   var el = document.getElementById(id);
   if (el) { el.classList.remove('show'); } else { console.warn('Elemento n\u00e3o encontrado:', id); }
+  if (id === 'modal-lab-info') {
+    var detail = document.getElementById('modal-case-detail');
+    if (detail) detail.classList.remove('cdm-under-lab-info');
+  }
 }
 // Tracks where Novo Caso was opened from so sendCase knows which
 // screen triggered it — set here (open time) not in sendCase (submit
@@ -6639,8 +6649,9 @@ function labSolicitarInfo(caseId) {
   var modal = document.getElementById('modal-lab-info');
   if (modal) {
     document.body.appendChild(modal);
-    modal.style.zIndex = '5000';
+    modal.style.zIndex = '2147483647';
     modal.style.position = 'fixed';
+    modal.style.visibility = 'visible';
   }
   openModal('modal-lab-info');
 }

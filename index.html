@@ -5837,6 +5837,28 @@ function issueDisplayTitle(issue) {
   return issue && issue.target && targetLabels[issue.target] ? label + ' · ' + targetLabels[issue.target] : label;
 }
 
+function issueContextDescription(issue) {
+  var c = issue && CDM[issue.caseId];
+  if (!c) return (issue && issue.desc) || 'O laboratorio solicitou atencao neste caso.';
+  var patient = c.paciente || 'Paciente';
+  var caseNum = c.num || ('#' + issue.caseId);
+  var lab = c.lab || 'Laboratorio';
+  var work = [c.tipo, c.dente ? 'dente(s) ' + c.dente : '', c.shade && c.shade !== '—' ? 'shade ' + c.shade : ''].filter(Boolean).join(' · ');
+  var targetLabels = { upper:'Maxila / Upper', lower:'Mandibula / Lower', both:'Maxila e mandibula / Upper + Lower', photos:'fotos clinicas' };
+  var target = targetLabels[(issue && issue.target) || ''] || '';
+  var base = patient + ' (' + caseNum + ') · ' + lab + (work ? ' · ' + work : '') + '. ';
+  if (!issue) return base;
+  if (issue.type === 'scanner_corrompido' || issue.type === 'scanner_incompleto') {
+    return base + 'O laboratorio pediu retificacao do scanner' + (target ? ' de ' + target : '') + '.';
+  }
+  if (issue.type === 'falta_fotos') return base + 'O laboratorio pediu para acrescentar fotos clinicas.';
+  if (issue.type === 'falta_cor') return base + 'O laboratorio pediu retificacao da cor/shade.';
+  if (issue.type === 'falta_material') return base + 'O laboratorio pediu retificacao do material.';
+  if (issue.type === 'retificar_prazo') return base + 'O laboratorio pediu retificacao do prazo.';
+  if (issue.type === 'falta_observacao') return base + ((issue.desc && issue.desc !== 'O laboratorio solicitou atencao neste caso.') ? issue.desc : 'O laboratorio solicitou informacao adicional.');
+  return base + (issue.desc || 'O laboratorio solicitou atencao neste caso.');
+}
+
 function issueDedupeKey(issue) {
   if (!issue) return '';
   return [String(issue.caseId || ''), issue.type || '', issue.target || '', issue.status || 'open'].join('|');
@@ -5876,7 +5898,7 @@ function issueBannerHTML(caseId) {
   if (!issue) return '';
   return '<div class="pc2-alert-banner" data-issue-banner="1">'
     + '<svg width="14px" height="14px" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>'
-    + '<div><strong>' + sbEscapeHtml(issueDisplayTitle(issue)) + '</strong> — ' + sbEscapeHtml(issue.desc || 'O laboratório solicitou atenção neste caso.') + '</div>'
+    + '<div><strong>' + sbEscapeHtml(issueDisplayTitle(issue)) + '</strong> — ' + sbEscapeHtml(issueContextDescription(issue)) + '</div>'
     + '</div>';
 }
 
@@ -6011,7 +6033,7 @@ function _alCardHTML(p, isLab) {
     + '<div class="al-card-meta">'
     + '<div class="al-card-case">' + caseRef + ' \u00b7 ' + labRef + '</div>'
     + '<div class="al-card-title">' + it.label + '</div>'
-    + '<div class="al-card-desc">' + p.desc + '</div>'
+    + '<div class="al-card-desc">' + sbEscapeHtml(issueContextDescription(p)) + '</div>'
     + '</div>'
     + '</div>'
     + '<div class="al-card-acts">' + actions + '</div>'
@@ -6654,7 +6676,7 @@ function labSolicitarInfo(caseId) {
   if (!requirePerm('canChangeStatus')) return;
   var c = CDM[caseId]; if (!c) return;
   cdmSetStatus(caseId, 'st-wait', 'Aguardando Cl\u00ednica', 'Laborat\u00f3rio solicitou informa\u00e7\u00e3o em falta.');
-  var desc = 'O laborat\u00f3rio solicitou informa\u00e7\u00e3o adicional para continuar a produ\u00e7\u00e3o do caso ' + c.num + '.';
+  var desc = c.paciente + ' (' + c.num + ') · ' + c.lab + ' · ' + c.tipo + '. O laboratorio solicitou informacao adicional para continuar a producao.';
   addPendingIssue(caseId, 'falta_observacao', desc);
   var msg = 'Laborat\u00f3rio solicitou informa\u00e7\u00f3es para o caso <strong>' + c.paciente + '</strong> (' + c.num + '). Por favor responda assim que poss\u00edvel.';
   if (CHAT_MESSAGES[c.labAv]) CHAT_MESSAGES[c.labAv].push({ type:'in', text: msg, time: now() });
@@ -6718,27 +6740,27 @@ function labConfirmSolicitarInfo(type, target) {
   var requests = {
     scanner_corrompido: {
       status: 'Laboratorio solicitou novo scanner.',
-      desc: 'O scanner enviado nao pode ser usado. Retifique ' + targetLabel + ' no caso ' + c.num + '.',
+      desc: c.paciente + ' (' + c.num + ') · ' + c.lab + ' · ' + c.tipo + (c.dente ? ' · dente(s) ' + c.dente : '') + '. O laboratorio pediu retificacao do scanner de ' + targetLabel + '.',
       msg: 'Laboratorio solicitou retificacao do scanner (' + targetLabel + ') para o caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     },
     falta_cor: {
       status: 'Laboratorio solicitou a cor do caso.',
-      desc: 'Retifique a cor/shade do caso ' + c.num + '.',
+      desc: c.paciente + ' (' + c.num + ') · ' + c.lab + ' · ' + c.tipo + '. O laboratorio pediu retificacao da cor/shade.',
       msg: 'Laboratorio solicitou retificacao da cor/shade do caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     },
     falta_fotos: {
       status: 'Laboratorio solicitou fotos clinicas.',
-      desc: 'Acrescente as fotos clinicas necessarias para continuar a producao do caso ' + c.num + '.',
+      desc: c.paciente + ' (' + c.num + ') · ' + c.lab + ' · ' + c.tipo + '. O laboratorio pediu para acrescentar fotos clinicas.',
       msg: 'Laboratorio solicitou fotos clinicas adicionais para o caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     },
     falta_material: {
       status: 'Laboratorio solicitou o material.',
-      desc: 'Retifique o material do caso ' + c.num + '.',
+      desc: c.paciente + ' (' + c.num + ') · ' + c.lab + ' · ' + c.tipo + '. O laboratorio pediu retificacao do material.',
       msg: 'Laboratorio solicitou retificacao do material do caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     },
     retificar_prazo: {
       status: 'Laboratorio solicitou retificacao do prazo.',
-      desc: 'Retifique o prazo do caso ' + c.num + '.',
+      desc: c.paciente + ' (' + c.num + ') · ' + c.lab + ' · ' + c.tipo + '. O laboratorio pediu retificacao do prazo.',
       msg: 'Laboratorio solicitou retificacao do prazo do caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     }
   };
@@ -6765,7 +6787,7 @@ function labSolicitarScanner(caseId) {
   if (!requirePerm('canChangeStatus')) return;
   var c = CDM[caseId]; if (!c) return;
   cdmSetStatus(caseId, 'st-wait', 'Aguardando Cl\u00ednica', 'Laborat\u00f3rio solicitou novo scanner.');
-  var desc = 'O scanner enviado est\u00e1 corrompido ou incompleto. Por favor retifique Upper + Lower no caso ' + c.num + '.';
+  var desc = c.paciente + ' (' + c.num + ') · ' + c.lab + ' · ' + c.tipo + (c.dente ? ' · dente(s) ' + c.dente : '') + '. O laboratorio pediu retificacao do scanner de Maxila e mandibula / Upper + Lower.';
   addPendingIssue(caseId, 'scanner_corrompido', desc, 'both');
   var msg = 'Laborat\u00f3rio solicitou novo scanner para o caso <strong>' + c.paciente + '</strong> (' + c.num + '). Scanner incorrecto ou em falta.';
   if (CHAT_MESSAGES[c.labAv]) CHAT_MESSAGES[c.labAv].push({ type:'in', text: msg, time: now() });

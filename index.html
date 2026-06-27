@@ -4337,6 +4337,7 @@ function closeModal(id){
   if (id === 'modal-lab-info') {
     var detail = document.getElementById('modal-case-detail');
     if (detail) detail.classList.remove('cdm-under-lab-info');
+    if (!_labInfoSubmitting) labRestoreCaseDetailAfterInfo();
   }
 }
 // Tracks where Novo Caso was opened from so sendCase knows which
@@ -6640,12 +6641,38 @@ function labSolicitarInfo(caseId) {
 }
 
 var _labInfoCaseId = '';
+var _labInfoPausedCaseId = '';
+var _labInfoSubmitting = false;
+
+function labPauseCaseDetailForInfo(caseId) {
+  var detail = document.getElementById('modal-case-detail');
+  if (detail && detail.classList.contains('open')) {
+    _labInfoPausedCaseId = String(caseId || _cdmActiveId || '');
+    detail.classList.remove('open');
+    detail.classList.remove('cdm-under-lab-info');
+  }
+  document.body.style.overflow = 'hidden';
+}
+
+function labRestoreCaseDetailAfterInfo() {
+  var caseId = _labInfoPausedCaseId;
+  _labInfoPausedCaseId = '';
+  var detail = document.getElementById('modal-case-detail');
+  if (detail) detail.classList.remove('cdm-under-lab-info');
+  if (caseId && CDM[caseId]) {
+    setTimeout(function(){ openCaseDetail(caseId); }, 80);
+  } else {
+    document.body.style.overflow = '';
+  }
+}
 
 function labSolicitarInfo(caseId) {
   if (!requirePerm('canChangeStatus')) return;
   if (currentUserRole !== 'laboratorio') return;
   _labInfoCaseId = String(caseId || '');
   if (!CDM[_labInfoCaseId]) return;
+  _labInfoSubmitting = false;
+  labPauseCaseDetailForInfo(_labInfoCaseId);
   var modal = document.getElementById('modal-lab-info');
   if (modal) {
     document.body.appendChild(modal);
@@ -6694,6 +6721,7 @@ function labConfirmSolicitarInfo(type, target) {
     }
   };
   var req = requests[type] || requests.falta_fotos;
+  _labInfoSubmitting = true;
   closeModal('modal-lab-info');
   cdmSetStatus(caseId, 'st-wait', 'Aguardando Cl\u00ednica', req.status);
   addPendingIssue(caseId, type, req.desc, target);
@@ -6703,6 +6731,12 @@ function labConfirmSolicitarInfo(type, target) {
   pc2RenderAllActs();
   renderHomeCaseStats();
   showToast('Solicitacao enviada ao dentista.');
+  var pausedCaseId = _labInfoPausedCaseId;
+  _labInfoPausedCaseId = '';
+  _labInfoSubmitting = false;
+  if (pausedCaseId && CDM[pausedCaseId]) {
+    setTimeout(function(){ openCaseDetail(pausedCaseId); }, 100);
+  }
 }
 
 function labSolicitarScanner(caseId) {

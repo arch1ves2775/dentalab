@@ -302,6 +302,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 /* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .22s;backdrop-filter:blur(4px)}
 #modal-status{z-index:900!important}
+#modal-lab-info{z-index:1200!important}
+#modal-cdm-shade-picker{z-index:1300!important}
 .modal-overlay.show{opacity:1;pointer-events:all}
 .modal-sheet{background:#FFFFFF;border-radius:24px 24px 0 0;border-top:1px solid var(--border);padding:18px 18px calc(env(safe-area-inset-bottom,18px)+18px);width:100%;transform:translateY(40px);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:90dvh;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,.10)}
 .modal-overlay.show .modal-sheet{transform:translateY(0)}
@@ -527,6 +529,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 /* CaseDetailsModal */
 #modal-case-detail{display:none;position:fixed;inset:0;z-index:800;align-items:flex-end;background:rgba(15,23,42,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #modal-case-detail.open{display:flex}
+#cdm-action-loading{display:none;position:fixed;inset:0;z-index:2600;background:rgba(15,23,42,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:20px}
+#cdm-action-loading.show{display:flex}
+.cdm-action-loading-card{width:min(340px,calc(100vw - 40px));background:#fff;border:1px solid var(--border);border-radius:18px;padding:22px 20px;text-align:center;box-shadow:0 20px 50px rgba(15,23,42,.24)}
+.cdm-action-spinner{width:38px;height:38px;border-radius:50%;border:4px solid #DBEAFE;border-top-color:var(--blue);margin:0 auto 14px;animation:stlvspin .8s linear infinite}
+.cdm-action-loading-title{font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px}
+.cdm-action-loading-sub{font-size:13px;line-height:1.35;color:var(--muted)}
 #modal-mc-detail,#modal-mc-new,#modal-mc-delete{display:none;position:fixed;inset:0;z-index:800;align-items:flex-end;background:rgba(17,24,39,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #modal-mc-detail.open,#modal-mc-new.show,#modal-mc-delete.show{display:flex}
 .cdm-sheet{background:#FFFFFF;border-radius:24px 24px 0 0;border-top:1px solid var(--border);width:100%;max-height:92vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,16px);box-shadow:0 -4px 24px rgba(0,0,0,.10)}
@@ -567,6 +575,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .cdm-rectify-input{min-width:0;flex:1;border:1px solid rgba(239,68,68,.35);background:#fff;color:var(--text);border-radius:9px;padding:7px 8px;font-size:12px;font-family:inherit;outline:none}
 .cdm-rectify-input:focus{box-shadow:0 0 0 3px rgba(239,68,68,.12)}
 .cdm-rectify-save{border:1px solid rgba(239,68,68,.28);background:var(--red-bg);color:var(--red);border-radius:9px;padding:7px 9px;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;white-space:nowrap}
+.cdm-rectify-shade-btn{width:100%;border:1px solid rgba(239,68,68,.28);background:var(--red-bg);color:var(--red);border-radius:9px;padding:8px 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;text-align:left}
+.cdm-rectify-shade-modal .chip-row{margin:4px 0 12px}
+.cdm-rectify-shade-modal .chip{border-radius:16px}
 .cdm-stl-card{position:relative}
 .dl-corner-btn{position:absolute;top:6px;right:6px;width:28px;height:28px;border:none;border-radius:50%;background:rgba(17,24,39,.82);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.22)}
 .dl-corner-btn:active{transform:scale(.94)}
@@ -4939,6 +4950,22 @@ var _cdmActive = null;
 var _stModalCaseId = ''; // caseId saved when status modal opens
 var _cdmActiveId = '';  // string key in CDM for the currently open case
 
+function cdmDisplayStatusLabel(c) {
+  if (!c) return '';
+  if (c.statusCls === 'st-wait' || c.status === 'Aguardando Clínica' || c.status === 'Aguardando Clinica') {
+    return currentUserRole === 'laboratorio' ? 'Aguardando Clínica' : 'Aguardando retificação';
+  }
+  return c.status || STATUS_LABELS[c.statusCls] || '';
+}
+
+function cdmRefreshHeaderStatus(c) {
+  var pill = document.getElementById('cdm-status-pill');
+  if (pill && c) {
+    pill.textContent = cdmDisplayStatusLabel(c);
+    pill.className = 'spill ' + (c.statusCls || 'st-a');
+  }
+}
+
 function openCaseDetail(id) {
   try {
   var c = CDM[String(id)]; if(!c){showToast('Caso n\u00E3o encontrado');return;}
@@ -4966,8 +4993,7 @@ function openCaseDetail(id) {
     urgEl.textContent=c.urg==='Urgente'?'\u26A1 Urgente':c.urg==='Expresso'?'\u1F534 Expresso':c.urg;
     urgEl.className='cdm-cell-val '+(c.urg==='Urgente'||c.urg==='Expresso'?'urg':'ok');
   }
-  var pill=document.getElementById('cdm-status-pill');
-  if(pill){pill.textContent=c.status;pill.className='spill '+c.statusCls;}
+  cdmRefreshHeaderStatus(c);
   var av=document.getElementById('cdm-pac-av');
   if(av){var ini=c.paciente.split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase();av.textContent=ini;av.style.background=c.labColor;}
   set('cdm-pac-name',c.paciente);
@@ -5067,9 +5093,10 @@ function cdmRenderScannerSection(which, c) {
       if (!btn) return;
       var requested = isScanIssue && (target === 'both' || target === pair[0]);
       var alreadyRetified = !isScanIssue && c._retifiedScannerSlots && c._retifiedScannerSlots[pair[0]];
+      var hiddenDuringScanIssue = isScanIssue && !requested;
       btn.textContent = requested ? 'Retificar' : '+ Adicionar';
       btn.classList.toggle('retify-btn', !!requested);
-      btn.style.display = alreadyRetified ? 'none' : '';
+      btn.style.display = (alreadyRetified || hiddenDuringScanIssue) ? 'none' : '';
       btn.setAttribute('onclick', requested
         ? "replaceCaseScannerFromIssue('" + issue.id + "')"
         : "cdmUploadScannerSlot('inicial','" + pair[1] + "')");
@@ -5343,12 +5370,69 @@ function renderRectificationField(caseId, c, field, elId, issueType, value) {
     el.textContent = value || (field === 'shade' ? '—' : 'A definir');
     return;
   }
+  if (field === 'shade') {
+    el.innerHTML = '<div class="cdm-rectify-field">'
+      + '<input id="cdm-rectify-shade" type="hidden" value="' + sbEscapeHtml(value || '') + '">'
+      + '<button class="cdm-rectify-shade-btn" onclick="openShadeRectificationPicker(\'' + issue.id + '\')">Escolher cor: ' + sbEscapeHtml(value || 'A definir') + '</button>'
+      + '</div>';
+    return;
+  }
   var inputType = field === 'prazo' ? 'date' : 'text';
   var inputValue = field === 'prazo' ? (c.prazoISO || '') : value;
   el.innerHTML = '<div class="cdm-rectify-field">'
     + '<input class="cdm-rectify-input" id="cdm-rectify-' + field + '" type="' + inputType + '" value="' + sbEscapeHtml(inputValue || '') + '">'
     + '<button class="cdm-rectify-save" onclick="saveCaseRectification(\'' + issue.id + '\',\'' + field + '\')">Salvar</button>'
     + '</div>';
+}
+
+function openShadeRectificationPicker(issueId) {
+  var issue = findIssueById(issueId);
+  if (!issue) { showToast('Aviso não encontrado.'); return; }
+  var c = CDM[issue.caseId];
+  if (!c) { showToast('Caso não encontrado.'); return; }
+  var modal = document.getElementById('modal-cdm-shade-picker');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'modal-cdm-shade-picker';
+    modal.onclick = function(event) { if (event.target === modal) closeShadeRectificationPicker(); };
+    document.body.appendChild(modal);
+  }
+  var shades = ['A1','A2','A3','A3.5','B1','B2','C1','D2','BL1','BL2','BL3','Outra'];
+  var current = c.shade || '';
+  var known = shades.indexOf(current) >= 0;
+  var chips = shades.map(function(shade) {
+    var selected = (known && shade === current) || (!known && shade === 'Outra');
+    return '<span class="chip' + (selected ? ' sel' : '') + '" onclick="selectRectifyShade(this,\'' + shade + '\')">' + shade + '</span>';
+  }).join('');
+  modal.innerHTML = '<div class="modal-sheet cdm-rectify-shade-modal">'
+    + '<div class="modal-handle"></div>'
+    + '<div class="modal-title">Escolher cor</div>'
+    + '<div class="chip-row" id="cdm-rectify-shade-chips">' + chips + '</div>'
+    + '<input class="nc-input" id="cdm-rectify-shade-custom" placeholder="Especificar cor..." autocomplete="off" style="' + (known ? 'display:none;' : '') + 'margin-top:-2px;margin-bottom:12px" value="' + sbEscapeHtml(known ? '' : current) + '">'
+    + '<button class="big-btn" onclick="saveCaseRectification(\'' + issue.id + '\',\'shade\')">Salvar cor</button>'
+    + '<button class="ghost-btn" onclick="closeShadeRectificationPicker()">Cancelar</button>'
+    + '</div>';
+  var hidden = safeEl('cdm-rectify-shade');
+  if (hidden) hidden.value = known ? current : 'Outra';
+  modal.classList.add('show');
+}
+
+function selectRectifyShade(el, shade) {
+  document.querySelectorAll('#cdm-rectify-shade-chips .chip').forEach(function(chip){ chip.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  var hidden = safeEl('cdm-rectify-shade');
+  if (hidden) hidden.value = shade;
+  var custom = safeEl('cdm-rectify-shade-custom');
+  if (custom) {
+    custom.style.display = shade === 'Outra' ? 'block' : 'none';
+    if (shade !== 'Outra') custom.value = '';
+  }
+}
+
+function closeShadeRectificationPicker() {
+  var modal = safeEl('modal-cdm-shade-picker');
+  if (modal) modal.classList.remove('show');
 }
 
 function formatDateBR(iso) {
@@ -5363,6 +5447,10 @@ async function saveCaseRectification(issueId, field) {
   if (!c) { showToast('Caso não encontrado.'); return; }
   var input = safeEl('cdm-rectify-' + field);
   var value = input ? String(input.value || '').trim() : '';
+  if (field === 'shade' && value === 'Outra') {
+    var customShade = safeEl('cdm-rectify-shade-custom');
+    value = customShade ? String(customShade.value || '').trim() : '';
+  }
   if (!value) { showToast('Preencha o campo solicitado.'); return; }
   if (field === 'shade') c.shade = value;
   else if (field === 'material') c.material = value;
@@ -5374,6 +5462,7 @@ async function saveCaseRectification(issueId, field) {
   if (_cdmActiveId === String(issue.caseId)) {
     cdmRenderRectificationFields(String(issue.caseId), c);
   }
+  if (field === 'shade') closeShadeRectificationPicker();
   showToast('Retificação salva.');
 }
 
@@ -5723,16 +5812,38 @@ function issueDisplayTitle(issue) {
   return issue && issue.target && targetLabels[issue.target] ? label + ' · ' + targetLabels[issue.target] : label;
 }
 
+function issueDedupeKey(issue) {
+  if (!issue) return '';
+  return [String(issue.caseId || ''), issue.type || '', issue.target || '', issue.status || 'open'].join('|');
+}
+
+function sameOpenIssue(issue, caseId, type, target) {
+  return !!issue
+    && String(issue.caseId || '') === String(caseId || '')
+    && issue.type === type
+    && issue.status === 'open'
+    && ((issue.target || '') === (target || ''));
+}
+
 function allCurrentIssues() {
-  var byId = {};
-  PENDING_ISSUES.forEach(function(p) {
-    if (p && p.id) byId[p.id] = p;
-  });
+  var byKey = {};
+  function addIssue(issue) {
+    if (!issue) return;
+    var key = issueDedupeKey(issue);
+    if (!key) return;
+    if (!byKey[key]) {
+      byKey[key] = issue;
+      return;
+    }
+    var oldLocal = String(byKey[key].id || '').indexOf('pi_') === 0;
+    var newRemote = issue.id && String(issue.id).indexOf('pi_') !== 0;
+    if (oldLocal && newRemote) byKey[key] = issue;
+  }
+  PENDING_ISSUES.forEach(addIssue);
   Object.keys(CDM).forEach(function(caseId) {
-    var issue = openIssueForCase(caseId);
-    if (issue && issue.id && !byId[issue.id]) byId[issue.id] = issue;
+    addIssue(openIssueForCase(caseId));
   });
-  return Object.keys(byId).map(function(id){ return byId[id]; });
+  return Object.keys(byKey).map(function(key){ return byKey[key]; });
 }
 
 function issueBannerHTML(caseId) {
@@ -5923,6 +6034,34 @@ function openCaseAndFocusIssue(issueId) {
   }, 180);
 }
 
+function ensureCaseActionLoading() {
+  var el = document.getElementById('cdm-action-loading');
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = 'cdm-action-loading';
+  el.innerHTML = '<div class="cdm-action-loading-card">'
+    + '<div class="cdm-action-spinner"></div>'
+    + '<div class="cdm-action-loading-title" id="cdm-action-loading-title">A processar...</div>'
+    + '<div class="cdm-action-loading-sub" id="cdm-action-loading-sub">Aguarde um momento.</div>'
+    + '</div>';
+  document.body.appendChild(el);
+  return el;
+}
+
+function showCaseActionLoading(title, sub) {
+  var el = ensureCaseActionLoading();
+  var titleEl = document.getElementById('cdm-action-loading-title');
+  var subEl = document.getElementById('cdm-action-loading-sub');
+  if (titleEl) titleEl.textContent = title || 'A processar...';
+  if (subEl) subEl.textContent = sub || 'Aguarde um momento.';
+  el.classList.add('show');
+}
+
+function hideCaseActionLoading() {
+  var el = document.getElementById('cdm-action-loading');
+  if (el) el.classList.remove('show');
+}
+
 function replaceCaseScannerFromIssue(issueId) {
   var issue = findIssueById(issueId);
   if (!issue) { showToast('Aviso não encontrado.'); return; }
@@ -5960,6 +6099,21 @@ function replaceCaseScannerFromIssue(issueId) {
       localCaseUpper: CDM_LOCAL_FILES[issue.caseId + ':inicial:Upper'],
       localCaseLower: CDM_LOCAL_FILES[issue.caseId + ':inicial:Lower']
     };
+    function rollbackScannerState() {
+      c.delivery = oldScannerState.delivery;
+      c.hasSTL = oldScannerState.hasSTL;
+      c.stlFileName = oldScannerState.stlFileName;
+      c.scannerInicialUpper = oldScannerState.scannerInicialUpper;
+      c.scannerInicialLower = oldScannerState.scannerInicialLower;
+      c._storage = c._storage || {};
+      c._storage.upperUrl = oldScannerState.storageUpperUrl;
+      c._storage.lowerUrl = oldScannerState.storageLowerUrl;
+      if (oldScannerState.localNumUpper) CDM_LOCAL_FILES[c.num + ':inicial:Upper'] = oldScannerState.localNumUpper; else delete CDM_LOCAL_FILES[c.num + ':inicial:Upper'];
+      if (oldScannerState.localNumLower) CDM_LOCAL_FILES[c.num + ':inicial:Lower'] = oldScannerState.localNumLower; else delete CDM_LOCAL_FILES[c.num + ':inicial:Lower'];
+      if (oldScannerState.localCaseUpper) CDM_LOCAL_FILES[issue.caseId + ':inicial:Upper'] = oldScannerState.localCaseUpper; else delete CDM_LOCAL_FILES[issue.caseId + ':inicial:Upper'];
+      if (oldScannerState.localCaseLower) CDM_LOCAL_FILES[issue.caseId + ':inicial:Lower'] = oldScannerState.localCaseLower; else delete CDM_LOCAL_FILES[issue.caseId + ':inicial:Lower'];
+    }
+    showCaseActionLoading('A retificar scanner', 'A remover o ficheiro antigo e enviar o novo scanner.');
     c.delivery = 'scanner';
     c.hasSTL = true;
     c._storage = c._storage || {};
@@ -5980,20 +6134,16 @@ function replaceCaseScannerFromIssue(issueId) {
       fileData.scannerLower = lower;
       jaws.push('lower');
     }
-    var replaced = await replaceCaseFilesInSupabase(c, fileData, ['stl','ply','obj','scanner'], jaws);
+    var replaced = false;
+    try {
+      replaced = await replaceCaseFilesInSupabase(c, fileData, ['stl','ply','obj','scanner'], jaws);
+    } catch (err) {
+      console.warn('[Scanner] Falha na retificacao:', err);
+      replaced = false;
+    }
     if (!replaced) {
-      c.delivery = oldScannerState.delivery;
-      c.hasSTL = oldScannerState.hasSTL;
-      c.stlFileName = oldScannerState.stlFileName;
-      c.scannerInicialUpper = oldScannerState.scannerInicialUpper;
-      c.scannerInicialLower = oldScannerState.scannerInicialLower;
-      c._storage = c._storage || {};
-      c._storage.upperUrl = oldScannerState.storageUpperUrl;
-      c._storage.lowerUrl = oldScannerState.storageLowerUrl;
-      if (oldScannerState.localNumUpper) CDM_LOCAL_FILES[c.num + ':inicial:Upper'] = oldScannerState.localNumUpper; else delete CDM_LOCAL_FILES[c.num + ':inicial:Upper'];
-      if (oldScannerState.localNumLower) CDM_LOCAL_FILES[c.num + ':inicial:Lower'] = oldScannerState.localNumLower; else delete CDM_LOCAL_FILES[c.num + ':inicial:Lower'];
-      if (oldScannerState.localCaseUpper) CDM_LOCAL_FILES[issue.caseId + ':inicial:Upper'] = oldScannerState.localCaseUpper; else delete CDM_LOCAL_FILES[issue.caseId + ':inicial:Upper'];
-      if (oldScannerState.localCaseLower) CDM_LOCAL_FILES[issue.caseId + ':inicial:Lower'] = oldScannerState.localCaseLower; else delete CDM_LOCAL_FILES[issue.caseId + ':inicial:Lower'];
+      rollbackScannerState();
+      hideCaseActionLoading();
       refreshCaseUiAfterReplacement(issue.caseId, c);
       showToast('Nao foi possivel trocar no Supabase. O aviso continua aberto.');
       return;
@@ -6001,8 +6151,9 @@ function replaceCaseScannerFromIssue(issueId) {
     c._retifiedScannerSlots = c._retifiedScannerSlots || {};
     jaws.forEach(function(jaw){ c._retifiedScannerSlots[jaw] = true; });
     resolvePending(issue.id, 'scanner reenviado');
+    hideCaseActionLoading();
     refreshCaseUiAfterReplacement(issue.caseId, c);
-    showToast('Scanner retificado no caso.');
+    showToast('Scanner retificado com sucesso.');
   });
   input.click();
 }
@@ -6044,6 +6195,7 @@ function replaceCasePhotosFromIssue(issueId) {
 
 function refreshCaseUiAfterReplacement(caseId, c) {
   if (_cdmActiveId === String(caseId)) {
+    cdmRefreshHeaderStatus(c);
     cdmRenderRectificationFields(String(caseId), c);
     cdmRenderScannerSection('inicial', c);
     cdmRenderPhotos(c.photos || []);
@@ -6098,12 +6250,23 @@ function resolvePending(issueId, actionLabel) {
 
   p.status     = 'resolved';
   p.resolvedAt = now();
+  PENDING_ISSUES.forEach(function(i) {
+    if (i !== p && sameOpenIssue(i, p.caseId, p.type, p.target)) {
+      i.status = 'resolved';
+      i.resolvedAt = p.resolvedAt;
+    }
+  });
   persistResolvedIssue(p);
-  var casePending = CDM[p.caseId] && Array.isArray(CDM[p.caseId]._pendingIssues) ? CDM[p.caseId]._pendingIssues.find(function(i){ return i.id === p.id; }) : null;
-  if (casePending) { casePending.status = 'resolved'; casePending.resolvedAt = p.resolvedAt; }
+  var casePendingList = CDM[p.caseId] && Array.isArray(CDM[p.caseId]._pendingIssues) ? CDM[p.caseId]._pendingIssues : [];
+  casePendingList.forEach(function(i) {
+    if (i && (i.id === p.id || sameOpenIssue(i, p.caseId, p.type, p.target))) {
+      i.status = 'resolved';
+      i.resolvedAt = p.resolvedAt;
+    }
+  });
 
   // Check if this case has any other open issues
-  var stillOpen = PENDING_ISSUES.some(function(i){ return i.caseId === p.caseId && i.status === 'open'; });
+  var stillOpen = PENDING_ISSUES.some(function(i){ return String(i.caseId) === String(p.caseId) && i.status === 'open'; });
   if (!stillOpen && CDM[p.caseId]) {
     restoreCaseStatusAfterPending(p.caseId);
   }
@@ -6149,12 +6312,27 @@ function restoreCaseStatusAfterPending(caseId) {
 }
 
 async function persistResolvedIssue(issue) {
-  if (!isSupabaseReady() || !issue || !issue.id || String(issue.id).indexOf('pi_') === 0) return;
+  if (!isSupabaseReady() || !issue) return;
   try {
-    await _supabaseClient
-      .from('pending_issues')
-      .update({ status: 'resolved', resolved_at: new Date().toISOString() })
-      .eq('id', issue.id);
+    var payload = { status: 'resolved', resolved_at: new Date().toISOString() };
+    if (issue.id && String(issue.id).indexOf('pi_') !== 0) {
+      await _supabaseClient
+        .from('pending_issues')
+        .update(payload)
+        .eq('id', issue.id);
+    }
+    var c = CDM[issue.caseId];
+    var remoteCaseId = c && (c._supabaseId || c.supabaseId || c.id);
+    if (remoteCaseId && String(remoteCaseId).indexOf('-') >= 0) {
+      var q = _supabaseClient
+        .from('pending_issues')
+        .update(payload)
+        .eq('case_id', remoteCaseId)
+        .eq('type', issue.type)
+        .eq('status', 'open');
+      if (issue.target) q = q.ilike('label', '[' + issue.target + ']%');
+      await q;
+    }
   } catch (err) {
     console.warn('[Supabase] resolve pending local apenas:', err.message);
   }
@@ -6195,8 +6373,11 @@ function alResolveTodos() {
 function addPendingIssue(caseId, type, desc, target) {
   // Avoid duplicates of the same type on the same case
   var exists = PENDING_ISSUES.find(function(p){
-    return p.caseId === caseId && p.type === type && p.status === 'open' && ((p.target || '') === (target || ''));
+    return sameOpenIssue(p, caseId, type, target);
   });
+  if (!exists && CDM[caseId] && Array.isArray(CDM[caseId]._pendingIssues)) {
+    exists = CDM[caseId]._pendingIssues.find(function(p){ return sameOpenIssue(p, caseId, type, target); });
+  }
   if (exists) {
     renderAlertas();
     pc2RenderAllActs();
@@ -6248,8 +6429,17 @@ async function persistPendingIssue(caseId, issue) {
       requested_by: currentUserId || null,
       requested_to: 'clinica'
     };
-    var inserted = await _supabaseClient.from('pending_issues').insert(row);
+    var inserted = await _supabaseClient.from('pending_issues').insert(row).select().single();
     if (inserted.error) throw inserted.error;
+    if (inserted.data && inserted.data.id && issue.id !== inserted.data.id) {
+      var oldId = issue.id;
+      issue.id = inserted.data.id;
+      if (c && Array.isArray(c._pendingIssues)) {
+        var localIssue = c._pendingIssues.find(function(p){ return p && p.id === oldId; });
+        if (localIssue) localIssue.id = issue.id;
+      }
+      await persistCasePayloadIssue(caseId);
+    }
   } catch (err) {
     console.warn('[Supabase] pending issue local apenas:', err.message);
   }
@@ -6302,6 +6492,9 @@ function mergePendingIssuesFromCaseRow(row, localCaseId) {
       if (targetMatch) mapped.target = targetMatch[1].toLowerCase();
     }
     var existing = PENDING_ISSUES.find(function(p){ return p.id === mapped.id; });
+    if (!existing && mapped.status === 'open') {
+      existing = PENDING_ISSUES.find(function(p){ return sameOpenIssue(p, mapped.caseId, mapped.type, mapped.target); });
+    }
     if (existing) Object.assign(existing, mapped);
     else PENDING_ISSUES.push(mapped);
     attachPendingIssueToCase(mapped.caseId, mapped);

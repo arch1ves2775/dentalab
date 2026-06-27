@@ -763,6 +763,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 #cdm-lightbox{display:none;position:fixed;inset:0;z-index:3000;background:rgba(2,5,12,.97);align-items:center;justify-content:center;flex-direction:column}
 #cdm-lightbox.open{display:flex}
 #cdm-lightbox-img{max-width:92vw;max-height:80dvh;border-radius:14px;object-fit:contain}
+#cdm-lightbox-img.zoomed{max-width:none;max-height:none;width:auto;height:auto;transform:scale(1.7);cursor:zoom-out}
 #cdm-lightbox-close{position:absolute;top:max(env(safe-area-inset-top,16px),16px);right:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 #cdm-lightbox-back{position:absolute;top:max(env(safe-area-inset-top,16px),16px);left:16px;height:36px;border-radius:18px;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:13px;font-weight:700;padding:0 14px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 #cdm-lightbox-caption{margin-top:12px;font-size:12px;color:rgba(255,255,255,.5)}
@@ -1397,10 +1398,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
   <div class="quick-wrap">
     <div class="quick-scroll" id="quick-btns">
       <button class="qbtn" id="qbtn-caso" onclick="openNewCase()" style="display:none"><svg class="-tooth" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M12 3c-2 0-4 1-4.5 3C7 8 7 9 8 11c.5 1 1 2 1 4 0 2 .5 4 3 4s3-2 3-4c0-2 .5-3 1-4 1-2 1-3 .5-5C16 4 14 3 12 3z"/></svg> Novo caso</button>
-      <button class="qbtn" onclick="openModal('modal-attach')"><svg class="-photo" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 13a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg> Fotos</button>
-      <button class="qbtn" onclick="openModal('modal-attach')"><svg class="-scan" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg> Scanner</button>
-      <button class="qbtn" onclick="showToast('Trabalho aprovado ✓')"><svg class="-check" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M20 6 9 17l-5-5"/></svg> Aprovar</button>
-      <button class="qbtn" onclick="openLabCases()"><svg class="-list-check" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M3.5 5.5 5 7l2.5-2.5M3.5 11.5 5 13l2.5-2.5M3.5 17.5 5 19l2.5-2.5M10 6h11M10 12h11M10 18h11"/></svg> Ver casos</button>
+      <button class="qbtn" id="qbtn-fotos" onclick="sendPhoto()"><svg class="-photo" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 13a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg> Fotos</button>
+      <button class="qbtn" id="qbtn-scanner" onclick="sendScan()"><svg class="-scan" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg> Scanner</button>
+      <button class="qbtn" id="qbtn-ver-casos" onclick="openLabCases()"><svg class="-list-check" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M3.5 5.5 5 7l2.5-2.5M3.5 11.5 5 13l2.5-2.5M3.5 17.5 5 19l2.5-2.5M10 6h11M10 12h11M10 18h11"/></svg> Ver casos</button>
     </div>
     <div class="input-row">
       <button class="clip-btn" onclick="openModal('modal-attach')"><svg class="-paperclip" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
@@ -2540,6 +2540,10 @@ function applyRoleUI(role) {
   // Quick-reply button "Novo Caso" in chat
   var qbtnCaso = document.getElementById('qbtn-caso');
   if (qbtnCaso) qbtnCaso.style.display = p.seesNewCaseBtn ? 'flex' : 'none';
+  ['qbtn-fotos','qbtn-scanner','qbtn-ver-casos'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'flex';
+  });
 
   // "Adicionar laboratório" row in chat-list — find it safely by ID instead of attribute selector
   var addLabRow = document.getElementById('add-lab-chat-row');
@@ -4461,6 +4465,11 @@ function sbEscapeHtml(value) {
   return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+function is3DFileName(name) {
+  var n = String(name || '').toLowerCase();
+  return n.endsWith('.stl') || n.endsWith('.ply') || n.endsWith('.obj');
+}
+
 async function sbLoadChatMessages() {
   if (!isSupabaseReady() || !CURRENT_CHAT.labId || !CURRENT_CHAT.clinicId) return;
   try {
@@ -4484,6 +4493,9 @@ async function sbLoadChatMessages() {
       if (row.message_type === 'image') {
         return { type:'image', out:own, url:row.attachment_url || '', name:row.attachment_name || 'Imagem', time:time };
       }
+      if (row.message_type === 'scanner') {
+        return { type:'scanner', out:own, url:row.attachment_url || '', name:row.attachment_name || 'Scanner', time:time };
+      }
       return { type: own ? 'out' : 'in', text:row.message || '', plain:true, time:time };
     });
     _renderChatMessages(_currentChatLabAv);
@@ -4506,11 +4518,11 @@ async function sbSendChatMessage(textValue, file) {
       clinic_id: CURRENT_CHAT.clinicId,
       sender_id: currentUserId,
       message: textValue || '',
-      message_type: file ? 'image' : 'text'
+      message_type: file ? (is3DFileName(file.name || '') ? 'scanner' : 'image') : 'text'
     };
     if (file) {
-      var path = 'chat/' + CURRENT_CHAT.labId + '/' + CURRENT_CHAT.clinicId + '/' + Date.now() + '-' + sbSafeName(file.name || 'imagem');
-      var upload = await _supabaseClient.storage.from('case-files').upload(path, file, { upsert:false, contentType:file.type || 'image/*' });
+      var path = 'chat/' + CURRENT_CHAT.labId + '/' + CURRENT_CHAT.clinicId + '/' + Date.now() + '-' + sbSafeName(file.name || 'anexo');
+      var upload = await _supabaseClient.storage.from('case-files').upload(path, file, { upsert:false, contentType:file.type || 'application/octet-stream' });
       if (upload.error) throw upload.error;
       payload.attachment_path = path;
       payload.attachment_name = file.name || 'Imagem';
@@ -4569,7 +4581,13 @@ function sendPhoto(){
   input.addEventListener('change', async function(){
     document.body.removeChild(input);
     if (!input.files || !input.files.length) return;
-    for (var i = 0; i < input.files.length; i++) await sbSendChatMessage('', input.files[i]);
+    for (var i = 0; i < input.files.length; i++) {
+      var ok = await sbSendChatMessage('', input.files[i]);
+      if (!ok) {
+        var url = URL.createObjectURL(input.files[i]);
+        addBubble('<div class="bubble out" style="padding:4px;cursor:pointer" onclick="chatImageOpen(\'' + url + '\',\'' + sbEscapeHtml(input.files[i].name || 'Imagem') + '\')"><img src="' + url + '" alt="Imagem" style="display:block;width:min(220px,58vw);max-height:280px;object-fit:cover;border-radius:12px"></div>', true);
+      }
+    }
   });
   input.click();
 }
@@ -4588,7 +4606,7 @@ function sendScan(){
   var input = document.createElement('input');
   setup3DFilePicker(input);
   document.body.appendChild(input);
-  input.addEventListener('change', function(){
+  input.addEventListener('change', async function(){
     document.body.removeChild(input);
     if (!input.files || !input.files.length) return;
     var file = input.files[0];
@@ -4597,16 +4615,17 @@ function sendScan(){
       showToast('Selecione um ficheiro .stl, .ply ou .obj');
       return;
     }
-    sendScanBubble(file.name);
+    var ok = await sbSendChatMessage('', file);
+    if (!ok) sendScanBubble(file.name, file);
   });
   input.click();
 }
 
-function sendScanBubble(realFileName){
+function sendScanBubble(realFileName, file){
   // FIX P0-1: label reflects the actual format (STL or PLY)
   var name = realFileName || ('Scan_caso_'+(Math.floor(Math.random()*900)+100)+'.stl');
-  var fmt = (name.toLowerCase().endsWith('.ply')) ? 'PLY' : 'STL';
-  addBubble(`<div class="case-bubble" style="display:flex;align-items:center;gap:10px;padding:10px 13px"><svg class="-scan" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;font-size:24px;color:rgba(255,255,255,.85)"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg><div><div style="font-size:13px;font-weight:700;color:#fff">${name}</div><div style="font-size:11px;color:rgba(255,255,255,.7)">Arquivo ${fmt} \u00B7 ${(Math.random()*5+1).toFixed(1)} MB</div></div></div>`,true);
+  var url = file ? URL.createObjectURL(file) : '';
+  addBubble(_chatScannerAttachment({ name:name, url:url }), true);
 }
 
 // -- ALERTAS --
@@ -4924,6 +4943,39 @@ function _chatPhotoRow(isOut) {
   return '<div class="bw ' + side + '"><div class="photo-row"><div class="photo-thumb">' + svg1 + '</div><div class="photo-thumb">' + svg2 + '</div><div class="photo-thumb" style="position:relative">' + svg1 + '<span style="position:absolute;bottom:4px;right:5px;font-size:10px;color:#fff;background:rgba(0,0,0,.6);padding:1px 5px;border-radius:8px">+2</span></div></div><div class="btime">09:15' + (isOut ? ' \u2713\u2713' : '') + '</div></div>';
 }
 
+function chatImageOpen(url, name) {
+  var lb = document.getElementById('cdm-lightbox');
+  var img = document.getElementById('cdm-lightbox-img');
+  var cap = document.getElementById('cdm-lightbox-caption');
+  if (!lb || !img || !url) return;
+  img.src = url;
+  img.classList.remove('zoomed');
+  if (cap) cap.textContent = name || 'Foto';
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function chatOpenScanner(url, name) {
+  if (!url) { showToast('Arquivo 3D indisponivel.'); return; }
+  U3D_open({
+    patientName: name || 'Scanner 3D',
+    caseKey: 'chat:' + (name || '') + ':' + Date.now(),
+    singleFileUrl: url,
+    singleFileName: name || 'scanner.stl'
+  });
+}
+
+function _chatScannerAttachment(m) {
+  var safeUrl = sbEscapeHtml(m.url || '');
+  var safeName = sbEscapeHtml(m.name || 'Scanner');
+  var fmt = String(m.name || '').toLowerCase().endsWith('.ply') ? 'PLY' : (String(m.name || '').toLowerCase().endsWith('.obj') ? 'OBJ' : 'STL');
+  return '<div class="case-bubble" onclick="chatOpenScanner(\'' + safeUrl + '\',\'' + safeName + '\')" style="display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer">'
+    + '<svg class="-scan" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;font-size:24px;color:rgba(255,255,255,.85)"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg>'
+    + '<div style="min-width:0"><div style="font-size:13px;font-weight:700;color:#fff;word-break:break-all">' + safeName + '</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.7)">Arquivo ' + fmt + ' · Toque para ver em 3D</div></div>'
+    + '</div>';
+}
+
 function _renderChatMessages(av) {
   var msgs = CHAT_MESSAGES[av];
   var area = document.getElementById('msgs-area');
@@ -4953,7 +5005,10 @@ function _renderChatMessages(av) {
         html += '<div class="bw in"><div class="bubble in">' + (m.plain ? sbEscapeHtml(m.text) : m.text) + '</div><div class="btime">' + (m.time||'') + '</div></div>';
         break;
       case 'image':
-        html += '<div class="bw ' + (m.out ? 'out' : 'in') + '"><div class="bubble ' + (m.out ? 'out' : 'in') + '" style="padding:4px"><img src="' + m.url + '" alt="' + sbEscapeHtml(m.name || 'Imagem') + '" style="display:block;width:min(220px,58vw);max-height:280px;object-fit:cover;border-radius:12px"></div><div class="btime">' + (m.time||'') + (m.out ? ' \u2713\u2713' : '') + '</div></div>';
+        html += '<div class="bw ' + (m.out ? 'out' : 'in') + '"><div class="bubble ' + (m.out ? 'out' : 'in') + '" style="padding:4px;cursor:pointer" onclick="chatImageOpen(\'' + sbEscapeHtml(m.url || '') + '\',\'' + sbEscapeHtml(m.name || 'Imagem') + '\')"><img src="' + m.url + '" alt="' + sbEscapeHtml(m.name || 'Imagem') + '" style="display:block;width:min(220px,58vw);max-height:280px;object-fit:cover;border-radius:12px"></div><div class="btime">' + (m.time||'') + (m.out ? ' \u2713\u2713' : '') + '</div></div>';
+        break;
+      case 'scanner':
+        html += '<div class="bw ' + (m.out ? 'out' : 'in') + '">' + _chatScannerAttachment(m) + '<div class="btime">' + (m.time||'') + (m.out ? ' \u2713\u2713' : '') + '</div></div>';
         break;
     }
   });
@@ -5541,7 +5596,15 @@ function cdmLightboxOpen(idx) {
 function cdmLightboxClose() {
   var lb = document.getElementById('cdm-lightbox');
   if (lb) lb.classList.remove('open');
+  var img = document.getElementById('cdm-lightbox-img');
+  if (img) img.classList.remove('zoomed');
   document.body.style.overflow = '';
+}
+
+function cdmLightboxToggleZoom(event) {
+  if (event) event.stopPropagation();
+  var img = document.getElementById('cdm-lightbox-img');
+  if (img) img.classList.toggle('zoomed');
 }
 // ────────────────────────────────────────────────────────────────────────
 
@@ -10282,7 +10345,7 @@ create table if not exists pending_issues (
 <div id="cdm-lightbox" onclick="cdmLightboxClose()">
   <button id="cdm-lightbox-back" onclick="cdmLightboxClose()">← Voltar</button>
   <button id="cdm-lightbox-close" onclick="cdmLightboxClose()">&#xd7;</button>
-  <img id="cdm-lightbox-img" src="" alt="Foto do caso">
+  <img id="cdm-lightbox-img" src="" alt="Foto do caso" onclick="cdmLightboxToggleZoom(event)">
   <div id="cdm-lightbox-caption"></div>
 </div>
 

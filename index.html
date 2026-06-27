@@ -3521,7 +3521,7 @@ function _cdmInjectMyLabCard(caseId, c, photos) {
 // existing mock bubbles. Photos are appended below if present.
 function _cdmInjectChatBubble(caseId, c, data) {
   // Use the same builder as the mock messages so format is identical
-  addBubble(_chatCaseBubble(caseId), true);
+  addBubble(_chatCaseBubbleInner(caseId), true);
 
   // Photo thumbnails below the bubble (if any were added in the form)
   var photos = data.photos || [];
@@ -3536,8 +3536,8 @@ function _cdmInjectChatBubble(caseId, c, data) {
   // and comes back, the case bubble is still there in the history.
   var labAv = c.labAv || _currentChatLabAv;
   if (!CHAT_MESSAGES[labAv]) CHAT_MESSAGES[labAv] = [];
-  CHAT_MESSAGES[labAv].push({ type: 'case', caseId: caseId });
-  if (photos.length) CHAT_MESSAGES[labAv].push({ type: 'photos' });
+  CHAT_MESSAGES[labAv].push({ type: 'case', caseId: caseId, out: true, senderRole: 'dentista' });
+  if (photos.length) CHAT_MESSAGES[labAv].push({ type: 'photos', out: true, senderRole: 'dentista' });
 }
 
 // ── Updated sendCase: now a thin wrapper around createLabCase ──────────
@@ -4479,7 +4479,7 @@ async function sbLoadChatMessages() {
       var own = row.sender_id === currentUserId;
       var time = row.created_at ? new Date(row.created_at).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '';
       if (row.message_type === 'case' && row.case_id) {
-        return { type:'case', caseId:row.case_id, time:time };
+        return { type:'case', caseId:row.case_id, out:own, time:time };
       }
       if (row.message_type === 'image') {
         return { type:'image', out:own, url:row.attachment_url || '', name:row.attachment_name || 'Imagem', time:time };
@@ -4887,27 +4887,41 @@ var CHAT_MESSAGES = {
 };
 if (!DENTALAB_DEMO_DATA) CHAT_MESSAGES = {};
 
-// Build a case-bubble HTML string from a CDM case object
-function _chatCaseBubble(caseId) {
+function _chatCaseBubbleInner(caseId) {
   var c = CDM[caseId]; if (!c) return '';
   var urgCls = c.urg === 'Urgente' ? 'ut-u' : 'ut-n';
   var urgTxt = c.urg === 'Urgente' ? '\u26A1 Urgente \u2014 48h' : '\u25CF Normal';
   var denteStr = c.dente ? ' \u00B7 dente ' + c.dente : '';
-  return '<div class="bw out"><div class="case-bubble" onclick="openCaseDetail(\'' + caseId + '\')" style="cursor:pointer;-webkit-tap-highlight-color:rgba(79,140,255,.2)">'
+  return '<div class="case-bubble" onclick="openCaseDetail(\'' + caseId + '\')" style="cursor:pointer;-webkit-tap-highlight-color:rgba(79,140,255,.2)">'
     + '<div class="cb-type"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;font-size:13px"><path d="M12 3c-2 0-4 1-4.5 3C7 8 7 9 8 11c.5 1 1 2 1 4 0 2 .5 4 3 4s3-2 3-4c0-2 .5-3 1-4 1-2 1-3 .5-5C16 4 14 3 12 3z"/></svg> Caso cl\u00EDnico \u00B7 ' + c.lab + '</div>'
     + '<div class="cb-title">' + c.paciente + '</div>'
     + '<div style="font-size:11px;color:rgba(255,255,255,.45);margin:2px 0 5px">' + c.tipo + denteStr + '</div>'
     + '<div class="cb-detail">Shade: ' + c.shade + (c.obs ? ' \u00B7 ' + c.obs.slice(0, 40) : '') + '</div>'
     + '<span class="urg-tag ' + urgCls + '">' + urgTxt + '</span>'
     + '<div style="margin-top:6px;font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.3px">TOCA PARA VER DETALHES \u203A</div>'
-    + '</div><div class="btime">' + (c.criado || '') + ' \u2713\u2713</div></div>';
+    + '</div>';
+}
+
+function chatItemIsOut(m) {
+  if (m.senderRole) return m.senderRole === currentUserRole;
+  if (m.type === 'case' || m.type === 'photos') return currentUserRole !== 'laboratorio';
+  if (typeof m.out === 'boolean') return m.out;
+  return currentUserRole !== 'laboratorio';
+}
+
+// Build a case-bubble HTML string from a CDM case object
+function _chatCaseBubble(caseId, isOut, time) {
+  var side = isOut ? 'out' : 'in';
+  return '<div class="bw ' + side + '">' + _chatCaseBubbleInner(caseId)
+    + '<div class="btime">' + (time || (CDM[caseId] || {}).criado || '') + (isOut ? ' \u2713\u2713' : '') + '</div></div>';
 }
 
 // Renders a static photo placeholder row (demo only)
-function _chatPhotoRow() {
+function _chatPhotoRow(isOut) {
   var svg1 = '<svg class="-photo" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 13a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>';
   var svg2 = '<svg class="-scan" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg>';
-  return '<div class="bw out"><div class="photo-row"><div class="photo-thumb">' + svg1 + '</div><div class="photo-thumb">' + svg2 + '</div><div class="photo-thumb" style="position:relative">' + svg1 + '<span style="position:absolute;bottom:4px;right:5px;font-size:10px;color:#fff;background:rgba(0,0,0,.6);padding:1px 5px;border-radius:8px">+2</span></div></div><div class="btime">09:15 \u2713\u2713</div></div>';
+  var side = isOut ? 'out' : 'in';
+  return '<div class="bw ' + side + '"><div class="photo-row"><div class="photo-thumb">' + svg1 + '</div><div class="photo-thumb">' + svg2 + '</div><div class="photo-thumb" style="position:relative">' + svg1 + '<span style="position:absolute;bottom:4px;right:5px;font-size:10px;color:#fff;background:rgba(0,0,0,.6);padding:1px 5px;border-radius:8px">+2</span></div></div><div class="btime">09:15' + (isOut ? ' \u2713\u2713' : '') + '</div></div>';
 }
 
 function _renderChatMessages(av) {
@@ -4927,10 +4941,10 @@ function _renderChatMessages(av) {
         html += '<div class="day-label">' + m.text + '</div>';
         break;
       case 'case':
-        html += _chatCaseBubble(m.caseId);
+        html += _chatCaseBubble(m.caseId, chatItemIsOut(m), m.time);
         break;
       case 'photos':
-        html += _chatPhotoRow();
+        html += _chatPhotoRow(chatItemIsOut(m));
         break;
       case 'out':
         html += '<div class="bw out"><div class="bubble out">' + (m.plain ? sbEscapeHtml(m.text) : m.text) + '</div><div class="btime">' + (m.time||'') + ' \u2713\u2713</div></div>';
@@ -6079,7 +6093,9 @@ function replaceCaseScannerFromIssue(issueId, slotTarget) {
   var c = CDM[issue.caseId];
   if (!c) { showToast('Caso não encontrado.'); return; }
   var target = slotTarget || issue.target || 'upper';
-  if (target === 'both') target = 'upper';
+  c._retifiedScannerSlots = c._retifiedScannerSlots || {};
+  if (target === 'both') target = c._retifiedScannerSlots.upper ? 'lower' : 'upper';
+  if (target !== 'upper' && target !== 'lower') target = 'upper';
   var input = document.createElement('input');
   setup3DFilePicker(input);
   input.multiple = false;

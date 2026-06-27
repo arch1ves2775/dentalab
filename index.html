@@ -562,6 +562,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .cdm-stl-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:8px}
 .cdm-stl-icon{width:44px;height:44px;background:rgba(96,165,250,.15);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .cdm-stl-btn{margin-left:auto;background:var(--accent-light);color:var(--accent);border:1px solid rgba(37,99,235,.2);border-radius:10px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.cdm-stl-btn.retify-btn{background:var(--red-bg)!important;color:var(--red)!important;border-color:rgba(239,68,68,.28)!important}
+.cdm-rectify-field{display:flex;gap:6px;align-items:center}
+.cdm-rectify-input{min-width:0;flex:1;border:1px solid rgba(239,68,68,.35);background:#fff;color:var(--text);border-radius:9px;padding:7px 8px;font-size:12px;font-family:inherit;outline:none}
+.cdm-rectify-input:focus{box-shadow:0 0 0 3px rgba(239,68,68,.12)}
+.cdm-rectify-save{border:1px solid rgba(239,68,68,.28);background:var(--red-bg);color:var(--red);border-radius:9px;padding:7px 9px;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;white-space:nowrap}
 .cdm-stl-card{position:relative}
 .dl-corner-btn{position:absolute;top:6px;right:6px;width:28px;height:28px;border:none;border-radius:50%;background:rgba(17,24,39,.82);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.22)}
 .dl-corner-btn:active{transform:scale(.94)}
@@ -1926,9 +1931,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
     <div class="modal-handle"></div>
     <div class="modal-title">Solicitar ao dentista</div>
     <div class="modal-grid">
-      <div class="modal-item" onclick="labConfirmSolicitarInfo('scanner_corrompido')">
+      <div class="modal-item" onclick="labConfirmSolicitarInfo('scanner_corrompido','upper')">
         <div class="modal-icon" style="background:var(--red-bg);color:var(--red)">3D</div>
-        <span class="modal-label">Reenviar scanner</span>
+        <span class="modal-label">Scan Upper</span>
+      </div>
+      <div class="modal-item" onclick="labConfirmSolicitarInfo('scanner_corrompido','lower')">
+        <div class="modal-icon" style="background:var(--red-bg);color:var(--red)">3D</div>
+        <span class="modal-label">Scan Lower</span>
+      </div>
+      <div class="modal-item" onclick="labConfirmSolicitarInfo('scanner_corrompido','both')">
+        <div class="modal-icon" style="background:var(--red-bg);color:var(--red)">3D</div>
+        <span class="modal-label">Upper + Lower</span>
       </div>
       <div class="modal-item" onclick="labConfirmSolicitarInfo('falta_cor')">
         <div class="modal-icon" style="background:var(--amber-bg);color:var(--amber)">A1</div>
@@ -1938,17 +1951,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
         <div class="modal-icon" style="background:var(--accent-glow);color:var(--accent)">IMG</div>
         <span class="modal-label">Pedir fotos</span>
       </div>
-      <div class="modal-item" onclick="labConfirmSolicitarInfo('falta_dentes')">
-        <div class="modal-icon" style="background:var(--green-bg);color:var(--green)">11</div>
-        <span class="modal-label">Indicar dentes</span>
-      </div>
       <div class="modal-item" onclick="labConfirmSolicitarInfo('falta_material')">
         <div class="modal-icon" style="background:var(--surface2);color:var(--muted)">MAT</div>
         <span class="modal-label">Material</span>
       </div>
-      <div class="modal-item" onclick="labConfirmSolicitarInfo('falta_observacao')">
-        <div class="modal-icon" style="background:rgba(147,51,234,.15);color:#8B5CF6">?</div>
-        <span class="modal-label">Outra info</span>
+      <div class="modal-item" onclick="labConfirmSolicitarInfo('retificar_prazo')">
+        <div class="modal-icon" style="background:rgba(147,51,234,.15);color:#8B5CF6">24h</div>
+        <span class="modal-label">Prazo</span>
       </div>
     </div>
   </div>
@@ -2031,7 +2040,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
         <div class="cdm-pac-av" id="cdm-pac-av" style="background:#3B82F6">--</div>
         <div><div class="cdm-pac-name" id="cdm-pac-name"></div><div class="cdm-pac-sub" id="cdm-pac-sub"></div></div>
       </div>
-      <div class="cdm-section">
+      <div class="cdm-section" id="cdm-info-section">
         <div class="cdm-section-title">Ficha técnica</div>
         <div class="cdm-grid cdm-grid-3">
           <div class="cdm-cell"><div class="cdm-cell-label">Tipo</div><div class="cdm-cell-val" id="cdm-tipo"></div></div>
@@ -2047,7 +2056,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
           <div class="cdm-cell"><div class="cdm-cell-label">Prazo</div><div class="cdm-cell-val" id="cdm-prazo"></div></div>
         </div>
       </div>
-      <div class="cdm-section">
+      <div class="cdm-section" id="cdm-scanner-section">
         <div class="cdm-section-title">Progresso</div>
         <div class="cdm-etapas" id="cdm-etapas"></div>
         <div class="cdm-prog-wrap"><div class="cdm-prog-fill" id="cdm-prog" style="width:0%"></div></div>
@@ -2076,13 +2085,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
              7), so either one can be added/replaced at any time
              regardless of the other's state. No Bite anywhere (point 4). -->
         <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px">
+          <div id="cdm-inicial-upper-row" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px">
             <div style="min-width:0;flex:1"><span style="font-size:11px;font-weight:700;color:#C0D0E0">Maxila / Upper</span><div style="font-size:10px;color:#4A6FA5;word-break:break-all" id="cdm-inicial-upper-name">Nenhum arquivo</div></div>
-            <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="cdmUploadScannerSlot('inicial','Upper')">+ Adicionar</button>
+            <button id="cdm-inicial-upper-btn" class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="cdmUploadScannerSlot('inicial','Upper')">+ Adicionar</button>
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px">
+          <div id="cdm-inicial-lower-row" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px">
             <div style="min-width:0;flex:1"><span style="font-size:11px;font-weight:700;color:#C0D0E0">Mandíbula / Lower</span><div style="font-size:10px;color:#4A6FA5;word-break:break-all" id="cdm-inicial-lower-name">Nenhum arquivo</div></div>
-            <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="cdmUploadScannerSlot('inicial','Lower')">+ Adicionar</button>
+            <button id="cdm-inicial-lower-btn" class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="cdmUploadScannerSlot('inicial','Lower')">+ Adicionar</button>
           </div>
         </div>
       </div>
@@ -3453,6 +3462,10 @@ function _cdmInjectMyLabCard(caseId, c, photos) {
     : '';
 
   var workLine = c.tipo + (c.dente ? ' \u00b7 ' + c.dente : '') + (c.shade && c.shade !== '\u2014' ? ' \u00b7 Shade ' + c.shade : '');
+  var issue = openIssueForCase(caseId);
+  var statusText = (issue && currentUserRole !== 'laboratorio') ? issueDisplayTitle(issue) : c.status;
+  var statusBg = issue ? 'var(--red-bg)' : 'rgba(79,140,255,.14)';
+  var statusFg = issue ? 'var(--red)' : 'var(--accent)';
 
   var html = '<div class="pc2-card" id="cdm-card-'+caseId+'" onclick="openCaseDetail(\''+caseId+'\')" style="animation:fadeUp .3s ease both">'
     + '<div class="pc2-top">'
@@ -3461,7 +3474,7 @@ function _cdmInjectMyLabCard(caseId, c, photos) {
     + '<div class="pc2-name">'+c.paciente+'</div>'
     + '<div class="pc2-ref">'+(c.npac ? c.npac+' \u00b7 ' : '')+c.num+'</div>'
     + '<div class="pc2-tags">'
-    + '<span class="pc2-status" style="background:rgba(79,140,255,.14);color:var(--accent)">'+c.status+'</span>'
+    + '<span class="pc2-status" style="background:'+statusBg+';color:'+statusFg+'">'+statusText+'</span>'
     + urgBadge + photoBadge
     + '</div>'
     + '</div>'
@@ -4951,6 +4964,7 @@ function openCaseDetail(id) {
   set('cdm-shade', c.shade);
   set('cdm-lab',   c.lab);
   set('cdm-prazo', c.prazo);
+  cdmRenderRectificationFields(String(id), c);
   var urgEl=document.getElementById('cdm-urg');
   if(urgEl){
     urgEl.textContent=c.urg==='Urgente'?'\u26A1 Urgente':c.urg==='Expresso'?'\u1F534 Expresso':c.urg;
@@ -5048,6 +5062,23 @@ function cdmRenderScannerSection(which, c) {
 
   var u = safeEl('cdm-' + which + '-upper-name'); if (u) u.textContent = effectiveUpper || 'Nenhum arquivo';
   var l = safeEl('cdm-' + which + '-lower-name'); if (l) l.textContent = lower || 'Nenhum arquivo';
+  if (which === 'inicial') {
+    var issue = openIssueForCase(_cdmActiveId);
+    var isScanIssue = issue && (issue.type === 'scanner_corrompido' || issue.type === 'scanner_incompleto');
+    var target = isScanIssue ? (issue.target || 'both') : '';
+    [['upper', 'Upper'], ['lower', 'Lower']].forEach(function(pair) {
+      var btn = safeEl('cdm-inicial-' + pair[0] + '-btn');
+      if (!btn) return;
+      var requested = isScanIssue && (target === 'both' || target === pair[0]);
+      var alreadyRetified = !isScanIssue && c._retifiedScannerSlots && c._retifiedScannerSlots[pair[0]];
+      btn.textContent = requested ? 'Retificar' : '+ Adicionar';
+      btn.classList.toggle('retify-btn', !!requested);
+      btn.style.display = alreadyRetified ? 'none' : '';
+      btn.setAttribute('onclick', requested
+        ? "replaceCaseScannerFromIssue('" + issue.id + "')"
+        : "cdmUploadScannerSlot('inicial','" + pair[1] + "')");
+    });
+  }
 }
 
 
@@ -5284,6 +5315,70 @@ function cdmDownloadScanner(which) {
   showToast('Arquivo original nao disponivel para baixar.');
 }
 
+function openIssueForCaseType(caseId, type) {
+  var local = PENDING_ISSUES.find(function(p) {
+    return String(p.caseId) === String(caseId) && p.status === 'open' && p.type === type;
+  });
+  if (local) return local;
+  var c = CDM[caseId];
+  if (c && Array.isArray(c._pendingIssues)) {
+    var stored = c._pendingIssues.find(function(p) {
+      return p && p.status === 'open' && p.type === type;
+    });
+    if (stored) return stored;
+  }
+  var derived = openIssueForCase(caseId);
+  return derived && derived.type === type ? derived : null;
+}
+
+function cdmRenderRectificationFields(caseId, c) {
+  renderRectificationField(caseId, c, 'shade', 'cdm-shade', 'falta_cor', c.shade || '');
+  renderRectificationField(caseId, c, 'material', 'cdm-material', 'falta_material', c.material || '');
+  renderRectificationField(caseId, c, 'prazo', 'cdm-prazo', 'retificar_prazo', c.prazo || '');
+}
+
+function renderRectificationField(caseId, c, field, elId, issueType, value) {
+  var el = safeEl(elId);
+  if (!el) return;
+  var issue = currentUserRole !== 'laboratorio' ? openIssueForCaseType(caseId, issueType) : null;
+  if (!issue) {
+    el.textContent = value || (field === 'shade' ? '—' : 'A definir');
+    return;
+  }
+  var inputType = field === 'prazo' ? 'date' : 'text';
+  var inputValue = field === 'prazo' ? (c.prazoISO || '') : value;
+  el.innerHTML = '<div class="cdm-rectify-field">'
+    + '<input class="cdm-rectify-input" id="cdm-rectify-' + field + '" type="' + inputType + '" value="' + sbEscapeHtml(inputValue || '') + '">'
+    + '<button class="cdm-rectify-save" onclick="saveCaseRectification(\'' + issue.id + '\',\'' + field + '\')">Salvar</button>'
+    + '</div>';
+}
+
+function formatDateBR(iso) {
+  var p = String(iso || '').split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : (iso || '');
+}
+
+async function saveCaseRectification(issueId, field) {
+  var issue = findIssueById(issueId);
+  if (!issue) { showToast('Aviso não encontrado.'); return; }
+  var c = CDM[issue.caseId];
+  if (!c) { showToast('Caso não encontrado.'); return; }
+  var input = safeEl('cdm-rectify-' + field);
+  var value = input ? String(input.value || '').trim() : '';
+  if (!value) { showToast('Preencha o campo solicitado.'); return; }
+  if (field === 'shade') c.shade = value;
+  else if (field === 'material') c.material = value;
+  else if (field === 'prazo') { c.prazoISO = value; c.prazo = formatDateBR(value); }
+  var saved = await updateCaseMetadataInSupabase(issue.caseId, c);
+  if (!saved) { showToast('Não foi possível salvar no Supabase. O aviso continua aberto.'); return; }
+  resolvePending(issue.id, field === 'shade' ? 'cor retificada' : field === 'material' ? 'material retificado' : 'prazo retificado');
+  refreshCaseUiAfterReplacement(issue.caseId, c);
+  if (_cdmActiveId === String(issue.caseId)) {
+    cdmRenderRectificationFields(String(issue.caseId), c);
+  }
+  showToast('Retificação salva.');
+}
+
 function cdmDownloadPhoto(idx) {
   var p = _cdmCurrentPhotos[idx];
   if (!p) return;
@@ -5295,10 +5390,15 @@ function cdmRenderPhotos(photos) {
   _cdmCurrentPhotos = (photos || []).filter(function(p){ return !!p.dataUrl; });
   var grid = document.getElementById('cdm-photos-grid');
   if (!grid) return;
+  var issue = openIssueForCase(_cdmActiveId);
+  var needsPhotos = issue && issue.type === 'falta_fotos';
+  var actionHtml = needsPhotos
+    ? '<button class="cdm-stl-btn retify-btn" style="width:100%;margin:10px 0 0;padding:10px 12px" onclick="replaceCasePhotosFromIssue(\'' + issue.id + '\')">Acrescentar fotos</button>'
+    : '';
 
   if (!_cdmCurrentPhotos.length) {
     // Empty state — always visible with a clear message
-    grid.innerHTML = '<div style="padding:14px 0;font-size:13px;color:var(--hint)">Nenhuma foto cl\u00ednica anexada.</div>';
+    grid.innerHTML = '<div style="padding:14px 0;font-size:13px;color:var(--hint)">Nenhuma foto cl\u00ednica anexada.</div>' + actionHtml;
     return;
   }
 
@@ -5311,7 +5411,7 @@ function cdmRenderPhotos(photos) {
          + '</div>';
   }).join('');
 
-  grid.innerHTML = '<div class="cdm-photos-scroll">' + tilesHtml + '</div>';
+  grid.innerHTML = '<div class="cdm-photos-scroll">' + tilesHtml + '</div>' + actionHtml;
 }
 
 function cdmLightboxOpen(idx) {
@@ -5559,25 +5659,82 @@ function _labCardHTML(caseId) {
 var ISSUE_TYPES = {
   scanner_corrompido:      { icon:'🗂️', label:'Scanner corrompido',         urgency:'urgente',  requestedTo:'clinica' },
   scanner_incompleto:      { icon:'📡', label:'Scanner incompleto',          urgency:'urgente',  requestedTo:'clinica' },
-  falta_cor:               { icon:'🎨', label:'Shade / cor não informada',   urgency:'urgente',  requestedTo:'clinica' },
-  falta_fotos:             { icon:'📸', label:'Fotos clínicas em falta',     urgency:'pendente', requestedTo:'clinica' },
+  falta_cor:               { icon:'🎨', label:'Cor a retificar',             urgency:'urgente',  requestedTo:'clinica' },
+  falta_fotos:             { icon:'📸', label:'Fotos a acrescentar',         urgency:'pendente', requestedTo:'clinica' },
   falta_dentes:            { icon:'🦷', label:'Dentes envolvidos não indicados', urgency:'pendente', requestedTo:'clinica' },
-  falta_material:          { icon:'🧪', label:'Material não especificado',   urgency:'pendente', requestedTo:'clinica' },
+  falta_material:          { icon:'🧪', label:'Material a retificar',        urgency:'pendente', requestedTo:'clinica' },
+  retificar_prazo:         { icon:'⏰', label:'Prazo a retificar',           urgency:'pendente', requestedTo:'clinica' },
   falta_aprovacao:         { icon:'✍️', label:'Aprovação pendente',          urgency:'pendente', requestedTo:'clinica' },
   falta_observacao:        { icon:'📋', label:'Informação adicional solicitada', urgency:'pendente', requestedTo:'clinica' },
   confirmar_recebimento:   { icon:'📦', label:'Confirmar recebimento',       urgency:'info',     requestedTo:'clinica' },
   prazo_proximo:           { icon:'⏰', label:'Prazo em 24h',                urgency:'pendente', requestedTo:'clinica' }
 };
 
-function openIssueForCase(caseId) {
-  return PENDING_ISSUES.find(function(p) {
+function storedOpenIssueForCase(caseId) {
+  var local = PENDING_ISSUES.find(function(p) {
     return String(p.caseId) === String(caseId) && p.status === 'open';
-  }) || null;
+  });
+  if (local) return local;
+  var c = CDM[caseId];
+  if (c && Array.isArray(c._pendingIssues)) {
+    return c._pendingIssues.find(function(p) { return p && p.status === 'open'; }) || null;
+  }
+  return null;
+}
+
+function inferIssueTypeFromCase(c) {
+  var text = ((c && c.obs) || '') + ' ' + ((c && c.status) || '') + ' ' + ((c && c.lastUpdate) || '');
+  text = text.toLowerCase();
+  if (text.indexOf('scanner') >= 0 || text.indexOf('scan') >= 0 || text.indexOf('stl') >= 0) return 'scanner_corrompido';
+  if (text.indexOf('foto') >= 0 || text.indexOf('imagem') >= 0) return 'falta_fotos';
+  if (text.indexOf('cor') >= 0 || text.indexOf('shade') >= 0) return 'falta_cor';
+  if (text.indexOf('prazo') >= 0 || text.indexOf('data') >= 0) return 'retificar_prazo';
+  if (text.indexOf('dente') >= 0) return 'falta_dentes';
+  if (text.indexOf('material') >= 0) return 'falta_material';
+  return 'falta_observacao';
+}
+
+function derivedIssueForCase(caseId) {
+  var c = CDM[caseId];
+  if (!c) return null;
+  var isAttention = c.statusCls === 'st-wait' || c.status === 'Aguardando Clínica' || c.status === 'Aguardando Clinica';
+  if (!isAttention) return null;
+  var type = inferIssueTypeFromCase(c);
+  var it = ISSUE_TYPES[type] || ISSUE_TYPES.falta_observacao;
+  return {
+    id: 'derived_' + caseId + '_' + type,
+    caseId: caseId,
+    type: type,
+    status: 'open',
+    desc: c.obs || 'O laboratório solicitou atenção neste caso.',
+    requestedBy: 'lab',
+    createdAt: c.criado || now(),
+    resolvedAt: null,
+    _derived: true
+  };
+}
+
+function openIssueForCase(caseId) {
+  return storedOpenIssueForCase(caseId) || derivedIssueForCase(caseId);
 }
 
 function issueDisplayTitle(issue) {
   var it = issue && ISSUE_TYPES[issue.type] ? ISSUE_TYPES[issue.type] : null;
-  return it ? it.label : (issue && issue.type ? issue.type : 'Ação necessária');
+  var label = it ? it.label : (issue && issue.type ? issue.type : 'Ação necessária');
+  var targetLabels = { upper: 'Upper', lower: 'Lower', both: 'Upper + Lower', photos: 'Fotos' };
+  return issue && issue.target && targetLabels[issue.target] ? label + ' · ' + targetLabels[issue.target] : label;
+}
+
+function allCurrentIssues() {
+  var byId = {};
+  PENDING_ISSUES.forEach(function(p) {
+    if (p && p.id) byId[p.id] = p;
+  });
+  Object.keys(CDM).forEach(function(caseId) {
+    var issue = openIssueForCase(caseId);
+    if (issue && issue.id && !byId[issue.id]) byId[issue.id] = issue;
+  });
+  return Object.keys(byId).map(function(id){ return byId[id]; });
 }
 
 function issueBannerHTML(caseId) {
@@ -5641,7 +5798,8 @@ function renderAlertas() {
   var showTab    = _alActiveTab; // 'open' | 'resolved'
 
   // Filter issues visible to this role + tab
-  var visible = PENDING_ISSUES.filter(function(p) {
+  var allIssues = allCurrentIssues();
+  var visible = allIssues.filter(function(p) {
     if (showTab === 'open'     && p.status !== 'open')     return false;
     if (showTab === 'resolved' && p.status !== 'resolved') return false;
     // Both roles see all issues — perspective differs (clinic acts, lab monitors)
@@ -5649,7 +5807,7 @@ function renderAlertas() {
   });
 
   // Update badge
-  var openCount = PENDING_ISSUES.filter(function(p){ return p.status === 'open'; }).length;
+  var openCount = allIssues.filter(function(p){ return p.status === 'open'; }).length;
   alertCount = openCount;
   updateAlertBadge();
 
@@ -5730,12 +5888,13 @@ function _alCardHTML(p, isLab) {
 // Generate the primary resolve button for each issue type (clinica only)
 function _alResolveBtn(p) {
   var actions = {
-    scanner_corrompido:    ['al-resolve-btn',     'Reenviar scanner',      "openModal('modal-attach');resolvePending('" + p.id + "','scanner reenviado')"],
-    scanner_incompleto:    ['al-resolve-btn',     'Reenviar scanner',      "openModal('modal-attach');resolvePending('" + p.id + "','scanner completado')"],
-    falta_cor:             ['al-resolve-btn amb', 'Adicionar shade',       "openCaseDetail('" + p.caseId + "');resolvePending('" + p.id + "','shade informado')"],
-    falta_fotos:           ['al-resolve-btn amb', 'Adicionar fotos',       "openCaseDetail('" + p.caseId + "');resolvePending('" + p.id + "','fotos adicionadas')"],
+    scanner_corrompido:    ['al-resolve-btn',     'Abrir scanner',         "openCaseAndFocusIssue('" + p.id + "')"],
+    scanner_incompleto:    ['al-resolve-btn',     'Abrir scanner',         "openCaseAndFocusIssue('" + p.id + "')"],
+    falta_cor:             ['al-resolve-btn amb', 'Editar cor',            "openCaseAndFocusIssue('" + p.id + "')"],
+    falta_fotos:           ['al-resolve-btn amb', 'Abrir fotos',           "openCaseAndFocusIssue('" + p.id + "')"],
     falta_dentes:          ['al-resolve-btn amb', 'Completar caso',        "openCaseDetail('" + p.caseId + "');resolvePending('" + p.id + "','dentes indicados')"],
-    falta_material:        ['al-resolve-btn amb', 'Completar caso',        "openCaseDetail('" + p.caseId + "');resolvePending('" + p.id + "','material especificado')"],
+    falta_material:        ['al-resolve-btn amb', 'Editar material',       "openCaseAndFocusIssue('" + p.id + "')"],
+    retificar_prazo:       ['al-resolve-btn amb', 'Editar prazo',          "openCaseAndFocusIssue('" + p.id + "')"],
     falta_aprovacao:       ['al-resolve-btn acc', 'Aprovar caso',          "resolvePending('" + p.id + "','caso aprovado')"],
     falta_observacao:      ['al-resolve-btn acc', 'Responder',             "openChat('" + (CDM[p.caseId]||{}).labAv + "','','');resolvePending('" + p.id + "','informa\u00e7\u00e3o enviada')"],
     confirmar_recebimento: ['al-resolve-btn grn', 'Confirmar recebimento', "cdmConfirmarRecebimento('" + p.caseId + "');resolvePending('" + p.id + "','recebimento confirmado')"],
@@ -5745,27 +5904,210 @@ function _alResolveBtn(p) {
   return '<button class="' + a[0] + '" onclick="' + a[2] + '">' + a[1] + '</button>';
 }
 
+function findIssueById(issueId) {
+  return allCurrentIssues().find(function(i){ return String(i.id) === String(issueId); }) || null;
+}
+
+function openCaseAndFocusIssue(issueId) {
+  var issue = findIssueById(issueId);
+  if (!issue) { showToast('Aviso nao encontrado.'); return; }
+  openCaseDetail(issue.caseId);
+  setTimeout(function() {
+    var targetId = 'cdm-scanner-section';
+    if (issue.type === 'falta_fotos') targetId = 'cdm-photos-section';
+    else if (issue.type === 'falta_cor') targetId = 'cdm-shade';
+    else if (issue.type === 'falta_material') targetId = 'cdm-material';
+    else if (issue.type === 'retificar_prazo') targetId = 'cdm-prazo';
+    else if ((issue.type === 'scanner_corrompido' || issue.type === 'scanner_incompleto') && issue.target === 'upper') targetId = 'cdm-inicial-upper-row';
+    else if ((issue.type === 'scanner_corrompido' || issue.type === 'scanner_incompleto') && issue.target === 'lower') targetId = 'cdm-inicial-lower-row';
+    var el = document.getElementById(targetId);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 180);
+}
+
+function replaceCaseScannerFromIssue(issueId) {
+  var issue = findIssueById(issueId);
+  if (!issue) { showToast('Aviso não encontrado.'); return; }
+  var c = CDM[issue.caseId];
+  if (!c) { showToast('Caso não encontrado.'); return; }
+  var target = issue.target || 'both';
+  var input = document.createElement('input');
+  setup3DFilePicker(input);
+  input.multiple = (target === 'both');
+  document.body.appendChild(input);
+  input.addEventListener('change', async function() {
+    document.body.removeChild(input);
+    var files = Array.from(input.files || []);
+    if (!files.length) return;
+    var valid = files.filter(function(file) {
+      var n = (file.name || '').toLowerCase();
+      return n.endsWith('.stl') || n.endsWith('.ply') || n.endsWith('.obj');
+    });
+    if (!valid.length) { showToast('Selecione ficheiros .stl, .ply ou .obj'); return; }
+    if (target === 'both' && valid.length < 2) { showToast('Selecione os ficheiros Upper e Lower.'); return; }
+    var upper = target === 'lower' ? null : valid[0];
+    var lower = target === 'upper' ? null : (target === 'lower' ? valid[0] : valid[1]);
+    var fileData = {};
+    var jaws = [];
+    var oldScannerState = {
+      delivery: c.delivery,
+      hasSTL: c.hasSTL,
+      stlFileName: c.stlFileName,
+      scannerInicialUpper: c.scannerInicialUpper,
+      scannerInicialLower: c.scannerInicialLower,
+      storageUpperUrl: c._storage ? c._storage.upperUrl : '',
+      storageLowerUrl: c._storage ? c._storage.lowerUrl : '',
+      localNumUpper: CDM_LOCAL_FILES[c.num + ':inicial:Upper'],
+      localNumLower: CDM_LOCAL_FILES[c.num + ':inicial:Lower'],
+      localCaseUpper: CDM_LOCAL_FILES[issue.caseId + ':inicial:Upper'],
+      localCaseLower: CDM_LOCAL_FILES[issue.caseId + ':inicial:Lower']
+    };
+    c.delivery = 'scanner';
+    c.hasSTL = true;
+    c._storage = c._storage || {};
+    if (upper) {
+      c.stlFileName = upper.name;
+      c.scannerInicialUpper = upper.name;
+      c._storage.upperUrl = '';
+      CDM_LOCAL_FILES[c.num + ':inicial:Upper'] = upper;
+      CDM_LOCAL_FILES[issue.caseId + ':inicial:Upper'] = upper;
+      fileData.scannerUpper = upper;
+      jaws.push('upper');
+    }
+    if (lower) {
+      c.scannerInicialLower = lower.name;
+      c._storage.lowerUrl = '';
+      CDM_LOCAL_FILES[c.num + ':inicial:Lower'] = lower;
+      CDM_LOCAL_FILES[issue.caseId + ':inicial:Lower'] = lower;
+      fileData.scannerLower = lower;
+      jaws.push('lower');
+    }
+    var replaced = await replaceCaseFilesInSupabase(c, fileData, ['stl','ply','obj','scanner'], jaws);
+    if (!replaced) {
+      c.delivery = oldScannerState.delivery;
+      c.hasSTL = oldScannerState.hasSTL;
+      c.stlFileName = oldScannerState.stlFileName;
+      c.scannerInicialUpper = oldScannerState.scannerInicialUpper;
+      c.scannerInicialLower = oldScannerState.scannerInicialLower;
+      c._storage = c._storage || {};
+      c._storage.upperUrl = oldScannerState.storageUpperUrl;
+      c._storage.lowerUrl = oldScannerState.storageLowerUrl;
+      if (oldScannerState.localNumUpper) CDM_LOCAL_FILES[c.num + ':inicial:Upper'] = oldScannerState.localNumUpper; else delete CDM_LOCAL_FILES[c.num + ':inicial:Upper'];
+      if (oldScannerState.localNumLower) CDM_LOCAL_FILES[c.num + ':inicial:Lower'] = oldScannerState.localNumLower; else delete CDM_LOCAL_FILES[c.num + ':inicial:Lower'];
+      if (oldScannerState.localCaseUpper) CDM_LOCAL_FILES[issue.caseId + ':inicial:Upper'] = oldScannerState.localCaseUpper; else delete CDM_LOCAL_FILES[issue.caseId + ':inicial:Upper'];
+      if (oldScannerState.localCaseLower) CDM_LOCAL_FILES[issue.caseId + ':inicial:Lower'] = oldScannerState.localCaseLower; else delete CDM_LOCAL_FILES[issue.caseId + ':inicial:Lower'];
+      refreshCaseUiAfterReplacement(issue.caseId, c);
+      showToast('Nao foi possivel trocar no Supabase. O aviso continua aberto.');
+      return;
+    }
+    c._retifiedScannerSlots = c._retifiedScannerSlots || {};
+    jaws.forEach(function(jaw){ c._retifiedScannerSlots[jaw] = true; });
+    resolvePending(issue.id, 'scanner reenviado');
+    refreshCaseUiAfterReplacement(issue.caseId, c);
+    showToast('Scanner retificado no caso.');
+  });
+  input.click();
+}
+
+function replaceCasePhotosFromIssue(issueId) {
+  var issue = findIssueById(issueId);
+  if (!issue) { showToast('Aviso não encontrado.'); return; }
+  var c = CDM[issue.caseId];
+  if (!c) { showToast('Caso não encontrado.'); return; }
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.style.display = 'none';
+  document.body.appendChild(input);
+  input.addEventListener('change', function() {
+    var files = Array.from(input.files || []);
+    document.body.removeChild(input);
+    if (!files.length) return;
+    var pending = files.map(function(file) {
+      return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e) { resolve({ dataUrl: e.target.result, name: file.name, file: file }); };
+        reader.readAsDataURL(file);
+      });
+    });
+    Promise.all(pending).then(function(photos) {
+      c.photos = (c.photos || []).concat(photos);
+      c._photosAddedAt = new Date().toISOString();
+      if (isSupabaseReady()) sbAttachFilesToCase(c, { photos: photos });
+      else persistCasePayloadIssue(issue.caseId);
+      resolvePending(issue.id, 'fotos acrescentadas');
+      refreshCaseUiAfterReplacement(issue.caseId, c);
+      showToast('Fotos acrescentadas ao caso.');
+    });
+  });
+  input.click();
+}
+
+function refreshCaseUiAfterReplacement(caseId, c) {
+  if (_cdmActiveId === String(caseId)) {
+    cdmRenderRectificationFields(String(caseId), c);
+    cdmRenderScannerSection('inicial', c);
+    cdmRenderPhotos(c.photos || []);
+    _cdmRenderFooter(String(caseId), c);
+  }
+  pc2RenderAllActs();
+  renderAlertas();
+  renderHomeCaseStats();
+  renderProfileStats();
+}
+
+async function replaceCaseFilesInSupabase(c, fileData, fileTypes, jaws) {
+  if (!isSupabaseReady() || !c) return true;
+  var caseId = c._supabaseId || c.id || null;
+  if (!caseId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(caseId))) return false;
+  try {
+    if (fileTypes && fileTypes.length) {
+      var oldFiles = (c._files || []).filter(function(f) {
+        var typeHit = fileTypes.indexOf(f.file_type) >= 0;
+        var jawHit = !jaws || !jaws.length || jaws.indexOf((f.jaw || '').toLowerCase()) >= 0;
+        return typeHit && jawHit;
+      });
+      var oldPaths = oldFiles.map(function(f){ return f.storage_path || ''; }).filter(Boolean);
+      if (oldPaths.length) {
+        var rm = await _supabaseClient.storage.from('case-files').remove(oldPaths);
+        if (rm.error) throw rm.error;
+      }
+      var delQuery = _supabaseClient.from('case_files').delete().eq('case_id', caseId).in('file_type', fileTypes);
+      if (jaws && jaws.length) delQuery = delQuery.in('jaw', jaws);
+      var del = await delQuery;
+      if (del.error) throw del.error;
+      else c._files = (c._files || []).filter(function(f){
+        var typeHit = fileTypes.indexOf(f.file_type) >= 0;
+        var jawHit = !jaws || !jaws.length || jaws.indexOf((f.jaw || '').toLowerCase()) >= 0;
+        return !(typeHit && jawHit);
+      });
+    }
+    var attached = await sbAttachFilesToCase(c, fileData);
+    if (attached && attached.success === false) throw new Error(attached.error || 'falha ao anexar arquivos');
+    return true;
+  } catch (err) {
+    console.warn('[Supabase] replaceCaseFiles erro:', err.message);
+    persistCasePayloadIssue(Object.keys(CDM).find(function(id){ return CDM[id] === c; }) || '');
+    return false;
+  }
+}
+
 // Resolve a pending issue (clinica action)
 function resolvePending(issueId, actionLabel) {
-  var p = PENDING_ISSUES.find(function(i){ return i.id === issueId; });
+  var p = findIssueById(issueId);
   if (!p || p.status === 'resolved') return;
 
   p.status     = 'resolved';
   p.resolvedAt = now();
   persistResolvedIssue(p);
+  var casePending = CDM[p.caseId] && Array.isArray(CDM[p.caseId]._pendingIssues) ? CDM[p.caseId]._pendingIssues.find(function(i){ return i.id === p.id; }) : null;
+  if (casePending) { casePending.status = 'resolved'; casePending.resolvedAt = p.resolvedAt; }
 
   // Check if this case has any other open issues
   var stillOpen = PENDING_ISSUES.some(function(i){ return i.caseId === p.caseId && i.status === 'open'; });
   if (!stillOpen && CDM[p.caseId]) {
-    // All resolved — move back to Em Produção
-    CDM[p.caseId].statusCls = 'st-a';
-    CDM[p.caseId].status    = 'Em Produ\u00e7\u00e3o';
-    // Update etapas
-    if (CDM[p.caseId].etapas) {
-      CDM[p.caseId].etapas[0].s = 'done';
-      CDM[p.caseId].etapas[1].s = 'cur';
-      for (var i = 2; i < CDM[p.caseId].etapas.length; i++) CDM[p.caseId].etapas[i].s = 'pend';
-    }
+    restoreCaseStatusAfterPending(p.caseId);
   }
 
   // Inject automatic chat message
@@ -5774,11 +6116,38 @@ function resolvePending(issueId, actionLabel) {
     var msg = 'Pend\u00eancia resolvida: ' + actionLabel + ' (' + c.num + ').';
     if (CHAT_MESSAGES[c.labAv]) CHAT_MESSAGES[c.labAv].push({ type:'out', text: msg, time: now() });
     if (_currentChatLabAv === c.labAv) addBubble('<div class="bubble out">' + msg + '</div>', true);
+    updateCaseStatusInSupabase(p.caseId, c.statusCls || 'st-a', c.obs || '');
   }
 
   showToast('Pend\u00eancia resolvida! \u2713');
   renderAlertas();
   pc2RenderAllActs();
+}
+
+function restoreCaseStatusAfterPending(caseId) {
+  var c = CDM[caseId];
+  if (!c) return;
+  var prev = c._statusBeforeWait || null;
+  if (prev && prev.statusCls) {
+    c.statusCls = prev.statusCls;
+    c.status = prev.status || STATUS_LABELS[prev.statusCls] || 'Em Produ\u00e7\u00e3o';
+    c.prog = typeof prev.prog === 'number' ? prev.prog : (STATUS_PROG[c.statusCls] || c.prog);
+    if (prev.etapas) {
+      try { c.etapas = JSON.parse(JSON.stringify(prev.etapas)); } catch(e) {}
+    }
+  } else {
+    c.statusCls = 'st-a';
+    c.status = 'Em Produ\u00e7\u00e3o';
+    c.prog = STATUS_PROG['st-a'] || c.prog;
+    if (c.etapas) {
+      c.etapas[0].s = 'done';
+      c.etapas[1].s = 'cur';
+      for (var i = 2; i < c.etapas.length; i++) c.etapas[i].s = 'pend';
+    }
+  }
+  delete c._statusBeforeWait;
+  updateCaseStatusInSupabase(caseId, c.statusCls, c.obs || '');
+  persistCasePayloadIssue(caseId);
 }
 
 async function persistResolvedIssue(issue) {
@@ -5825,23 +6194,36 @@ function alResolveTodos() {
 }
 
 // Add a new pending issue programmatically (called by labSolicitarInfo/labSolicitarScanner)
-function addPendingIssue(caseId, type, desc) {
+function addPendingIssue(caseId, type, desc, target) {
   // Avoid duplicates of the same type on the same case
-  var exists = PENDING_ISSUES.some(function(p){ return p.caseId === caseId && p.type === type && p.status === 'open'; });
+  var exists = PENDING_ISSUES.find(function(p){
+    return p.caseId === caseId && p.type === type && p.status === 'open' && ((p.target || '') === (target || ''));
+  });
   if (exists) {
     renderAlertas();
     pc2RenderAllActs();
     renderHomeCaseStats();
-    return;
+    return exists;
   }
   var id = 'pi_' + Date.now();
   var issue = { id: id, caseId: caseId, type: type, status: 'open',
-    desc: desc, requestedBy: 'lab', createdAt: now(), resolvedAt: null };
+    desc: desc, target: target || '', requestedBy: 'lab', createdAt: now(), resolvedAt: null };
   PENDING_ISSUES.push(issue);
+  attachPendingIssueToCase(caseId, issue);
   persistPendingIssue(caseId, issue);
   renderAlertas();
   pc2RenderAllActs();
   renderHomeCaseStats();
+  return issue;
+}
+
+function attachPendingIssueToCase(caseId, issue) {
+  var c = CDM[caseId];
+  if (!c || !issue) return;
+  c._pendingIssues = Array.isArray(c._pendingIssues) ? c._pendingIssues : [];
+  var existing = c._pendingIssues.find(function(p){ return p.id === issue.id || (p.type === issue.type && p.status === 'open' && ((p.target || '') === (issue.target || ''))); });
+  if (existing) Object.assign(existing, issue, { caseId: caseId });
+  else c._pendingIssues.push(Object.assign({}, issue, { caseId: caseId }));
 }
 
 function hasOpenScannerRequest(caseId) {
@@ -5858,23 +6240,52 @@ async function persistPendingIssue(caseId, issue) {
   var c = CDM[caseId];
   var remoteCaseId = c && (c._supabaseId || c.supabaseId || c.id);
   if (!remoteCaseId || String(remoteCaseId).indexOf('-') < 0) return;
+  await persistCasePayloadIssue(caseId);
   try {
     var row = {
       case_id: remoteCaseId,
       type: issue.type,
-      label: issue.desc || issueDisplayTitle(issue),
+      label: (issue.target ? '[' + issue.target + '] ' : '') + (issue.desc || issueDisplayTitle(issue)),
       status: 'open',
       requested_by: currentUserId || null,
       requested_to: 'clinica'
     };
-    await _supabaseClient.from('pending_issues').insert(row);
+    var inserted = await _supabaseClient.from('pending_issues').insert(row);
+    if (inserted.error) throw inserted.error;
   } catch (err) {
     console.warn('[Supabase] pending issue local apenas:', err.message);
   }
 }
 
+async function persistCasePayloadIssue(caseId) {
+  if (!isSupabaseReady()) return;
+  var c = CDM[caseId];
+  var remoteCaseId = c && (c._supabaseId || c.supabaseId || c.id);
+  if (!c || !remoteCaseId || String(remoteCaseId).indexOf('-') < 0) return;
+  try {
+    var res = await _supabaseClient
+      .from('cases')
+      .update({
+        status: c.statusCls || 'st-wait',
+        case_payload: sbBuildCasePayload(c),
+        updated_at: new Date().toISOString(),
+        last_synced_at: new Date().toISOString()
+      })
+      .eq('id', remoteCaseId);
+    if (res.error) throw res.error;
+  } catch (err) {
+    console.warn('[Supabase] case_payload pending local apenas:', err.message);
+  }
+}
+
 function mergePendingIssuesFromCaseRow(row, localCaseId) {
-  var issues = row && Array.isArray(row.pending_issues) ? row.pending_issues : [];
+  var issues = row && Array.isArray(row.pending_issues) ? row.pending_issues.slice() : [];
+  var payloadIssues = row && row.case_payload && row.case_payload.case && Array.isArray(row.case_payload.case._pendingIssues)
+    ? row.case_payload.case._pendingIssues
+    : [];
+  payloadIssues.forEach(function(payloadIssue) {
+    if (payloadIssue) issues.push(Object.assign({}, payloadIssue, { _fromPayload: true }));
+  });
   issues.forEach(function(remote) {
     if (!remote || !remote.id) return;
     var mapped = {
@@ -5882,14 +6293,20 @@ function mergePendingIssuesFromCaseRow(row, localCaseId) {
       caseId: localCaseId || row.id,
       type: remote.type || 'falta_observacao',
       status: remote.status || 'open',
-      desc: remote.label || 'O laboratório solicitou atenção neste caso.',
+      target: remote.target || remote.request_target || remote.jaw || remote.targetJaw || '',
+      desc: remote.desc || remote.label || 'O laboratório solicitou atenção neste caso.',
       requestedBy: 'lab',
       createdAt: remote.created_at ? new Date(remote.created_at).toLocaleString('pt-BR') : now(),
       resolvedAt: remote.resolved_at ? new Date(remote.resolved_at).toLocaleString('pt-BR') : null
     };
+    if (!mapped.target && remote.label) {
+      var targetMatch = String(remote.label).match(/^\[(upper|lower|both|photos)\]/i);
+      if (targetMatch) mapped.target = targetMatch[1].toLowerCase();
+    }
     var existing = PENDING_ISSUES.find(function(p){ return p.id === mapped.id; });
     if (existing) Object.assign(existing, mapped);
     else PENDING_ISSUES.push(mapped);
+    attachPendingIssueToCase(mapped.caseId, mapped);
   });
 }
 // ─────────────────────────────────────────────────────────────────────────
@@ -5915,6 +6332,20 @@ function pc2RenderAllActs() {
       var footer = card.querySelector('.pc2-footer');
       if (banner && footer) footer.insertAdjacentHTML('beforebegin', banner);
       card.classList.toggle('alerta', !!banner);
+      var issue = openIssueForCase(cid);
+      var statusPill = card.querySelector('.pc2-status');
+      if (statusPill) {
+        var c = CDM[cid] || {};
+        if (issue && currentUserRole !== 'laboratorio') {
+          statusPill.textContent = issueDisplayTitle(issue);
+          statusPill.style.background = 'var(--red-bg)';
+          statusPill.style.color = 'var(--red)';
+        } else {
+          statusPill.textContent = c.status || STATUS_LABELS[c.statusCls] || 'Em Produ\u00e7\u00e3o';
+          statusPill.style.background = 'rgba(79,140,255,.14)';
+          statusPill.style.color = 'var(--accent)';
+        }
+      }
     }
   });
 }
@@ -5971,8 +6402,15 @@ function _pc2ActsHTML(cid, av, lab, labColor) {
   } else {
     // ── DENTISTA / ASSISTENTE ──
     // Reenviar scan only when the lab explicitly requested a new scanner
-    var btnReenviar = (status === 'st-wait' && hasOpenScannerRequest(cid))
-      ? '<button class="pc2-btn red" onclick="event.stopPropagation();openModal(\'modal-attach\')">' + svgScan + ' Reenviar scan</button>'
+    var openIssue = openIssueForCase(cid);
+    var btnReenviar = (openIssue && (openIssue.type === 'scanner_corrompido' || openIssue.type === 'scanner_incompleto'))
+      ? '<button class="pc2-btn red" onclick="event.stopPropagation();openCaseAndFocusIssue(\'' + openIssue.id + '\')">' + svgScan + ' Retificar scan</button>'
+      : '';
+    var btnReenviarFotos = (openIssue && openIssue.type === 'falta_fotos')
+      ? '<button class="pc2-btn red" onclick="event.stopPropagation();openCaseAndFocusIssue(\'' + openIssue.id + '\')">' + svgInfo + ' Acrescentar fotos</button>'
+      : '';
+    var btnEditarCampo = (openIssue && (openIssue.type === 'falta_cor' || openIssue.type === 'falta_material' || openIssue.type === 'retificar_prazo'))
+      ? '<button class="pc2-btn red" onclick="event.stopPropagation();openCaseAndFocusIssue(\'' + openIssue.id + '\')">' + svgInfo + ' Editar</button>'
       : '';
     // Confirmar entrega (only dentista/assistente, and only when lab marked Entregue + not yet confirmed)
     var btnConfirm = (isDone && !c.recebimentoConfirmado)
@@ -5984,6 +6422,8 @@ function _pc2ActsHTML(cid, av, lab, labColor) {
 
     var buttons = [btnMsg];
     if (btnReenviar) buttons.push(btnReenviar);
+    if (btnReenviarFotos) buttons.push(btnReenviarFotos);
+    if (btnEditarCampo) buttons.push(btnEditarCampo);
     if (btnConfirm)  buttons.push(btnConfirm);
     if (btnDone)     buttons.push(btnDone);
     return buttons.join('');
@@ -6013,47 +6453,47 @@ function labSolicitarInfo(caseId) {
   openModal('modal-lab-info');
 }
 
-function labConfirmSolicitarInfo(type) {
+function labConfirmSolicitarInfo(type, target) {
   if (!requirePerm('canChangeStatus')) return;
   if (currentUserRole !== 'laboratorio') return;
   var caseId = _labInfoCaseId;
   var c = CDM[caseId]; if (!c) return;
+  var allowed = ['scanner_corrompido','falta_fotos','falta_cor','falta_material','retificar_prazo'];
+  if (allowed.indexOf(type) < 0) { showToast('Escolha scanner, fotos, cor, material ou prazo.'); return; }
+  target = (type === 'scanner_corrompido') ? (target || 'both') : (type === 'falta_fotos' ? 'photos' : '');
+  var targetLabels = { upper: 'Maxila / Upper', lower: 'Mandibula / Lower', both: 'Upper + Lower', photos: 'Fotos clinicas' };
+  var targetLabel = targetLabels[target] || '';
   var requests = {
     scanner_corrompido: {
       status: 'Laboratorio solicitou novo scanner.',
-      desc: 'O scanner enviado nao pode ser usado. Por favor reenvie o ficheiro para o caso ' + c.num + '.',
-      msg: 'Laboratorio solicitou novo scanner para o caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
+      desc: 'O scanner enviado nao pode ser usado. Retifique ' + targetLabel + ' no caso ' + c.num + '.',
+      msg: 'Laboratorio solicitou retificacao do scanner (' + targetLabel + ') para o caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     },
     falta_cor: {
       status: 'Laboratorio solicitou a cor do caso.',
-      desc: 'Informe a cor/shade para continuar a producao do caso ' + c.num + '.',
-      msg: 'Laboratorio solicitou a cor/shade do caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
+      desc: 'Retifique a cor/shade do caso ' + c.num + '.',
+      msg: 'Laboratorio solicitou retificacao da cor/shade do caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     },
     falta_fotos: {
       status: 'Laboratorio solicitou fotos clinicas.',
-      desc: 'Envie as fotos clinicas necessarias para continuar a producao do caso ' + c.num + '.',
-      msg: 'Laboratorio solicitou fotos clinicas para o caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
-    },
-    falta_dentes: {
-      status: 'Laboratorio solicitou dentes envolvidos.',
-      desc: 'Indique os dentes envolvidos para continuar a producao do caso ' + c.num + '.',
-      msg: 'Laboratorio solicitou a indicacao dos dentes do caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
+      desc: 'Acrescente as fotos clinicas necessarias para continuar a producao do caso ' + c.num + '.',
+      msg: 'Laboratorio solicitou fotos clinicas adicionais para o caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     },
     falta_material: {
       status: 'Laboratorio solicitou o material.',
-      desc: 'Informe o material solicitado para continuar a producao do caso ' + c.num + '.',
-      msg: 'Laboratorio solicitou o material do caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
+      desc: 'Retifique o material do caso ' + c.num + '.',
+      msg: 'Laboratorio solicitou retificacao do material do caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     },
-    falta_observacao: {
-      status: 'Laboratorio solicitou informacao em falta.',
-      desc: 'O laboratorio solicitou informacao adicional para continuar a producao do caso ' + c.num + '.',
-      msg: 'Laboratorio solicitou informacoes para o caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
+    retificar_prazo: {
+      status: 'Laboratorio solicitou retificacao do prazo.',
+      desc: 'Retifique o prazo do caso ' + c.num + '.',
+      msg: 'Laboratorio solicitou retificacao do prazo do caso <strong>' + c.paciente + '</strong> (' + c.num + ').'
     }
   };
-  var req = requests[type] || requests.falta_observacao;
+  var req = requests[type] || requests.falta_fotos;
   closeModal('modal-lab-info');
   cdmSetStatus(caseId, 'st-wait', 'Aguardando Cl\u00ednica', req.status);
-  addPendingIssue(caseId, type || 'falta_observacao', req.desc);
+  addPendingIssue(caseId, type, req.desc, target);
   var msg = req.msg + ' Por favor responda assim que possivel.';
   if (CHAT_MESSAGES[c.labAv]) CHAT_MESSAGES[c.labAv].push({ type:'in', text: msg, time: now() });
   if (_currentChatLabAv === c.labAv) addBubble('<div class="bubble in">' + msg + '</div>', false);
@@ -6066,8 +6506,8 @@ function labSolicitarScanner(caseId) {
   if (!requirePerm('canChangeStatus')) return;
   var c = CDM[caseId]; if (!c) return;
   cdmSetStatus(caseId, 'st-wait', 'Aguardando Cl\u00ednica', 'Laborat\u00f3rio solicitou novo scanner.');
-  var desc = 'O scanner enviado est\u00e1 corrompido ou incompleto. Por favor reenvie o ficheiro para o caso ' + c.num + '.';
-  addPendingIssue(caseId, 'scanner_corrompido', desc);
+  var desc = 'O scanner enviado est\u00e1 corrompido ou incompleto. Por favor retifique Upper + Lower no caso ' + c.num + '.';
+  addPendingIssue(caseId, 'scanner_corrompido', desc, 'both');
   var msg = 'Laborat\u00f3rio solicitou novo scanner para o caso <strong>' + c.paciente + '</strong> (' + c.num + '). Scanner incorrecto ou em falta.';
   if (CHAT_MESSAGES[c.labAv]) CHAT_MESSAGES[c.labAv].push({ type:'in', text: msg, time: now() });
   if (_currentChatLabAv === c.labAv) addBubble('<div class="bubble in">' + msg + '</div>', false);
@@ -6161,6 +6601,14 @@ function cdmSetStatus(caseId, cls, label, obs) {
   if (!requirePerm('canChangeStatus')) return;
   var c = CDM[caseId]; if (!c) { showToast(label + ' \u2713'); return; }
 
+  if (cls === 'st-wait' && c.statusCls !== 'st-wait') {
+    c._statusBeforeWait = {
+      statusCls: c.statusCls || 'st-a',
+      status: c.status || STATUS_LABELS[c.statusCls] || 'Em Produ\u00e7\u00e3o',
+      prog: c.prog,
+      etapas: c.etapas ? JSON.parse(JSON.stringify(c.etapas)) : null
+    };
+  }
   c.statusCls = cls;
   c.status    = label;
   c.prog      = STATUS_PROG[cls] || c.prog;
@@ -8558,14 +9006,17 @@ function renderHomeCaseStats() {
   var cases = Object.keys(CDM).map(function(id){ return CDM[id]; }).filter(Boolean);
   var finished = cases.filter(function(c){ return c.statusCls === 'st-done' || c.status === 'Entregue' || c.status === 'Finalizado'; }).length;
   var active = cases.length - finished;
-  var pending = cases.filter(function(c){ return c.statusCls === 'st-wait' || c.status === 'Aguardando Clínica'; }).length;
-  if (typeof PENDING_ISSUES !== 'undefined') {
-    var issueCaseIds = PENDING_ISSUES.filter(function(issue){ return issue.status === 'open'; }).map(function(issue){ return String(issue.caseId); });
-    cases.forEach(function(c, index){
-      var caseId = Object.keys(CDM).find(function(id){ return CDM[id] === c; });
-      if (caseId && issueCaseIds.indexOf(String(caseId)) >= 0 && c.statusCls !== 'st-wait') pending++;
-    });
-  }
+  var pendingCaseIds = {};
+  allCurrentIssues().filter(function(issue){ return issue.status === 'open'; }).forEach(function(issue){
+    pendingCaseIds[String(issue.caseId)] = true;
+  });
+  cases.forEach(function(c) {
+    var caseId = Object.keys(CDM).find(function(id){ return CDM[id] === c; });
+    if (caseId && (c.statusCls === 'st-wait' || c.status === 'Aguardando Clínica' || c.status === 'Aguardando Clinica')) {
+      pendingCaseIds[String(caseId)] = true;
+    }
+  });
+  var pending = Object.keys(pendingCaseIds).length;
   var activeEl = document.getElementById('home-casos-ativos-val');
   var pendingEl = document.getElementById('home-pendencias-val');
   var finishedEl = document.getElementById('home-finalizados-val');
@@ -9106,11 +9557,17 @@ async function loadCasesFromSupabase() {
   }
 }
 
+function latestCaseFile(files, matcher) {
+  return (files || []).filter(matcher).sort(function(a, b) {
+    return new Date(b.uploaded_at || b.created_at || 0) - new Date(a.uploaded_at || a.created_at || 0);
+  })[0] || null;
+}
+
 function sbMapCaseRowToCDM(row) {
   var files = row.case_files || [];
-  var upper = files.find(function(f){ return (f.file_type === 'stl' || f.file_type === 'ply' || f.file_type === 'obj' || f.file_type === 'scanner') && f.jaw === 'upper'; });
-  var lower = files.find(function(f){ return (f.file_type === 'stl' || f.file_type === 'ply' || f.file_type === 'obj' || f.file_type === 'scanner') && f.jaw === 'lower'; });
-  var bite  = files.find(function(f){ return (f.file_type === 'stl' || f.file_type === 'ply' || f.file_type === 'obj' || f.file_type === 'scanner') && f.jaw === 'bite'; });
+  var upper = latestCaseFile(files, function(f){ return (f.file_type === 'stl' || f.file_type === 'ply' || f.file_type === 'obj' || f.file_type === 'scanner') && f.jaw === 'upper'; });
+  var lower = latestCaseFile(files, function(f){ return (f.file_type === 'stl' || f.file_type === 'ply' || f.file_type === 'obj' || f.file_type === 'scanner') && f.jaw === 'lower'; });
+  var bite  = latestCaseFile(files, function(f){ return (f.file_type === 'stl' || f.file_type === 'ply' || f.file_type === 'obj' || f.file_type === 'scanner') && f.jaw === 'bite'; });
   var photos = files.filter(function(f){ return f.file_type === 'photo'; }).map(function(f){
     return { dataUrl: f.file_url || sbPublicUrlFromPath(f.storage_path), name: f.original_name || f.file_name || 'foto', fileRecord: f };
   });
@@ -9175,7 +9632,7 @@ function sbMapCaseRowToCDM(row) {
   c.obs = row.notes || c.obs || '';
   c.implante = row.implant_ref || c.implante || '';
   c.implantDesc = row.implant_desc || c.implantDesc || '';
-  c.photos = photos.length ? photos : (c.photos || []);
+  c.photos = (c._photosReplacedAt && c.photos && c.photos.length) ? c.photos : (photos.length ? photos : (c.photos || []));
   c.hasSTL = !!(upper || lower || bite || c.hasSTL);
   c.stlFileName = (upper && (upper.original_name || upper.file_name)) || (lower && (lower.original_name || lower.file_name)) || c.stlFileName || '';
   c.scannerInicialUpper = upper ? (upper.original_name || upper.file_name) : (c.scannerInicialUpper || '');
@@ -9207,7 +9664,6 @@ async function syncSupabaseCasesIntoCDM() {
     var id = row.id;
     if (!id) return;
     var c = sbMapCaseRowToCDM(row);
-    mergePendingIssuesFromCaseRow(row, id);
     var localId = Object.keys(CDM).find(function(k){
       return k !== id && CDM[k] && CDM[k]._supabaseId === id;
     });
@@ -9222,6 +9678,7 @@ async function syncSupabaseCasesIntoCDM() {
       CDM[id] = c;
       _cdmInjectMyLabCard(id, c, c.photos || []);
     }
+    mergePendingIssuesFromCaseRow(row, id);
     changed++;
   });
   if (changed) {
@@ -9264,6 +9721,7 @@ async function refreshCaseFromSupabase(localId) {
       cdmRenderScannerSection('inicial', c);
       cdmRenderScannerSection('final', c);
       cdmRenderPhotos(c.photos || []);
+      cdmRenderRectificationFields(localId, c);
       _cdmRenderFooter(localId, c);
     }
     pc2RenderAllActs();
@@ -9294,6 +9752,35 @@ async function updateCaseStatusInSupabase(caseId, status, notes) {
     console.info('[Supabase] Status actualizado:', supabaseId, status);
   } catch (err) {
     console.warn('[Supabase] updateCaseStatus erro:', err.message);
+  }
+}
+
+async function updateCaseMetadataInSupabase(caseId, caseObj) {
+  if (!caseObj) return false;
+  if (!isSupabaseReady()) {
+    persistCasePayloadIssue(caseId);
+    return true;
+  }
+  var supabaseId = (caseObj && caseObj._supabaseId) || caseId;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(supabaseId))) {
+    persistCasePayloadIssue(caseId);
+    return true;
+  }
+  try {
+    var payload = {
+      shade: caseObj.shade || '',
+      material: caseObj.material || '',
+      deadline: caseObj.prazoISO || null,
+      case_payload: sbBuildCasePayload(caseObj),
+      updated_at: new Date().toISOString(),
+      last_synced_at: new Date().toISOString()
+    };
+    var res = await _supabaseClient.from('cases').update(payload).eq('id', supabaseId);
+    if (res.error) throw res.error;
+    return true;
+  } catch (err) {
+    console.warn('[Supabase] updateCaseMetadata erro:', err.message);
+    return false;
   }
 }
 

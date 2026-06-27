@@ -5103,13 +5103,13 @@ function cdmRenderScannerSection(which, c) {
       var btn = safeEl('cdm-inicial-' + pair[0] + '-btn');
       if (!btn) return;
       var requested = isScanIssue && (target === 'both' || target === pair[0]);
-      var alreadyRetified = !isScanIssue && c._retifiedScannerSlots && c._retifiedScannerSlots[pair[0]];
+      var alreadyRetified = c._retifiedScannerSlots && c._retifiedScannerSlots[pair[0]];
       var hiddenDuringScanIssue = isScanIssue && !requested;
       btn.textContent = requested ? 'Retificar' : '+ Adicionar';
       btn.classList.toggle('retify-btn', !!requested);
       btn.style.display = (alreadyRetified || hiddenDuringScanIssue) ? 'none' : '';
       btn.setAttribute('onclick', requested
-        ? "replaceCaseScannerFromIssue('" + issue.id + "')"
+        ? "replaceCaseScannerFromIssue('" + issue.id + "','" + pair[0] + "')"
         : "cdmUploadScannerSlot('inicial','" + pair[1] + "')");
     });
   }
@@ -6073,15 +6073,16 @@ function hideCaseActionLoading() {
   if (el) el.classList.remove('show');
 }
 
-function replaceCaseScannerFromIssue(issueId) {
+function replaceCaseScannerFromIssue(issueId, slotTarget) {
   var issue = findIssueById(issueId);
   if (!issue) { showToast('Aviso não encontrado.'); return; }
   var c = CDM[issue.caseId];
   if (!c) { showToast('Caso não encontrado.'); return; }
-  var target = issue.target || 'both';
+  var target = slotTarget || issue.target || 'upper';
+  if (target === 'both') target = 'upper';
   var input = document.createElement('input');
   setup3DFilePicker(input);
-  input.multiple = (target === 'both');
+  input.multiple = false;
   document.body.appendChild(input);
   input.addEventListener('change', async function() {
     document.body.removeChild(input);
@@ -6092,9 +6093,8 @@ function replaceCaseScannerFromIssue(issueId) {
       return n.endsWith('.stl') || n.endsWith('.ply') || n.endsWith('.obj');
     });
     if (!valid.length) { showToast('Selecione ficheiros .stl, .ply ou .obj'); return; }
-    if (target === 'both' && valid.length < 2) { showToast('Selecione os ficheiros Upper e Lower.'); return; }
     var upper = target === 'lower' ? null : valid[0];
-    var lower = target === 'upper' ? null : (target === 'lower' ? valid[0] : valid[1]);
+    var lower = target === 'upper' ? null : valid[0];
     var fileData = {};
     var jaws = [];
     var oldScannerState = {
@@ -6161,10 +6161,16 @@ function replaceCaseScannerFromIssue(issueId) {
     }
     c._retifiedScannerSlots = c._retifiedScannerSlots || {};
     jaws.forEach(function(jaw){ c._retifiedScannerSlots[jaw] = true; });
-    resolvePending(issue.id, 'scanner reenviado');
+    var issueNeedsBoth = (issue.target || '') === 'both';
+    var allRequestedDone = !issueNeedsBoth || (c._retifiedScannerSlots.upper && c._retifiedScannerSlots.lower);
+    if (allRequestedDone) {
+      resolvePending(issue.id, 'scanner reenviado');
+    } else {
+      persistCasePayloadIssue(issue.caseId);
+    }
     hideCaseActionLoading();
     refreshCaseUiAfterReplacement(issue.caseId, c);
-    showToast('Scanner retificado com sucesso.');
+    showToast(allRequestedDone ? 'Scanner retificado com sucesso.' : 'Scanner retificado. Falta a outra arcada.');
   });
   input.click();
 }

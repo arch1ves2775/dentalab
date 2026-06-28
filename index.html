@@ -5421,19 +5421,46 @@ function cdmDownloadScanner(which) {
 }
 
 function openIssueForCaseType(caseId, type) {
-  var local = PENDING_ISSUES.find(function(p) {
-    return String(p.caseId) === String(caseId) && p.status === 'open' && p.type === type;
-  });
-  if (local) return local;
   var c = CDM[caseId];
+  var candidates = [];
+  PENDING_ISSUES.forEach(function(p) {
+    if (String(p.caseId) === String(caseId) && p.status === 'open') candidates.push(p);
+  });
   if (c && Array.isArray(c._pendingIssues)) {
-    var stored = c._pendingIssues.find(function(p) {
-      return p && p.status === 'open' && p.type === type;
+    c._pendingIssues.forEach(function(p) {
+      if (p && p.status === 'open') candidates.push(p);
     });
-    if (stored) return stored;
   }
-  var derived = openIssueForCase(caseId);
-  return derived && derived.type === type ? derived : null;
+  var exact = candidates.find(function(p) { return p.type === type; });
+  if (exact) return exact;
+  var inferred = candidates.find(function(p) {
+    return inferIssueTypeFromIssue(p, c) === type;
+  });
+  if (inferred) {
+    inferred.type = type;
+    return inferred;
+  }
+  var derived = derivedIssueForCase(caseId);
+  if (derived && derived.type === type) return derived;
+  return null;
+}
+
+function inferIssueTypeFromIssue(issue, c) {
+  var text = [
+    issue && issue.type,
+    issue && issue.label,
+    issue && issue.desc,
+    issue && issue.title,
+    c && c.obs,
+    c && c.status,
+    c && c.lastUpdate
+  ].filter(Boolean).join(' ').toLowerCase();
+  if (text.indexOf('material') >= 0) return 'falta_material';
+  if (text.indexOf('prazo') >= 0 || text.indexOf('data') >= 0) return 'retificar_prazo';
+  if (text.indexOf('cor') >= 0 || text.indexOf('shade') >= 0) return 'falta_cor';
+  if (text.indexOf('foto') >= 0 || text.indexOf('imagem') >= 0) return 'falta_fotos';
+  if (text.indexOf('scanner') >= 0 || text.indexOf('scan') >= 0 || text.indexOf('stl') >= 0 || text.indexOf('ply') >= 0) return 'scanner_corrompido';
+  return issue && issue.type ? issue.type : '';
 }
 
 function cdmRenderRectificationFields(caseId, c) {
@@ -5454,6 +5481,13 @@ function renderRectificationField(caseId, c, field, elId, issueType, value) {
     el.innerHTML = '<div class="cdm-rectify-field">'
       + '<input id="cdm-rectify-shade" type="hidden" value="' + sbEscapeHtml(value || '') + '">'
       + '<button class="cdm-rectify-shade-btn" onclick="openShadeRectificationPicker(\'' + issue.id + '\')">Escolher cor: ' + sbEscapeHtml(value || 'A definir') + '</button>'
+      + '</div>';
+    return;
+  }
+  if (field === 'material') {
+    el.innerHTML = '<div class="cdm-rectify-field">'
+      + '<input id="cdm-rectify-material" type="hidden" value="' + sbEscapeHtml(value || '') + '">'
+      + '<button class="cdm-rectify-shade-btn" onclick="openMaterialRectificationPicker(\'' + issue.id + '\')">Escolher material: ' + sbEscapeHtml(value || 'A definir') + '</button>'
       + '</div>';
     return;
   }
@@ -5515,6 +5549,111 @@ function closeShadeRectificationPicker() {
   if (modal) modal.classList.remove('show');
 }
 
+var _cdmMaterialRectification = { issueId: '', material: '', subtype: '', conexao: '' };
+
+function openMaterialRectificationPicker(issueId) {
+  var issue = findIssueById(issueId);
+  if (!issue) { showToast('Aviso nao encontrado.'); return; }
+  var c = CDM[issue.caseId];
+  if (!c) { showToast('Caso nao encontrado.'); return; }
+  var modal = document.getElementById('modal-cdm-material-picker');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'modal-cdm-material-picker';
+    modal.onclick = function(event) { if (event.target === modal) closeMaterialRectificationPicker(); };
+    document.body.appendChild(modal);
+  }
+  var current = c.material || '';
+  _cdmMaterialRectification = { issueId: issue.id, material: current, subtype: '', conexao: '' };
+  var resolved = typeof matResolve === 'function' ? matResolve(c.tipo || '') : null;
+  var body = '';
+  if (resolved && resolved.mats && resolved.mats.length) {
+    body += '<div class="nc-mat-chips" id="cdm-rectify-material-chips" style="display:flex;margin-bottom:10px">';
+    body += resolved.mats.map(function(m) {
+      var name = m.name || '';
+      var selected = current.toLowerCase().indexOf(name.toLowerCase()) >= 0;
+      return '<button class="nc-mat-chip' + (selected ? ' sel' : '') + '" onclick="selectRectifyMaterial(this,\'' + name.replace(/'/g,"\\'") + '\')">' + sbEscapeHtml(name) + '</button>';
+    }).join('');
+    body += '</div>';
+    body += '<div id="cdm-rectify-material-subwrap" class="nc-subtype-chips" style="display:none;margin-bottom:10px"></div>';
+    if (resolved.showConexao) {
+      body += '<div id="cdm-rectify-material-conwrap" class="nc-conexao-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">'
+        + ['Ti-base','Pilar personalizado','UCLA'].map(function(name) {
+          return '<button class="nc-conexao-chip" onclick="selectRectifyMaterialConexao(this,\'' + name.replace(/'/g,"\\'") + '\')">' + sbEscapeHtml(name) + '</button>';
+        }).join('')
+        + '</div>';
+    }
+  } else {
+    body += '<input class="nc-input" id="cdm-rectify-material-text" placeholder="Material..." autocomplete="off" value="' + sbEscapeHtml(current) + '" oninput="setRectifyMaterialText(this.value)" style="margin-bottom:12px">';
+  }
+  modal.innerHTML = '<div class="modal-sheet cdm-rectify-shade-modal">'
+    + '<div class="modal-handle"></div>'
+    + '<div class="modal-title">Escolher material</div>'
+    + '<input id="cdm-rectify-material" type="hidden" value="' + sbEscapeHtml(current) + '">'
+    + body
+    + '<button class="big-btn" onclick="saveCaseRectification(\'' + issue.id + '\',\'material\')">Salvar material</button>'
+    + '<button class="ghost-btn" onclick="closeMaterialRectificationPicker()">Cancelar</button>'
+    + '</div>';
+  modal.classList.add('show');
+}
+
+function selectRectifyMaterial(el, name) {
+  _cdmMaterialRectification.material = name || '';
+  _cdmMaterialRectification.subtype = '';
+  document.querySelectorAll('#cdm-rectify-material-chips .nc-mat-chip').forEach(function(chip){ chip.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  var issue = findIssueById(_cdmMaterialRectification.issueId);
+  var c = issue ? CDM[issue.caseId] : null;
+  var resolved = c && typeof matResolve === 'function' ? matResolve(c.tipo || '') : null;
+  var matEntry = resolved && resolved.mats ? resolved.mats.find(function(m){ return m.name === name; }) : null;
+  var subWrap = safeEl('cdm-rectify-material-subwrap');
+  if (subWrap && matEntry && matEntry.sub && matEntry.sub.length) {
+    subWrap.style.display = 'flex';
+    subWrap.style.flexWrap = 'wrap';
+    subWrap.style.gap = '7px';
+    subWrap.innerHTML = matEntry.sub.map(function(sub) {
+      return '<button class="nc-subtype-chip" onclick="selectRectifyMaterialSubtype(this,\'' + sub.replace(/'/g,"\\'") + '\')">' + sbEscapeHtml(sub) + '</button>';
+    }).join('');
+  } else if (subWrap) {
+    subWrap.style.display = 'none';
+    subWrap.innerHTML = '';
+  }
+  updateRectifyMaterialValue();
+}
+
+function selectRectifyMaterialSubtype(el, subtype) {
+  _cdmMaterialRectification.subtype = subtype || '';
+  document.querySelectorAll('#cdm-rectify-material-subwrap .nc-subtype-chip').forEach(function(chip){ chip.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  updateRectifyMaterialValue();
+}
+
+function selectRectifyMaterialConexao(el, conexao) {
+  _cdmMaterialRectification.conexao = conexao || '';
+  document.querySelectorAll('#cdm-rectify-material-conwrap .nc-conexao-chip').forEach(function(chip){ chip.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  updateRectifyMaterialValue();
+}
+
+function setRectifyMaterialText(value) {
+  _cdmMaterialRectification.material = String(value || '').trim();
+  _cdmMaterialRectification.subtype = '';
+  _cdmMaterialRectification.conexao = '';
+  updateRectifyMaterialValue();
+}
+
+function updateRectifyMaterialValue() {
+  var parts = [_cdmMaterialRectification.material, _cdmMaterialRectification.subtype, _cdmMaterialRectification.conexao].filter(Boolean);
+  var hidden = safeEl('cdm-rectify-material');
+  if (hidden) hidden.value = parts.join(' ');
+}
+
+function closeMaterialRectificationPicker() {
+  var modal = safeEl('modal-cdm-material-picker');
+  if (modal) modal.classList.remove('show');
+}
+
 function formatDateBR(iso) {
   var p = String(iso || '').split('-');
   return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : (iso || '');
@@ -5543,6 +5682,7 @@ async function saveCaseRectification(issueId, field) {
     cdmRenderRectificationFields(String(issue.caseId), c);
   }
   if (field === 'shade') closeShadeRectificationPicker();
+  if (field === 'material') closeMaterialRectificationPicker();
   showToast('Retificação salva.');
 }
 
@@ -6124,7 +6264,21 @@ function _alResolveBtn(p) {
 }
 
 function findIssueById(issueId) {
-  return allCurrentIssues().find(function(i){ return String(i.id) === String(issueId); }) || null;
+  var id = String(issueId || '');
+  var found = allCurrentIssues().find(function(i){ return String(i.id) === id; }) || null;
+  if (found) return found;
+  found = PENDING_ISSUES.find(function(i){ return String(i.id) === id; }) || null;
+  if (found) return found;
+  var caseIds = Object.keys(CDM || {});
+  for (var idx = 0; idx < caseIds.length; idx++) {
+    var c = CDM[caseIds[idx]];
+    if (!c || !Array.isArray(c._pendingIssues)) continue;
+    found = c._pendingIssues.find(function(i){ return i && String(i.id) === id; }) || null;
+    if (found) return found;
+  }
+  var derivedMatch = id.match(/^derived_(.+)_(scanner_corrompido|scanner_incompleto|falta_fotos|falta_cor|falta_material|retificar_prazo|falta_observacao)$/);
+  if (derivedMatch) return openIssueForCaseType(derivedMatch[1], derivedMatch[2]);
+  return null;
 }
 
 function openCaseAndFocusIssue(issueId) {

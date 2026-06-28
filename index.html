@@ -939,6 +939,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .mc-media-pill{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:11px;font-size:10.5px;font-weight:700;background:var(--surface2);color:var(--hint);border:1.5px dashed var(--border)}
 .mc-media-pill.has{background:var(--green-bg);color:var(--green);border:1.5px solid rgba(34,197,94,.3)}
 .mc-fab{position:fixed;right:18px;bottom:calc(60px + 18px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--mc-purple),var(--mc-purple-d));color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(124,58,237,.45);cursor:pointer;z-index:55}
+.mylab-fab{position:fixed;right:18px;bottom:calc(60px + 18px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--mc-purple),var(--mc-purple-d));color:#fff;display:none;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(124,58,237,.45);cursor:pointer;z-index:55}
 .mc-empty{text-align:center;padding:60px 24px;color:var(--muted)}
 .mc-empty svg{margin-bottom:14px;opacity:.4}
 
@@ -1477,6 +1478,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 
     <div style="height:20px"></div>
   </div>
+  <button class="mylab-fab" id="mylab-fab-new-case" onclick="openNewCase()" aria-label="Novo caso">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
 </div>
 <div id="scr-mycases" class="screen">
   <div class="header">
@@ -2531,11 +2535,15 @@ function applyRoleUI(role) {
   var p = ROLE_PERMS[role] || ROLE_PERMS.dentista;
 
   // ── Buttons that depend on role ──
-  var newCaseIds = ['btn-novo-caso', 'btn-novo-caso-casos'];
+  var newCaseIds = ['btn-novo-caso'];
   newCaseIds.forEach(function(id){
     var el = document.getElementById(id);
     if (el) el.style.display = p.seesNewCaseBtn ? 'flex' : 'none';
   });
+  var topMyLabNewCase = document.getElementById('btn-novo-caso-casos');
+  if (topMyLabNewCase) topMyLabNewCase.style.display = 'none';
+  var mylabFab = document.getElementById('mylab-fab-new-case');
+  if (mylabFab) mylabFab.style.display = (role !== 'laboratorio' && p.seesNewCaseBtn) ? 'flex' : 'none';
 
   // Quick-reply button "Novo Caso" in chat
   var qbtnCaso = document.getElementById('qbtn-caso');
@@ -9604,6 +9612,7 @@ function renderHomeCaseStats() {
   if (mylabActive) mylabActive.textContent = active;
   if (mylabReady) mylabReady.textContent = cases.filter(function(c){ return c.statusCls === 'st-ok' || c.status === 'Pronto'; }).length;
   if (mylabAttention) mylabAttention.textContent = pending;
+  if (typeof refreshConversationCaseCounts === 'function') refreshConversationCaseCounts();
 }
 
 function renderProfileLabs() {
@@ -9667,6 +9676,10 @@ function renderConnectedLabs() {
     if (homeLabs) {
       var card = document.createElement('div');
       card.className = 'lab-card';
+      card.setAttribute('data-lab-id', lab.id || '');
+      card.setAttribute('data-lab-name', lab.name || '');
+      card.setAttribute('data-lab-av', ini || '');
+      card.setAttribute('data-clinic-id', currentUserId || '');
       card.onclick = function(){
         CHAT_MESSAGES[ini] = CHAT_MESSAGES[ini] || [];
         openChat(ini, lab.name, color, lab.id, currentUserId);
@@ -9694,8 +9707,10 @@ function caseMatchesConversationLab(c, labRef) {
   var caseLabId = c._labDbId || c.labDbId || null;
   var caseLabName = c.lab || c.labName || '';
   var caseLabAv = c.labAv || '';
+  var norm = (typeof cdmNormalizeText === 'function') ? cdmNormalizeText : function(v){ return String(v || '').toLowerCase().trim(); };
   return (labId && caseLabId === labId)
     || (labName && caseLabName === labName)
+    || (labName && norm(caseLabName) === norm(labName))
     || (labAv && caseLabAv === labAv)
     || (typeof labRef === 'string' && (caseLabId === labRef || caseLabName === labRef || caseLabAv === labRef));
 }
@@ -9704,9 +9719,9 @@ function countActiveCasesForConversation(labRef, clinicId) {
   return Object.keys(CDM).filter(function(id){
     var c = CDM[id];
     if (!c) return false;
-    var caseClinicId = c._clinicId || c.clinicId || currentUserId || null;
+    var caseClinicId = c._clinicId || c.clinicId || null;
     var sameLab = labRef ? caseMatchesConversationLab(c, labRef) : true;
-    var sameClinic = clinicId ? (!caseClinicId || caseClinicId === clinicId) : true;
+    var sameClinic = (currentUserRole === 'laboratorio' && clinicId) ? (!caseClinicId || caseClinicId === clinicId) : true;
     var active = c.statusCls !== 'st-done' && c.status !== 'Entregue' && c.status !== 'Finalizado';
     return sameLab && sameClinic && active;
   }).length;
@@ -9718,6 +9733,20 @@ function updateConversationCaseCount(card, labRef, clinicId) {
   var count = countActiveCasesForConversation(labRef, clinicId);
   status.textContent = activeCaseLabel(count);
   status.classList.toggle('off', count === 0);
+  status.classList.toggle('lab-card-status', true);
+  var dot = card ? card.querySelector('.lab-card-dot') : null;
+  if (dot) dot.classList.toggle('off', count === 0);
+}
+
+function refreshConversationCaseCounts() {
+  document.querySelectorAll('#home-labs .lab-card[data-lab-id], #home-labs .lab-card[data-lab-name]').forEach(function(card) {
+    var labRef = {
+      id: card.getAttribute('data-lab-id') || '',
+      name: card.getAttribute('data-lab-name') || '',
+      av: card.getAttribute('data-lab-av') || ''
+    };
+    updateConversationCaseCount(card, labRef, card.getAttribute('data-clinic-id') || '');
+  });
 }
 
 async function loadLabClinics() {
@@ -10262,12 +10291,14 @@ async function syncSupabaseCasesIntoCDM() {
     mcInit();
     renderProfileStats();
     renderHomeCaseStats();
+    refreshConversationCaseCounts();
     renderAlertas();
     renderProfileLabs();
   } else {
     mcInit();
     renderProfileStats();
     renderHomeCaseStats();
+    refreshConversationCaseCounts();
     renderAlertas();
     pc2RenderAllActs();
     renderProfileLabs();

@@ -305,7 +305,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 #modal-lab-info{z-index:2147483647!important;position:fixed!important;transform:translateZ(0);-webkit-transform:translateZ(0)}
 #modal-lab-info.show{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important}
 #modal-case-detail.cdm-under-lab-info{visibility:hidden!important;pointer-events:none!important}
-#modal-cdm-shade-picker{z-index:1300!important}
+#modal-cdm-shade-picker,#modal-cdm-material-picker{z-index:2147483647!important}
 .modal-overlay.show{opacity:1;pointer-events:all}
 .modal-sheet{background:#FFFFFF;border-radius:24px 24px 0 0;border-top:1px solid var(--border);padding:18px 18px calc(env(safe-area-inset-bottom,18px)+18px);width:100%;transform:translateY(40px);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:90dvh;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,.10)}
 .modal-overlay.show .modal-sheet{transform:translateY(0)}
@@ -5551,6 +5551,45 @@ function closeShadeRectificationPicker() {
 
 var _cdmMaterialRectification = { issueId: '', material: '', subtype: '', conexao: '' };
 
+function cdmNormalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w.]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function cdmResolveMaterialForCase(c) {
+  var serviceNames = [
+    c && c.tipo,
+    c && c.service,
+    c && c.servico,
+    c && c.categoria,
+    c && c.workType
+  ].filter(Boolean);
+  for (var i = 0; i < serviceNames.length; i++) {
+    var direct = typeof matResolve === 'function' ? matResolve(serviceNames[i]) : null;
+    if (direct && direct.mats && direct.mats.length) return direct;
+  }
+  var svcText = cdmNormalizeText(serviceNames.join(' '));
+  if (!svcText || !Array.isArray(MAT_MAP)) return null;
+  for (var m = 0; m < MAT_MAP.length; m++) {
+    var entry = MAT_MAP[m];
+    var matched = (entry.match || []).some(function(kw) {
+      return svcText.indexOf(cdmNormalizeText(kw)) >= 0;
+    });
+    if (matched) {
+      var showConexao = Array.isArray(MAT_IMPLANT_SVC) && MAT_IMPLANT_SVC.some(function(k) {
+        return svcText.indexOf(cdmNormalizeText(k)) >= 0;
+      });
+      return { mats: entry.mats || [], showConexao: showConexao };
+    }
+  }
+  return null;
+}
+
 function openMaterialRectificationPicker(issueId) {
   var issue = findIssueById(issueId);
   if (!issue) { showToast('Aviso nao encontrado.'); return; }
@@ -5566,7 +5605,7 @@ function openMaterialRectificationPicker(issueId) {
   }
   var current = c.material || '';
   _cdmMaterialRectification = { issueId: issue.id, material: current, subtype: '', conexao: '' };
-  var resolved = typeof matResolve === 'function' ? matResolve(c.tipo || '') : null;
+  var resolved = cdmResolveMaterialForCase(c);
   var body = '';
   if (resolved && resolved.mats && resolved.mats.length) {
     body += '<div class="nc-mat-chips" id="cdm-rectify-material-chips" style="display:flex;margin-bottom:10px">';
@@ -5580,7 +5619,7 @@ function openMaterialRectificationPicker(issueId) {
     if (resolved.showConexao) {
       body += '<div id="cdm-rectify-material-conwrap" class="nc-conexao-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">'
         + ['Ti-base','Pilar personalizado','UCLA'].map(function(name) {
-          return '<button class="nc-conexao-chip" onclick="selectRectifyMaterialConexao(this,\'' + name.replace(/'/g,"\\'") + '\')">' + sbEscapeHtml(name) + '</button>';
+          return '<button class="nc-con-chip" onclick="selectRectifyMaterialConexao(this,\'' + name.replace(/'/g,"\\'") + '\')">' + sbEscapeHtml(name) + '</button>';
         }).join('')
         + '</div>';
     }
@@ -5605,7 +5644,7 @@ function selectRectifyMaterial(el, name) {
   if (el) el.classList.add('sel');
   var issue = findIssueById(_cdmMaterialRectification.issueId);
   var c = issue ? CDM[issue.caseId] : null;
-  var resolved = c && typeof matResolve === 'function' ? matResolve(c.tipo || '') : null;
+  var resolved = c ? cdmResolveMaterialForCase(c) : null;
   var matEntry = resolved && resolved.mats ? resolved.mats.find(function(m){ return m.name === name; }) : null;
   var subWrap = safeEl('cdm-rectify-material-subwrap');
   if (subWrap && matEntry && matEntry.sub && matEntry.sub.length) {
@@ -5613,7 +5652,7 @@ function selectRectifyMaterial(el, name) {
     subWrap.style.flexWrap = 'wrap';
     subWrap.style.gap = '7px';
     subWrap.innerHTML = matEntry.sub.map(function(sub) {
-      return '<button class="nc-subtype-chip" onclick="selectRectifyMaterialSubtype(this,\'' + sub.replace(/'/g,"\\'") + '\')">' + sbEscapeHtml(sub) + '</button>';
+      return '<button class="nc-sub-chip" onclick="selectRectifyMaterialSubtype(this,\'' + sub.replace(/'/g,"\\'") + '\')">' + sbEscapeHtml(sub) + '</button>';
     }).join('');
   } else if (subWrap) {
     subWrap.style.display = 'none';
@@ -5624,14 +5663,14 @@ function selectRectifyMaterial(el, name) {
 
 function selectRectifyMaterialSubtype(el, subtype) {
   _cdmMaterialRectification.subtype = subtype || '';
-  document.querySelectorAll('#cdm-rectify-material-subwrap .nc-subtype-chip').forEach(function(chip){ chip.classList.remove('sel'); });
+  document.querySelectorAll('#cdm-rectify-material-subwrap .nc-sub-chip').forEach(function(chip){ chip.classList.remove('sel'); });
   if (el) el.classList.add('sel');
   updateRectifyMaterialValue();
 }
 
 function selectRectifyMaterialConexao(el, conexao) {
   _cdmMaterialRectification.conexao = conexao || '';
-  document.querySelectorAll('#cdm-rectify-material-conwrap .nc-conexao-chip').forEach(function(chip){ chip.classList.remove('sel'); });
+  document.querySelectorAll('#cdm-rectify-material-conwrap .nc-con-chip').forEach(function(chip){ chip.classList.remove('sel'); });
   if (el) el.classList.add('sel');
   updateRectifyMaterialValue();
 }

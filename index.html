@@ -2938,7 +2938,38 @@ var MAT_MAP = [
     ]
   },
   // ── Outros (catchall) ──
-  { match: ['enceramento','modelo','chave de silicone','guia de preparo','rebasamento','reparo','acrescentar'],
+  { match: ['enceramento'],
+    mats: [
+      { name: 'Digital' },
+      { name: 'Cera diagnÃ³stica' },
+      { name: 'Resina impressa' },
+      { name: 'Outro' }
+    ]
+  },
+  { match: ['modelo'],
+    mats: [
+      { name: 'Resina para modelo' },
+      { name: 'Gesso' },
+      { name: 'ImpressÃ£o 3D' },
+      { name: 'Outro' }
+    ]
+  },
+  { match: ['chave de silicone','guia de preparo'],
+    mats: [
+      { name: 'Silicone' },
+      { name: 'Resina guia' },
+      { name: 'Outro' }
+    ]
+  },
+  { match: ['rebasamento','reparo','acrescentar'],
+    mats: [
+      { name: 'AcrÃ­lico convencional' },
+      { name: 'AcrÃ­lico injetado' },
+      { name: 'Resina' },
+      { name: 'Outro' }
+    ]
+  },
+  { match: ['outro serviÃ§o'],
     mats: [
       { name: 'Outro' }
     ]
@@ -2950,12 +2981,18 @@ var MAT_IMPLANT_SVC = ['coroa sobre implante','ponte sobre implantes','protocolo
 
 function matResolve(svcName){
   // Returns { mats: [...], showConexao: bool } for a given service name
-  var svcLow = (svcName||'').toLowerCase();
+  var svcLow = (typeof cdmNormalizeText === 'function') ? cdmNormalizeText(svcName) : (svcName||'').toLowerCase();
   for (var i = 0; i < MAT_MAP.length; i++){
     var entry = MAT_MAP[i];
-    var matched = entry.match.some(function(kw){ return svcLow.indexOf(kw) >= 0; });
+    var matched = entry.match.some(function(kw){
+      var key = (typeof cdmNormalizeText === 'function') ? cdmNormalizeText(kw) : String(kw || '').toLowerCase();
+      return svcLow.indexOf(key) >= 0;
+    });
     if (matched){
-      var showConexao = MAT_IMPLANT_SVC.some(function(k){ return svcLow.indexOf(k) >= 0; });
+      var showConexao = MAT_IMPLANT_SVC.some(function(k){
+        var key = (typeof cdmNormalizeText === 'function') ? cdmNormalizeText(k) : String(k || '').toLowerCase();
+        return svcLow.indexOf(key) >= 0;
+      });
       return { mats: entry.mats, showConexao: showConexao };
     }
   }

@@ -1114,296 +1114,70 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 
 
 /* ═══════════════════════════════════════════════════════════════════
-   DESKTOP LAYOUT — @media (min-width: 768px)
-   A sidebar substitui a bottom-nav.
-   O conteúdo expande para ocupar o ecrã inteiro.
-   Zero alterações à lógica JS ou ao HTML existente.
+   DESKTOP — body full width, dock centrado em baixo
 ═══════════════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
-
-  /* ── Root container ── */
-  body {
-    max-width: 100vw;
-    flex-direction: row;
-    height: 100dvh;
-    overflow: hidden;
-    background: #F4F6FA;
-  }
-
+  body { max-width: 100vw; height: 100dvh; overflow: hidden; background: #F4F6FA; }
   #onboarding {
-    max-width: 480px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 20px;
-    box-shadow: 0 24px 80px rgba(0,0,0,.18);
-    height: 90dvh;
-    top: 5dvh;
-    bottom: auto;
+    max-width: 460px; left: 50%; transform: translateX(-50%);
+    border-radius: 20px; box-shadow: 0 24px 80px rgba(0,0,0,.18);
+    height: 90dvh; top: 5dvh; bottom: auto;
   }
+  .screen { bottom: 0 !important; }
 
-  /* ── Sidebar (replaces bottom-nav) ── */
+  /* Dock flutuante centrado */
   .bottom-nav {
-    position: relative;
-    left: auto;
-    transform: none;
-    width: 220px;
-    min-width: 220px;
-    max-width: 220px;
-    flex-direction: column;
-    height: 100dvh;
-    border-top: none;
-    border-right: 1px solid var(--border);
-    padding-bottom: 0;
-    padding-top: 0;
-    box-shadow: none;
-    background: #FFFFFF;
-    z-index: 10;
-    flex-shrink: 0;
-    overflow: visible;
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    max-width: none !important;
+    border-top: none !important;
+    border-radius: 999px !important;
+    background: rgba(255,255,255,.92) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 0 4px 32px rgba(0,0,0,.12), 0 1px 0 rgba(255,255,255,.8) !important;
+    padding: 6px 12px !important;
+    gap: 4px !important;
+    border: 1px solid rgba(0,0,0,.06) !important;
+    z-index: 200 !important;
   }
-
-  /* ── Sidebar logo/brand header ── */
-  .bottom-nav::before {
-    content: '🦷 DentaLab';
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 28px 20px 20px;
-    font-family: 'Raleway', sans-serif;
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: .3px;
-    color: var(--text);
-    border-bottom: 1px solid var(--border);
-    width: 100%;
-  }
-
-  /* ── Sidebar tabs ── */
   .bn-tab {
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 13px 20px;
-    gap: 12px;
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: .1px;
-    border-radius: 10px;
-    margin: 2px 10px;
-    width: calc(100% - 20px);
-    transition: background .15s, color .15s;
+    flex-direction: column !important;
+    padding: 10px 18px !important;
+    gap: 4px !important;
+    font-size: 10px !important;
+    border-radius: 14px !important;
+    min-width: 64px !important;
+    transition: background .15s, color .15s !important;
   }
+  .bn-tab svg, .bn-tab div > svg { width: 22px !important; height: 22px !important; }
+  .bn-tab:hover { background: var(--surface2) !important; }
+  .bn-tab.active { background: var(--accent-light) !important; color: var(--accent) !important; }
+  .nb { top: 4px !important; right: 10px !important; font-size: 9px !important; min-width: 15px !important; height: 15px !important; }
 
-  .bn-tab:hover {
-    background: var(--surface2);
-  }
+  .scroll-wrap { background: #F4F6FA; }
+  .chat-item:hover, .pc2-card:hover, .al-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 
-  .bn-tab.active {
-    background: var(--accent-light);
-    color: var(--accent);
-  }
-
-  .bn-tab svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-
-  /* Active indicator — left border instead of underline */
-  .bn-tab.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 60%;
-    background: var(--accent);
-    border-radius: 0 3px 3px 0;
-  }
-
-  /* Badge repositioned for sidebar */
-  .nb {
-    position: static !important;
-    margin-left: auto;
-    font-size: 10px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-  }
-
-  /* ── Main content area ── */
-  #app-main {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  /* ── Screens fill the main area (not the full viewport) ── */
-  .screen {
-    position: absolute;
-    inset: 0;
-    bottom: 0 !important; /* no bottom-nav offset needed */
-  }
-
-  /* ── Header adjustments ── */
-  .header {
-    padding-top: 18px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  /* ── Home header wave section ── */
-  .home3-header {
-    border-radius: 0;
-  }
-
-  .home3-content {
-    padding-top: 40px;
-  }
-
-  /* ── Scroll wrap ── */
-  .scroll-wrap {
-    background: #F4F6FA;
-  }
-
-  /* ── Cards — slightly wider on desktop ── */
-  .chat-item, .pc2-card, .al-card, .lab-card {
-    transition: box-shadow .15s, transform .15s;
-  }
-
-  .chat-item:hover, .pc2-card:hover, .al-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-  }
-
-  /* ── Modals — centered on desktop ── */
-  .modal-overlay {
-    align-items: center;
-    justify-content: center;
-  }
-
-  .modal-sheet {
-    border-radius: 20px;
-    max-width: 480px;
-    width: 480px;
-    max-height: 85dvh;
-    transform: translateY(20px) scale(.97);
-  }
-
-  .modal-overlay.show .modal-sheet {
-    transform: translateY(0) scale(1);
-  }
-
-  .cdm-sheet {
-    border-radius: 20px;
-    max-width: 520px;
-    width: 520px;
-    max-height: 88dvh;
-  }
-
-  /* ── Case detail modal centered ── */
-  #modal-case-detail {
-    align-items: center;
-    justify-content: center;
-  }
-
-  #modal-case-detail .cdm-sheet {
-    border-radius: 20px;
-  }
-
-  /* ── MyCases modal ── */
-  #modal-mc-detail, #modal-mc-new, #modal-mc-delete {
-    align-items: center;
-    justify-content: center;
-  }
-
+  .modal-overlay { align-items: center; justify-content: center; }
+  .modal-sheet { border-radius: 20px; max-width: 500px; width: 500px; max-height: 85dvh; transform: translateY(16px) scale(.97); }
+  .modal-overlay.show .modal-sheet { transform: translateY(0) scale(1); }
+  .cdm-sheet { border-radius: 20px; max-width: 540px; width: 540px; max-height: 88dvh; }
+  #modal-case-detail, #modal-mc-detail, #modal-mc-new,
+  #modal-mc-delete, #modal-status { align-items: center; justify-content: center; }
   #modal-mc-detail .mc-detail-sheet,
   #modal-mc-new .mc-sheet,
-  #modal-mc-delete .mc-delete-box {
-    border-radius: 20px;
-    max-width: 520px;
-    width: 520px;
-  }
+  #modal-mc-delete .mc-delete-box { border-radius: 20px; max-width: 540px; width: 540px; }
+  #modal-status .modal-sheet { max-width: 440px; width: 440px; }
 
-  /* ── Status modal ── */
-  #modal-status {
-    align-items: center;
-    justify-content: center;
-  }
-
-  #modal-status .modal-sheet {
-    max-width: 420px;
-    width: 420px;
-  }
-
-  /* ── STL Viewer ── */
-  #u3d-overlay {
-    left: 220px; /* offset for sidebar */
-  }
-
-  /* ── Chat screen ── */
-  #scr-chat {
-    bottom: 0 !important;
-  }
-
-  /* ── Onboarding login box ── */
-  .sbl-wrap {
-    min-height: auto;
-    padding: 40px 32px 32px;
-  }
-
-  /* ── Perfil screen — limit width ── */
-  #scr-perfil .scroll-wrap {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  
-  /* ── FAB — reposition above sidebar on desktop ── */
-  .mc-fab, [class*="-fab"] {
-    bottom: 24px !important;
-    right: 24px;
-  }
-
-  /* ── Screen bottom offset — no bottom-nav on desktop ── */
-  .screen {
-    bottom: 0 !important;
-  }
-
-  /* ── Toast — bottom left on desktop ── */
-  #toast {
-    left: 240px;
-    bottom: 24px;
-    right: auto;
-    max-width: 340px;
-  }
-}
-
-/* ── Extra wide screens (> 1200px) — show content panel ── */
-@media (min-width: 1200px) {
-  .bottom-nav {
-    width: 260px;
-    min-width: 260px;
-    max-width: 260px;
-  }
-
-  .modal-sheet, .cdm-sheet {
-    max-width: 560px;
-    width: 560px;
-  }
-
-  #toast {
-    left: 280px;
-  }
-
-  #u3d-overlay {
-    left: 260px;
-  }
+  .mc-fab, [class*="-fab"] { bottom: 90px !important; right: 32px; }
+  #toast { bottom: 90px; }
+  #scr-chat { bottom: 0 !important; }
+  .sbl-wrap { min-height: auto; padding: 40px 32px 32px; }
+  .home3-content { padding-top: 40px; }
+  .header { border-bottom: 1px solid var(--border); }
 }
 
 </style>
@@ -1619,7 +1393,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
         <div class="lab-card-av" style="background:var(--accent-soft)">LP</div>
         <div class="lab-card-info">
           <div class="lab-card-name">Lab. Prótese Figueiredo</div>
-          <div class="lab-card-prev">⚠ï¸ Scanner do caso #041 com problema</div>
+          <div class="lab-card-prev">⚠ Scanner do caso #041 com problema</div>
           <div class="lab-card-foot">
             <span class="lab-card-dot"></span>
             <span class="lab-card-cases">Online · <strong>4 casos ativos</strong></span>
@@ -1719,7 +1493,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
   <div class="pc2-filter-bar" id="casos-filter-bar" style="display:none">
     <button class="pc2-filter-chip active" id="pcf-all"    onclick="pc2Filter('all')">Todos</button>
     <button class="pc2-filter-chip" id="pcf-urg"           onclick="pc2Filter('urg')">⚡ Urgentes</button>
-    <button class="pc2-filter-chip" id="pcf-wait"          onclick="pc2Filter('wait')">⚠ï¸ Aguardando</button>
+    <button class="pc2-filter-chip" id="pcf-wait"          onclick="pc2Filter('wait')">⚠ Aguardando</button>
     <button class="pc2-filter-chip" id="pcf-prod"          onclick="pc2Filter('prod')">⏳ Em Produção</button>
     <button class="pc2-filter-chip" id="pcf-pronto"        onclick="pc2Filter('pronto')">✅ Prontos</button>
     <button class="pc2-filter-chip" id="pcf-done"          onclick="pc2Filter('done')">✓ Entregues</button>
@@ -1752,9 +1526,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
     <div id="lab-casos-wrap" style="display:none"></div>
 
     <!-- Static dentista/assistente sections (hidden in lab mode) -->
-    <!-- ⚠ï¸ AGUARDANDO CLÍNICA -->
+    <!-- ⚠ AGUARDANDO CLÍNICA -->
     <div id="casos-static-sections">
-    <div class="pc2-card alerta" onclick="openCaseDetail('041')"><div class="pc2-top"><div class="pc2-av" style="background:#EF444422;color:#EF4444">CF</div><div class="pc2-info"><div class="pc2-name">Carlos Ferreira</div><div class="pc2-ref">PAC-0241 · #2024-041</div><div class="pc2-tags"><span class="pc2-status" style="background:var(--red-bg);color:var(--red)">⚠ï¸ Aguardando Clínica</span></div></div></div><div class="pc2-alert-banner"><svg width="14px" height="14px" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg><div><strong>Scanner corrompido</strong> — reenvio necessário para continuar a produção.</div></div><div class="pc2-footer"><span class="pc2-work">Coroa PFM · dente 46 · Shade A2 · Lab. Figueiredo</span><span class="pc2-prazo" style="color:#EF4444">Qui 20/06</span></div><div class="pc2-acts" data-cid="041" data-av="LP" data-lab="Lab. Prótese Figueiredo" data-labcolor="#3B82F6"></div></div>
+    <div class="pc2-card alerta" onclick="openCaseDetail('041')"><div class="pc2-top"><div class="pc2-av" style="background:#EF444422;color:#EF4444">CF</div><div class="pc2-info"><div class="pc2-name">Carlos Ferreira</div><div class="pc2-ref">PAC-0241 · #2024-041</div><div class="pc2-tags"><span class="pc2-status" style="background:var(--red-bg);color:var(--red)">⚠ Aguardando Clínica</span></div></div></div><div class="pc2-alert-banner"><svg width="14px" height="14px" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg><div><strong>Scanner corrompido</strong> — reenvio necessário para continuar a produção.</div></div><div class="pc2-footer"><span class="pc2-work">Coroa PFM · dente 46 · Shade A2 · Lab. Figueiredo</span><span class="pc2-prazo" style="color:#EF4444">Qui 20/06</span></div><div class="pc2-acts" data-cid="041" data-av="LP" data-lab="Lab. Prótese Figueiredo" data-labcolor="#3B82F6"></div></div>
 
     <!-- ⏳ EM PRODU??O -->
     <div class="casos-sec">⏳ Em produção</div>
@@ -2707,7 +2481,7 @@ window.addEventListener('unhandledrejection', function(e){
 // .classList/.style/etc access throw "Cannot read properties of null".
 function safeEl(id){
   var el = document.getElementById(id);
-  if (!el) console.warn('Elemento n\u00e3o encontrado:', id);
+  if (!el) console.log('Elemento n\u00e3o encontrado:', id);
   return el;
 }
 
@@ -2751,7 +2525,7 @@ async function dlSource(source, name) {
           revoke = true;
         }
       } catch (err) {
-        console.warn('[Download] fallback para link direto:', err.message);
+        console.log('[Download] fallback para link direto:', err.message);
       }
     }
   }
@@ -4049,7 +3823,7 @@ function sbSaveLocalSession(profile) {
       createdAt: new Date().toISOString()
     }, profile || {})));
   } catch (err) {
-    console.warn('[Auth] Nao foi possivel guardar sessao local:', err.message);
+    console.log('[Auth] Nao foi possivel guardar sessao local:', err.message);
   }
 }
 
@@ -4058,7 +3832,7 @@ function sbGetLocalSession() {
     var raw = localStorage.getItem(LOCAL_AUTH_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch (err) {
-    console.warn('[Auth] Sessao local invalida:', err.message);
+    console.log('[Auth] Sessao local invalida:', err.message);
     localStorage.removeItem(LOCAL_AUTH_KEY);
     return null;
   }
@@ -4132,19 +3906,19 @@ async function sbLogin(email, password) {
     };
     sbApplyLocalProfile(profile);
     sbSaveLocalSession(profile);
-    console.info('[Auth] Login local OK:', email);
+    console.log('[Auth] Login local OK:', email);
     return { success: true, user: profile, local: true };
   }
   try {
     var res = await _supabaseClient.auth.signInWithPassword({ email, password });
     if (res.error) throw res.error;
     currentUserId = res.data.user.id;
-    console.info('[Auth] Login OK:', email);
+    console.log('[Auth] Login OK:', email);
     await sbLoadOrCreateProfile(res.data.user);
     return { success: true, user: res.data.user };
   } catch (err) {
     var msg = sbFriendlyAuthError(err);
-    console.warn('[Auth] Login erro:', err.message);
+    console.log('[Auth] Login erro:', err.message);
     showToast('Erro ao entrar: ' + msg);
     return { success: false, error: msg };
   }
@@ -4184,7 +3958,7 @@ async function sbSignup(email, password) {
     };
   } catch (err) {
     var msg = sbFriendlyAuthError(err);
-    console.warn('[Auth] Signup erro:', err.message);
+    console.log('[Auth] Signup erro:', err.message);
     showToast('Erro ao criar conta: ' + msg);
     return { success: false, error: msg };
   }
@@ -4197,10 +3971,10 @@ async function sbLogout() {
     if (isSupabaseReady()) {
       var res = await _supabaseClient.auth.signOut();
       if (res && res.error) throw res.error;
-      console.info('[Auth] Logout Supabase OK');
+      console.log('[Auth] Logout Supabase OK');
     }
   } catch (err) {
-    console.warn('[Auth] Logout Supabase erro:', err.message);
+    console.log('[Auth] Logout Supabase erro:', err.message);
   }
   sbResetAccountRuntimeState();
   sbClearLocalSession();
@@ -4228,36 +4002,36 @@ async function sbLogout() {
 async function sbRestoreSession() {
   if (!isSupabaseReady()) {
     if (REQUIRE_REAL_AUTH) {
-      console.warn('[Auth] Supabase indisponivel na versao publica.');
+      console.log('[Auth] Supabase indisponivel na versao publica.');
       sbInitLoginScreen();
       return false;
     }
     var local = sbGetLocalSession();
     if (local) {
-      console.info('[Auth] Sessao local restaurada:', local.email || local.name);
+      console.log('[Auth] Sessao local restaurada:', local.email || local.name);
       sbApplyLocalProfile(local);
       _sbEnterApp();
       return true;
     }
-    console.info('[Auth] Sem Supabase e sem sessao local.');
+    console.log('[Auth] Sem Supabase e sem sessao local.');
     sbInitLoginScreen();
     return false;
   }
   try {
     var res = await _supabaseClient.auth.getSession();
     if (!res.data.session) {
-      console.info('[Auth] Sem sessao activa.');
+      console.log('[Auth] Sem sessao activa.');
       sbInitLoginScreen();
       return false;
     }
     var user = res.data.session.user;
     currentUserId = user.id;
-    console.info('[Auth] Sessao restaurada:', user.email);
+    console.log('[Auth] Sessao restaurada:', user.email);
     await sbLoadOrCreateProfile(user);
     _sbEnterApp();
     return true;
   } catch (err) {
-    console.warn('[Auth] sbRestoreSession erro:', err.message);
+    console.log('[Auth] sbRestoreSession erro:', err.message);
     sbInitLoginScreen();
     return false;
   }
@@ -4286,7 +4060,7 @@ async function sbLoadOrCreateProfile(user) {
         clinic: res.data.clinic_name || res.data.lab_name || userClinica,
         tel: res.data.phone || res.data.tel || '+55 11 99999-9999'
       }));
-      console.info('[Auth] Perfil carregado:', res.data.role, res.data.name);
+      console.log('[Auth] Perfil carregado:', res.data.role, res.data.name);
       return res.data;
     }
 
@@ -4307,10 +4081,10 @@ async function sbLoadOrCreateProfile(user) {
     sbApplyLocalProfile(Object.assign({}, ins.data, {
       clinic: ins.data.clinic_name || ins.data.lab_name || userClinica
     }));
-    console.info('[Auth] Perfil criado:', ins.data);
+    console.log('[Auth] Perfil criado:', ins.data);
     return ins.data;
   } catch (err) {
-    console.warn('[Auth] sbLoadOrCreateProfile erro:', err.message);
+    console.log('[Auth] sbLoadOrCreateProfile erro:', err.message);
     return null;
   }
 }
@@ -4325,9 +4099,9 @@ async function sbUpdateProfile(fields) {
       .from('profiles')
       .upsert(Object.assign({ id: currentUserId }, fields));
     if (res.error) throw res.error;
-    console.info('[Auth] Perfil actualizado.');
+    console.log('[Auth] Perfil actualizado.');
   } catch (err) {
-    console.warn('[Auth] sbUpdateProfile erro:', err.message);
+    console.log('[Auth] sbUpdateProfile erro:', err.message);
   }
 }
 
@@ -4375,7 +4149,7 @@ function _sbEnterApp() {
 function sbInitAuthListener() {
   if (!isSupabaseReady()) return;
   _supabaseClient.auth.onAuthStateChange(function(event, session) {
-    console.info('[Auth] Estado:', event);
+    console.log('[Auth] Estado:', event);
     if (event === 'SIGNED_IN' && session) {
       currentUserId = session.user.id;
     }
@@ -4383,7 +4157,7 @@ function sbInitAuthListener() {
       currentUserId = null;
     }
     if (event === 'TOKEN_REFRESHED') {
-      console.info('[Auth] Token renovado.');
+      console.log('[Auth] Token renovado.');
     }
   });
 }
@@ -4679,11 +4453,11 @@ function openModal(id){
     var detail = document.getElementById('modal-case-detail');
     if (detail) detail.classList.add('cdm-under-lab-info');
   }
-  if (el) { el.classList.add('show'); } else { console.warn('Elemento n\u00e3o encontrado:', id); }
+  if (el) { el.classList.add('show'); } else { console.log('Elemento n\u00e3o encontrado:', id); }
 }
 function closeModal(id){
   var el = document.getElementById(id);
-  if (el) { el.classList.remove('show'); } else { console.warn('Elemento n\u00e3o encontrado:', id); }
+  if (el) { el.classList.remove('show'); } else { console.log('Elemento n\u00e3o encontrado:', id); }
   if (id === 'modal-lab-info') {
     var detail = document.getElementById('modal-case-detail');
     if (detail) detail.classList.remove('cdm-under-lab-info');
@@ -4847,7 +4621,7 @@ async function sbLoadChatMessages() {
     _renderChatMessages(_currentChatLabAv);
     if (newRemoteMessages.length) sbNotify('chat', 'Nova mensagem', newRemoteMessages.length === 1 ? 'Você recebeu uma nova mensagem.' : 'Você recebeu ' + newRemoteMessages.length + ' novas mensagens.');
   } catch (err) {
-    console.warn('[Supabase] sbLoadChatMessages erro:', err.message);
+    console.log('[Supabase] sbLoadChatMessages erro:', err.message);
   }
 }
 
@@ -4879,7 +4653,7 @@ async function sbSendChatMessage(textValue, file) {
     await sbLoadChatMessages();
     return true;
   } catch (err) {
-    console.warn('[Supabase] sbSendChatMessage erro:', err.message);
+    console.log('[Supabase] sbSendChatMessage erro:', err.message);
     showToast('Não foi possível enviar a mensagem: ' + err.message);
     return false;
   }
@@ -4899,7 +4673,7 @@ async function sbSendCaseChatEvent(caseId, labId, clinicId) {
     if (res.error) throw res.error;
     return true;
   } catch (err) {
-    console.warn('[Supabase] sbSendCaseChatEvent erro:', err.message);
+    console.log('[Supabase] sbSendCaseChatEvent erro:', err.message);
     return false;
   }
 }
@@ -5114,7 +4888,7 @@ function sbInitLoginScreen() {
   var ob0 = document.getElementById('ob0');
   var ob1 = document.getElementById('ob1');
   var ob2 = document.getElementById('ob2');
-  if (!ob) { console.warn('[Auth] onboarding element missing'); return; }
+  if (!ob) { console.log('[Auth] onboarding element missing'); return; }
   ob.style.display  = 'flex';
   ob.style.opacity  = '1';
   if (ob2) ob2.style.display = 'none';
@@ -6357,14 +6131,14 @@ function _labCardHTML(caseId) {
 // Lab sees issues where requestedTo='clinica' (to monitor blocked cases).
 // ─────────────────────────────────────────────────────────────────────────
 var ISSUE_TYPES = {
-  scanner_corrompido:      { icon:'🗂ï¸', label:'Scanner corrompido',         urgency:'urgente',  requestedTo:'clinica' },
+  scanner_corrompido:      { icon:'🗂', label:'Scanner corrompido',         urgency:'urgente',  requestedTo:'clinica' },
   scanner_incompleto:      { icon:'📡', label:'Scanner incompleto',          urgency:'urgente',  requestedTo:'clinica' },
   falta_cor:               { icon:'🎨', label:'Cor a retificar',             urgency:'urgente',  requestedTo:'clinica' },
   falta_fotos:             { icon:'📸', label:'Fotos a acrescentar',         urgency:'pendente', requestedTo:'clinica' },
   falta_dentes:            { icon:'🦷', label:'Dentes envolvidos não indicados', urgency:'pendente', requestedTo:'clinica' },
   falta_material:          { icon:'🧪', label:'Material a retificar',        urgency:'pendente', requestedTo:'clinica' },
   retificar_prazo:         { icon:'⏰', label:'Prazo a retificar',           urgency:'pendente', requestedTo:'clinica' },
-  falta_aprovacao:         { icon:'✍ï¸', label:'Aprovação pendente',          urgency:'pendente', requestedTo:'clinica' },
+  falta_aprovacao:         { icon:'✍', label:'Aprovação pendente',          urgency:'pendente', requestedTo:'clinica' },
   falta_observacao:        { icon:'📋', label:'Informação adicional solicitada', urgency:'pendente', requestedTo:'clinica' },
   confirmar_recebimento:   { icon:'📦', label:'Confirmar recebimento',       urgency:'info',     requestedTo:'clinica' },
   prazo_proximo:           { icon:'⏰', label:'Prazo em 24h',                urgency:'pendente', requestedTo:'clinica' }
@@ -6585,14 +6359,14 @@ function renderAlertas() {
   var html = '';
   if (urgente.length)  html += '<div class="al-section">🔴 Ação urgente</div>'  + urgente.map(function(p){ return _alCardHTML(p, isLab); }).join('');
   if (pendente.length) html += '<div class="al-section">⚡ Pendentes</div>'     + pendente.map(function(p){ return _alCardHTML(p, isLab); }).join('');
-  if (info.length)     html += '<div class="al-section">ℹï¸ Informativos</div>'  + info.map(function(p){ return _alCardHTML(p, isLab); }).join('');
+  if (info.length)     html += '<div class="al-section">ℹ Informativos</div>'  + info.map(function(p){ return _alCardHTML(p, isLab); }).join('');
   html += '<div style="height:10px"></div>';
   list.innerHTML = html;
 }
 
 // Build a single alert card HTML
 function _alCardHTML(p, isLab) {
-  var it  = ISSUE_TYPES[p.type] || { icon:'⚠ï¸', label: p.type, urgency:'pendente' };
+  var it  = ISSUE_TYPES[p.type] || { icon:'⚠', label: p.type, urgency:'pendente' };
   var c   = CDM[p.caseId];
   var caseRef = c ? (c.paciente + ' \u00b7 ' + c.num) : ('#' + p.caseId);
   var labRef  = c ? c.lab : 'Laborat\u00f3rio';
@@ -6789,7 +6563,7 @@ function replaceCaseScannerFromIssue(issueId, slotTarget) {
     try {
       replaced = await replaceCaseFilesInSupabase(c, fileData, ['stl','ply','obj','scanner'], jaws);
     } catch (err) {
-      console.warn('[Scanner] Falha na retificacao:', err);
+      console.log('[Scanner] Falha na retificacao:', err);
       replaced = false;
     }
     if (!replaced) {
@@ -6894,7 +6668,7 @@ async function replaceCaseFilesInSupabase(c, fileData, fileTypes, jaws) {
     if (attached && attached.success === false) throw new Error(attached.error || 'falha ao anexar arquivos');
     return true;
   } catch (err) {
-    console.warn('[Supabase] replaceCaseFiles erro:', err.message);
+    console.log('[Supabase] replaceCaseFiles erro:', err.message);
     persistCasePayloadIssue(Object.keys(CDM).find(function(id){ return CDM[id] === c; }) || '');
     return false;
   }
@@ -6991,7 +6765,7 @@ async function persistResolvedIssue(issue) {
       await q;
     }
   } catch (err) {
-    console.warn('[Supabase] resolve pending local apenas:', err.message);
+    console.log('[Supabase] resolve pending local apenas:', err.message);
   }
 }
 
@@ -7098,7 +6872,7 @@ async function persistPendingIssue(caseId, issue) {
       await persistCasePayloadIssue(caseId);
     }
   } catch (err) {
-    console.warn('[Supabase] pending issue local apenas:', err.message);
+    console.log('[Supabase] pending issue local apenas:', err.message);
   }
 }
 
@@ -7119,7 +6893,7 @@ async function persistCasePayloadIssue(caseId) {
       .eq('id', remoteCaseId);
     if (res.error) throw res.error;
   } catch (err) {
-    console.warn('[Supabase] case_payload pending local apenas:', err.message);
+    console.log('[Supabase] case_payload pending local apenas:', err.message);
   }
 }
 
@@ -8186,7 +7960,7 @@ function mcToggleFavorite(id) {
 function mcOpenDetail(id) {
   try {
   var rec = MC_DATA[id];
-  if (!rec) { console.warn('MyCase nao encontrado:', id); return; }
+  if (!rec) { console.log('MyCase nao encontrado:', id); return; }
   _mcActiveId = id;
 
   function set(elId, val) { var el = safeEl(elId); if (el) el.textContent = val || ''; }
@@ -9729,13 +9503,13 @@ async function sbPromptSupabaseConfig() {
 // Pode também ser chamada manualmente após configurar as constantes.
 function initSupabase() {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.info('[Supabase] URL ou ANON_KEY não configurados — modo local activo.');
+    console.log('[Supabase] URL ou ANON_KEY não configurados — modo local activo.');
     return Promise.resolve(false);
   }
   if (_supabaseInitPromise) return _supabaseInitPromise;
   if (typeof window.supabase !== 'undefined') {
     _supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.info('[Supabase] Cliente inicializado com sucesso.');
+    console.log('[Supabase] Cliente inicializado com sucesso.');
     return Promise.resolve(true);
   }
   // SDK ainda não carregado — injectar script e tentar de novo
@@ -9744,11 +9518,11 @@ function initSupabase() {
     script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
     script.onload = function() {
       _supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.info('[Supabase] SDK carregado e cliente inicializado.');
+      console.log('[Supabase] SDK carregado e cliente inicializado.');
       resolve(true);
     };
     script.onerror = function() {
-      console.warn('[Supabase] Falha ao carregar SDK — modo local activo.');
+      console.log('[Supabase] Falha ao carregar SDK — modo local activo.');
       _supabaseInitPromise = null;
       resolve(false);
     };
@@ -9768,7 +9542,7 @@ function isSupabaseReady() {
 // Fallback: retorna os dados locais (userName, userClinica, currentUserRole).
 async function loadCurrentProfile() {
   if (!isSupabaseReady()) {
-    console.info('[Supabase] loadCurrentProfile — usando dados locais.');
+    console.log('[Supabase] loadCurrentProfile — usando dados locais.');
     return {
       name:      userName      || '',
       clinic:    userClinica   || '',
@@ -9787,7 +9561,7 @@ async function loadCurrentProfile() {
     if (res.error) throw res.error;
     return Object.assign({}, res.data, { source: 'supabase' });
   } catch (err) {
-    console.warn('[Supabase] loadCurrentProfile erro:', err.message);
+    console.log('[Supabase] loadCurrentProfile erro:', err.message);
     return null;
   }
 }
@@ -9826,7 +9600,7 @@ async function ensureLabForCurrentUser() {
     showToast('Laboratório criado. Código: ' + ins.data.invite_code);
     return ins.data;
   } catch (err) {
-    console.warn('[Supabase] ensureLabForCurrentUser erro:', err.message);
+    console.log('[Supabase] ensureLabForCurrentUser erro:', err.message);
     showToast('Não foi possível criar/carregar laboratório: ' + err.message);
     return null;
   }
@@ -9845,7 +9619,7 @@ async function loadConnectedLabs() {
     renderConnectedLabs();
     return CONNECTED_LABS;
   } catch (err) {
-    console.warn('[Supabase] loadConnectedLabs erro:', err.message);
+    console.log('[Supabase] loadConnectedLabs erro:', err.message);
     return [];
   }
 }
@@ -10096,7 +9870,7 @@ async function loadLabClinics() {
     renderLabClinics(clinics, lab);
     return clinics;
   } catch (err) {
-    console.warn('[Supabase] loadLabClinics erro:', err.message);
+    console.log('[Supabase] loadLabClinics erro:', err.message);
     return [];
   }
 }
@@ -10184,7 +9958,7 @@ async function connectLabByInvite() {
     closeModal('modal-addlab');
     showToast(lab.data.name + ' conectado! ✓');
   } catch (err) {
-    console.warn('[Supabase] connectLabByInvite erro:', err.message);
+    console.log('[Supabase] connectLabByInvite erro:', err.message);
     showToast('Erro ao conectar laboratório: ' + err.message);
   }
 }
@@ -10304,7 +10078,7 @@ async function sbUploadCaseFiles(caseId, fileData) {
 
 async function saveCaseToSupabase(caseData, fileData) {
   if (!isSupabaseReady()) {
-    console.info('[Supabase] saveCaseToSupabase — guardado apenas localmente.', caseData);
+    console.log('[Supabase] saveCaseToSupabase — guardado apenas localmente.', caseData);
     return { success: true, source: 'local', data: caseData };
   }
   try {
@@ -10352,10 +10126,10 @@ async function saveCaseToSupabase(caseData, fileData) {
     var res = await _supabaseClient.from('cases').insert(payload);
     if (res.error) throw res.error;
     var files = await sbUploadCaseFiles(generatedCaseId, fileData);
-    console.info('[Supabase] Caso guardado:', generatedCaseId);
+    console.log('[Supabase] Caso guardado:', generatedCaseId);
     return { success: true, source: 'supabase', data: Object.assign({ id: generatedCaseId }, payload), files: files };
   } catch (err) {
-    console.warn('[Supabase] saveCaseToSupabase erro:', err.message);
+    console.log('[Supabase] saveCaseToSupabase erro:', err.message);
     return { success: false, error: err.message };
   }
 }
@@ -10364,7 +10138,7 @@ async function sbAttachFilesToCase(caseObj, fileData) {
   if (!isSupabaseReady() || !caseObj) return { success:true, source:'local' };
   var caseId = caseObj._supabaseId || caseObj.id || null;
   if (!caseId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(caseId))) {
-    console.info('[Supabase] sbAttachFilesToCase ignorado: caso ainda sem UUID Supabase.');
+    console.log('[Supabase] sbAttachFilesToCase ignorado: caso ainda sem UUID Supabase.');
     return { success:false, source:'local', error:'missing_supabase_id' };
   }
   try {
@@ -10381,7 +10155,7 @@ async function sbAttachFilesToCase(caseObj, fileData) {
     if (row.error) throw row.error;
     return { success:true, source:'supabase', files:files };
   } catch (err) {
-    console.warn('[Supabase] sbAttachFilesToCase erro:', err.message);
+    console.log('[Supabase] sbAttachFilesToCase erro:', err.message);
     return { success:false, error:err.message };
   }
 }
@@ -10463,7 +10237,7 @@ async function sbUpdateManualMyCase(rec) {
     last_synced_at: new Date().toISOString()
   };
   var res = await _supabaseClient.from('cases').update(payload).eq('id', rec._supabaseId);
-  if (res.error) console.warn('[Supabase] sbUpdateManualMyCase erro:', res.error.message);
+  if (res.error) console.log('[Supabase] sbUpdateManualMyCase erro:', res.error.message);
 }
 
 // ── loadCasesFromSupabase ───────────────────────────────────────────
@@ -10471,7 +10245,7 @@ async function sbUpdateManualMyCase(rec) {
 // Fallback: retorna o CDM local.
 async function loadCasesFromSupabase() {
   if (!isSupabaseReady()) {
-    console.info('[Supabase] loadCasesFromSupabase — usando CDM local.');
+    console.log('[Supabase] loadCasesFromSupabase — usando CDM local.');
     return { source: 'local', data: CDM };
   }
   try {
@@ -10485,10 +10259,10 @@ async function loadCasesFromSupabase() {
     }
     var res = await query;
     if (res.error) throw res.error;
-    console.info('[Supabase] ' + res.data.length + ' casos carregados.');
+    console.log('[Supabase] ' + res.data.length + ' casos carregados.');
     return { source: 'supabase', data: res.data };
   } catch (err) {
-    console.warn('[Supabase] loadCasesFromSupabase erro:', err.message);
+    console.log('[Supabase] loadCasesFromSupabase erro:', err.message);
     return { source: 'local', data: CDM };
   }
 }
@@ -10666,7 +10440,7 @@ async function refreshCaseFromSupabase(localId) {
     renderAlertas();
     renderHomeCaseStats();
   } catch (err) {
-    console.warn('[Supabase] refreshCaseFromSupabase erro:', err.message);
+    console.log('[Supabase] refreshCaseFromSupabase erro:', err.message);
   }
 }
 
@@ -10687,9 +10461,9 @@ async function updateCaseStatusInSupabase(caseId, status, notes) {
     }
     var res = await _supabaseClient.from('cases').update(payload).eq('id', supabaseId);
     if (res.error) throw res.error;
-    console.info('[Supabase] Status actualizado:', supabaseId, status);
+    console.log('[Supabase] Status actualizado:', supabaseId, status);
   } catch (err) {
-    console.warn('[Supabase] updateCaseStatus erro:', err.message);
+    console.log('[Supabase] updateCaseStatus erro:', err.message);
   }
 }
 
@@ -10717,7 +10491,7 @@ async function updateCaseMetadataInSupabase(caseId, caseObj) {
     if (res.error) throw res.error;
     return true;
   } catch (err) {
-    console.warn('[Supabase] updateCaseMetadata erro:', err.message);
+    console.log('[Supabase] updateCaseMetadata erro:', err.message);
     return false;
   }
 }
@@ -10740,10 +10514,10 @@ window.addEventListener('load', async function() {
   await sbEnforceSessionVersion();
   sbInitAuthListener();
   if (isSupabaseReady()) {
-    console.info('[Auth] Supabase pronto — a restaurar sessão…');
+    console.log('[Auth] Supabase pronto — a restaurar sessão…');
     sbRestoreSession();
   } else {
-    console.info('[Auth] Modo local — a mostrar login local…');
+    console.log('[Auth] Modo local — a mostrar login local…');
     sbInitLoginScreen();
   }
 });
@@ -10942,10 +10716,8 @@ create table if not exists pending_issues (
   <div id="cdm-lightbox-caption"></div>
 </div>
 
-  </div><!-- /app-main -->
 </body>
 </html>
 
 
-  <div id="app-main">
 

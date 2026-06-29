@@ -295,7 +295,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .ps-item{background:var(--surface);padding:14px 10px;text-align:center}
 .ps-val{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.5px}
 .ps-label{font-size:10px;color:var(--hint);margin-top:3px;font-weight:600}
-.logout-btn{margin:4px 14px 24px;width:calc(100% - 28px);padding:14px;border-radius:var(--radius);background:var(--surface);border:1.5px solid rgba(239,68,68,.25);color:var(--red);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;box-shadow:var(--shadow-xs)}
+.logout-btn{margin:4px 14px 24px;width:calc(100% - 28px);padding:14px;border-radius:var(--radius);background:var(--surface);border:1.5px solid rgba(239,68,68,.25);color:var(--red);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;box-shadow:var(--shadow-xs);position:relative;z-index:1}
 .logout-btn:active{background:var(--red-bg)}
 .toggle{width:46px;height:27px;border-radius:14px;background:var(--accent);position:relative;cursor:pointer;border:none;flex-shrink:0;transition:background .2s;box-shadow:0 2px 6px rgba(37,99,235,.3)}
 .toggle::after{content:'';position:absolute;top:3px;right:3px;width:21px;height:21px;background:#fff;border-radius:50%;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
@@ -1180,6 +1180,69 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
   .header { border-bottom: 1px solid var(--border); }
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   DESKTOP — dock centrado em baixo, logout visível
+═══════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  body { max-width: 100vw; height: 100dvh; overflow: hidden; background: #F4F6FA; }
+  #onboarding {
+    max-width: 460px; left: 50%; transform: translateX(-50%);
+    border-radius: 20px; box-shadow: 0 24px 80px rgba(0,0,0,.18);
+    height: 90dvh; top: 5dvh; bottom: auto;
+  }
+  .screen { bottom: 0 !important; }
+
+  /* Dock flutuante centrado */
+  .bottom-nav {
+    position: fixed !important; bottom: 20px !important;
+    left: 50% !important; transform: translateX(-50%) !important;
+    width: auto !important; max-width: none !important;
+    border-top: none !important; border-radius: 999px !important;
+    background: rgba(255,255,255,.92) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 0 4px 32px rgba(0,0,0,.12), 0 1px 0 rgba(255,255,255,.8) !important;
+    padding: 6px 12px !important; gap: 4px !important;
+    border: 1px solid rgba(0,0,0,.06) !important; z-index: 200 !important;
+  }
+  .bn-tab {
+    flex-direction: column !important; padding: 10px 18px !important;
+    gap: 4px !important; font-size: 10px !important;
+    border-radius: 14px !important; min-width: 64px !important;
+    transition: background .15s, color .15s !important;
+  }
+  .bn-tab svg, .bn-tab div > svg { width: 22px !important; height: 22px !important; }
+  .bn-tab:hover { background: var(--surface2) !important; }
+  .bn-tab.active { background: var(--accent-light) !important; color: var(--accent) !important; }
+  .nb { top: 4px !important; right: 10px !important; font-size: 9px !important; min-width: 15px !important; height: 15px !important; }
+
+  /* Perfil scroll: garante que o botão sair é visível */
+  #scr-perfil .scroll-wrap { padding-bottom: 100px; }
+  .logout-btn { margin-bottom: 40px !important; }
+
+  .scroll-wrap { background: #F4F6FA; }
+  .chat-item:hover, .pc2-card:hover, .al-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+  .modal-overlay { align-items: center; justify-content: center; }
+  .modal-sheet { border-radius: 20px; max-width: 500px; width: 500px; max-height: 85dvh; transform: translateY(16px) scale(.97); }
+  .modal-overlay.show .modal-sheet { transform: translateY(0) scale(1); }
+  .cdm-sheet { border-radius: 20px; max-width: 540px; width: 540px; max-height: 88dvh; }
+  #modal-case-detail, #modal-mc-detail, #modal-mc-new,
+  #modal-mc-delete, #modal-status { align-items: center; justify-content: center; }
+  #modal-mc-detail .mc-detail-sheet,
+  #modal-mc-new .mc-sheet,
+  #modal-mc-delete .mc-delete-box { border-radius: 20px; max-width: 540px; width: 540px; }
+  #modal-status .modal-sheet { max-width: 440px; width: 440px; }
+
+  .mc-fab, [class*="-fab"] { bottom: 90px !important; right: 32px; }
+  #toast { bottom: 90px; }
+  #scr-chat { bottom: 0 !important; }
+  .sbl-wrap { min-height: auto; padding: 40px 32px 32px; }
+  .home3-content { padding-top: 40px; }
+  .header { border-bottom: 1px solid var(--border); }
+}
+
 </style>
 </head>
 <body>
@@ -1719,7 +1782,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 <!-- ══ BOTTOM NAV ══ -->
 <div class="bottom-nav" id="bottom-nav" style="display:none">
   <button class="bn-tab" id="bn-conv" onclick="showTab('conv')">
-    <div style="position:relative"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nb" id="nb-conv">3</span></div>
+    <div style="position:relative"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nb" id="nb-conv" style="display:none">0</span></div>
     <span>Conversas</span>
   </button>
   <button class="bn-tab" id="bn-casos" onclick="showTab('casos')">
@@ -4619,6 +4682,7 @@ async function sbLoadChatMessages() {
       return { type: own ? 'out' : 'in', text:row.message || '', plain:true, time:time };
     });
     _renderChatMessages(_currentChatLabAv);
+  markChatRead(_currentChatLabAv);
     if (newRemoteMessages.length) sbNotify('chat', 'Nova mensagem', newRemoteMessages.length === 1 ? 'Você recebeu uma nova mensagem.' : 'Você recebeu ' + newRemoteMessages.length + ' novas mensagens.');
   } catch (err) {
     console.log('[Supabase] sbLoadChatMessages erro:', err.message);
@@ -5085,14 +5149,63 @@ function chatOpenScanner(url, name) {
   });
 }
 
+
+// ── updateConvBadge — recalcula mensagens não lidas ──────────────────
+function updateConvBadge() {
+  var el = document.getElementById('nb-conv');
+  if (!el) return;
+  var count = 0;
+  // Count unread: messages of type 'in' from labs that haven't been seen
+  // We use a simple approach: count 'in' messages in all labs
+  // When user opens a chat, mark that lab as read
+  Object.keys(CHAT_MESSAGES || {}).forEach(function(av) {
+    var msgs = CHAT_MESSAGES[av] || [];
+    var lastSeen = parseInt(localStorage.getItem('DENTALAB_CHAT_SEEN_' + av) || '0');
+    msgs.forEach(function(m, i) {
+      if (!m.out && !m.type && i > lastSeen) count++;
+      if (m.type === 'in' || (m.out === false && m.text)) {
+        // remote messages count if unseen
+      }
+    });
+  });
+  // Simpler: just check if there are any unread from Supabase
+  // For now use the nb-alertas pattern — show if > 0
+  if (count > 0) {
+    el.textContent = count > 99 ? '99+' : String(count);
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// Mark chat as read when opened
+function markChatRead(av) {
+  if (!av) return;
+  var msgs = CHAT_MESSAGES[av] || [];
+  localStorage.setItem('DENTALAB_CHAT_SEEN_' + av, String(msgs.length - 1));
+  updateConvBadge();
+}
+
 function _chatScannerAttachment(m) {
-  var safeUrl = sbEscapeHtml(m.url || '');
+  var safeUrl  = sbEscapeHtml(m.url || '');
   var safeName = sbEscapeHtml(m.name || 'Scanner');
-  var fmt = String(m.name || '').toLowerCase().endsWith('.ply') ? 'PLY' : (String(m.name || '').toLowerCase().endsWith('.obj') ? 'OBJ' : 'STL');
+  var rawName  = String(m.name || '').toLowerCase();
+  var fmt      = rawName.endsWith('.ply') ? 'PLY' : rawName.endsWith('.obj') ? 'OBJ' : 'STL';
+  var dlBtn    = (m.url)
+    ? '<a href="' + safeUrl + '" download="' + safeName + '" onclick="event.stopPropagation()" '
+      + 'style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;'
+      + 'border-radius:50%;background:rgba(255,255,255,.18);flex-shrink:0;text-decoration:none" '
+      + 'title="Download ' + fmt + '">'
+      + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" '
+      + 'stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>'
+      + '</a>'
+    : '';
   return '<div class="case-bubble" onclick="chatOpenScanner(\'' + safeUrl + '\',\'' + safeName + '\')" style="display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer">'
-    + '<svg class="-scan" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;font-size:24px;color:rgba(255,255,255,.85)"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg>'
-    + '<div style="min-width:0"><div style="font-size:13px;font-weight:700;color:#fff;word-break:break-all">' + safeName + '</div>'
+    + '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg>'
+    + '<div style="min-width:0;flex:1"><div style="font-size:13px;font-weight:700;color:#fff;word-break:break-all">' + safeName + '</div>'
     + '<div style="font-size:11px;color:rgba(255,255,255,.7)">Arquivo ' + fmt + ' · Toque para ver em 3D</div></div>'
+    + dlBtn
     + '</div>';
 }
 

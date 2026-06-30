@@ -3523,8 +3523,8 @@ function createLabCase(data, source) {
     prazoISO:   data.prazo || '',
     delivery:   data.delivery,           // 'scanner' | 'molde'
     status:     'Recebido',
-    statusCls:  'st-wait',
-    prog:       5,
+    statusCls:  'st-p',
+    prog:       10,
     obs:        data.obs || '',
     implante:   data.implante || '',
     implantDesc:data.implantDesc || '',
@@ -3685,6 +3685,28 @@ function _cdmInjectChatBubble(caseId, c, data) {
   if (photos.length) CHAT_MESSAGES[labAv].push({ type: 'photos', out: true, senderRole: 'dentista' });
 }
 
+function cdmPromoteLocalCaseId(localId, remoteId) {
+  if (!localId || !remoteId || localId === remoteId || !CDM[localId]) return;
+  var c = CDM[localId];
+  c._supabaseId = remoteId;
+  CDM[remoteId] = c;
+  delete CDM[localId];
+
+  var card = document.getElementById('cdm-card-' + localId);
+  if (card) {
+    card.id = 'cdm-card-' + remoteId;
+    card.setAttribute('onclick', "openCaseDetail('" + remoteId + "')");
+    var acts = card.querySelector('.pc2-acts');
+    if (acts) acts.setAttribute('data-cid', remoteId);
+  }
+
+  Object.keys(CHAT_MESSAGES || {}).forEach(function(k){
+    (CHAT_MESSAGES[k] || []).forEach(function(m){
+      if (m && m.type === 'case' && m.caseId === localId) m.caseId = remoteId;
+    });
+  });
+}
+
 // ── Updated sendCase: now a thin wrapper around createLabCase ──────────
 function sendCase(){
   if(!requirePerm('canCreateCase')) return;
@@ -3762,11 +3784,11 @@ function sendCase(){
     photos: NC_PHOTOS.map(function(p){ return { dataUrl: p.dataUrl, file: p.file }; })
   }).then(function(res) {
     if (res && res.source === 'supabase') {
-      CDM[newCaseId]._supabaseId = res.data.id;
-      CDM[newCaseId]._files = res.files || [];
-      CDM[newCaseId]._labDbId = selectedLabDbId || null;
-      CDM[newCaseId]._clinicId = currentUserId || null;
-      CDM[newCaseId]._createdBy = currentUserId || null;
+      cdmPromoteLocalCaseId(newCaseId, res.data.id);
+      CDM[res.data.id]._files = res.files || [];
+      CDM[res.data.id]._labDbId = selectedLabDbId || null;
+      CDM[res.data.id]._clinicId = currentUserId || null;
+      CDM[res.data.id]._createdBy = currentUserId || null;
       sbSendCaseChatEvent(res.data.id, selectedLabDbId, currentUserId);
       showToast('Caso enviado ao Supabase ✓');
     } else {
@@ -6393,11 +6415,13 @@ function derivedIssueForCase(caseId) {
       var chosen = scanIssue || openIssues[0];
       return Object.assign({}, chosen, { _derived: false });
     }
+    return null;
   }
 
   // Last resort only: no structured issue data available at all (e.g.
   // a very old case from before pending_issues existed) -- fall back
   // to guessing from free text.
+  if (!c.obs || !String(c.obs).trim()) return null;
   var type = inferIssueTypeFromCase(c);
   var it = ISSUE_TYPES[type] || ISSUE_TYPES.falta_observacao;
   var issue = {
@@ -7836,6 +7860,14 @@ function u3dIsPLY(buf){
   return head === 'ply\\n' || head.slice(0,3) === 'ply';
 }
 
+function u3dPLYHasFaceElement(buf){
+  var bytes = new Uint8Array(buf);
+  var head = new TextDecoder().decode(bytes.slice(0, Math.min(bytes.length, 8192)));
+  var end = head.indexOf('end_header');
+  if (end < 0) return false;
+  return /\nelement\s+face\s+[1-9][0-9]*/i.test('\n' + head.slice(0, end));
+}
+
 // OBJ detection/parsing: the upload filters across the app (.stl,.ply,.obj)
 // have always accepted .obj files, but until now U3D_buildMeshFromBuffer
 // had no OBJ branch -- it fell through to the STL path, where stlvIsBinary
@@ -9013,6 +9045,33 @@ var U3D_O = { th:0, ph:Math.PI/2, r:5, tTh:0, tPh:Math.PI/2, tR:5, drag:false, l
 
 function U3D_log(m){ console.log('[STLM] '+m); }
 
+var U3D_scriptPromises = {};
+function U3D_loadScriptOnce(src){
+  if (U3D_scriptPromises[src]) return U3D_scriptPromises[src];
+  U3D_scriptPromises[src] = new Promise(function(resolve, reject){
+    var existing = document.querySelector('script[src="' + src + '"]');
+    if (existing) { resolve(); return; }
+    var s = document.createElement('script');
+    s.src = src;
+    s.crossOrigin = 'anonymous';
+    s.onload = function(){ resolve(); };
+    s.onerror = function(){ reject(new Error('Falha ao carregar ' + src)); };
+    document.head.appendChild(s);
+  });
+  return U3D_scriptPromises[src];
+}
+
+function U3D_ensureLoaderScripts(){
+  if (typeof THREE === 'undefined') return Promise.resolve();
+  var base = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/';
+  var jobs = [];
+  if (!THREE.STLLoader) jobs.push(U3D_loadScriptOnce(base + 'STLLoader.js'));
+  if (!THREE.PLYLoader) jobs.push(U3D_loadScriptOnce(base + 'PLYLoader.js'));
+  return Promise.all(jobs).catch(function(err){
+    U3D_log('Loaders oficiais indisponiveis, usando parser interno: ' + err.message);
+  });
+}
+
 function U3D_onResize(){
   var vp = document.getElementById('u3d-vp');
   if (!vp) return;
@@ -9146,18 +9205,18 @@ var U3D_SLOT_COLORS = {
 // verifiable at runtime instead of only provable from source code.
 function U3D_forceSolidMaterial(mesh, slot){
   if (!mesh || !mesh.geometry || !mesh.material) return mesh;
-  var hasVertexColors = !!(mesh.geometry.attributes && mesh.geometry.attributes.color);
   var solidColor = U3D_SLOT_COLORS[slot] || U3D_SLOT_COLORS.scan;
-  mesh.material = new THREE.MeshPhongMaterial({
-    color: hasVertexColors ? 0xffffff : solidColor,
-    vertexColors: hasVertexColors,
-    specular: 0x222222,
-    shininess: 18,
+  if (mesh.geometry.attributes && mesh.geometry.attributes.color) {
+    mesh.geometry.deleteAttribute('color');
+  }
+  mesh.material = new THREE.MeshLambertMaterial({
+    color: solidColor,
     side: THREE.DoubleSide,
     transparent: false,
     opacity: 1,
     wireframe: false,
-    flatShading: false
+    depthTest: true,
+    depthWrite: true
   });
   mesh.material.needsUpdate = true;
   mesh.visible = true;
@@ -9168,11 +9227,51 @@ function U3D_forceSolidMaterial(mesh, slot){
   return mesh;
 }
 
+function U3D_makeDentalMeshFromGeometry(geo, slot){
+  if (!geo || !geo.attributes || !geo.attributes.position || geo.attributes.position.count < 3) {
+    throw new Error('Malha 3D sem faces validas');
+  }
+  if (geo.attributes.color) geo.deleteAttribute('color');
+  if (geo.attributes.normal) geo.deleteAttribute('normal');
+  geo.computeVertexNormals();
+  geo.computeBoundingBox();
+  geo.computeBoundingSphere();
+  var solidColor = U3D_SLOT_COLORS[slot] || U3D_SLOT_COLORS.scan;
+  var mat = new THREE.MeshLambertMaterial({
+    color: solidColor,
+    vertexColors: false,
+    side: THREE.DoubleSide,
+    transparent: false,
+    opacity: 1,
+    wireframe: false,
+    depthTest: true,
+    depthWrite: true
+  });
+  var mesh = new THREE.Mesh(geo, mat);
+  mesh.visible = true;
+  return mesh;
+}
+
 // Builds ONE opaque, solid-shaded mesh from a parsed STL/PLY buffer.
 // `slot` ('upper'|'lower'|'bite'|'scan') selects which solid color this
 // mesh gets when the file itself carries no vertex colors -- PLY vertex
 // colors (when present) are used instead, per spec point 3.
 function U3D_buildMeshFromBuffer(buf, slot, fileName){
+  var lowerName = String(fileName || '').toLowerCase();
+  if (typeof THREE !== 'undefined') {
+    try {
+      if ((lowerName.endsWith('.stl') || (!lowerName.endsWith('.ply') && !lowerName.endsWith('.obj') && !u3dIsPLY(buf))) && THREE.STLLoader) {
+        return U3D_makeDentalMeshFromGeometry(new THREE.STLLoader().parse(buf), slot);
+      }
+      if ((lowerName.endsWith('.ply') || u3dIsPLY(buf)) && THREE.PLYLoader) {
+        if (!u3dPLYHasFaceElement(buf)) throw new Error('PLY sem faces de malha; parece nuvem de pontos');
+        return U3D_makeDentalMeshFromGeometry(new THREE.PLYLoader().parse(buf), slot);
+      }
+    } catch(loaderErr) {
+      U3D_log('Loader oficial falhou (' + (fileName || 'buffer') + '): ' + loaderErr.message + ' -- usando parser interno.');
+    }
+  }
+
   var data, vcolors = null;
   if (u3dIsPLY(buf)) {
     var parsed = u3dParsePLY(buf);
@@ -9285,12 +9384,42 @@ function U3D_buildMeshFromBuffer(buf, slot, fileName){
   }
 
   var geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-  geo.setAttribute('normal',   new THREE.BufferAttribute(normals,3));
-  var hasVertexColors = !!(vcolors && vcolors.length === nVerts*3);
-  if (hasVertexColors) {
-    geo.setAttribute('color', new THREE.BufferAttribute(vcolors, 3));
+  var unique = [];
+  var index = [];
+  var map = {};
+  var triSeen = {};
+  var INDEX_PRECISION = 5;
+  for (var pi = 0; pi < nVerts; pi += 3) {
+    var triIdx = [];
+    for (var pv = 0; pv < 3; pv++) {
+      var oi = pi + pv;
+      var px = positions[oi*3], py = positions[oi*3+1], pz = positions[oi*3+2];
+      var pkey = px.toFixed(INDEX_PRECISION) + '|' + py.toFixed(INDEX_PRECISION) + '|' + pz.toFixed(INDEX_PRECISION);
+      var ui = map[pkey];
+      if (ui === undefined) {
+        ui = unique.length / 3;
+        map[pkey] = ui;
+        unique.push(px, py, pz);
+      }
+      triIdx.push(ui);
+    }
+    if (triIdx[0] !== triIdx[1] && triIdx[1] !== triIdx[2] && triIdx[0] !== triIdx[2]) {
+      var triKey = triIdx.slice().sort(function(a,b){ return a-b; }).join('|');
+      if (triSeen[triKey]) continue;
+      triSeen[triKey] = true;
+      index.push(triIdx[0], triIdx[1], triIdx[2]);
+    }
   }
+
+  if (unique.length >= 9 && index.length >= 3) {
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(unique), 3));
+    geo.setIndex(index);
+    geo.computeVertexNormals();
+  } else {
+    geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    geo.setAttribute('normal',   new THREE.BufferAttribute(normals,3));
+  }
+  var hasVertexColors = false;
   geo.computeBoundingBox();
   // NOTE: deliberately no geo.center() here -- centering happens once,
   // on the whole U3D_group, after every requested slot has loaded (see
@@ -9302,16 +9431,14 @@ function U3D_buildMeshFromBuffer(buf, slot, fileName){
   // PointsMaterial, no blending, transparent:false and opacity:1
   // always. Vertex colors are only enabled when the source file
   // actually supplied them; otherwise this is a single solid color.
-  var mat = new THREE.MeshPhongMaterial({
-    color: hasVertexColors ? 0xffffff : solidColor,
-    vertexColors: hasVertexColors,
-    specular: 0x222222,
-    shininess: 18,
+  var mat = new THREE.MeshLambertMaterial({
+    color: solidColor,
     side: THREE.DoubleSide,
     transparent: false,
     opacity: 1,
     wireframe: false,
-    flatShading: false
+    depthTest: true,
+    depthWrite: true
   });
   var mesh = new THREE.Mesh(geo, mat);
   mesh.material.needsUpdate = true;
@@ -9469,8 +9596,10 @@ function U3D_open(opts){
     s.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';
     s.crossOrigin = 'anonymous';
     s.onload = function(){
-      if (loadEl0) loadEl0.style.display = 'none';
-      proceed();
+      U3D_ensureLoaderScripts().then(function(){
+        if (loadEl0) loadEl0.style.display = 'none';
+        proceed();
+      });
     };
     s.onerror = function(){
       if (loadTxt0) loadTxt0.textContent = 'N\u00e3o foi poss\u00edvel carregar a biblioteca 3D (sem liga\u00e7\u00e3o \u00e0 internet).';
@@ -9480,7 +9609,7 @@ function U3D_open(opts){
     return;
   }
 
-  proceed();
+  U3D_ensureLoaderScripts().then(proceed);
 }
 
 // Full state reset, called whenever U3D_open() detects the case/model
@@ -10758,6 +10887,30 @@ function latestCaseFile(files, matcher) {
   })[0] || null;
 }
 
+function sbMapPendingIssues(row, localCaseId) {
+  var fromTable = row && Array.isArray(row.pending_issues) ? row.pending_issues : [];
+  var fromPayload = row && row.case_payload && row.case_payload.case && Array.isArray(row.case_payload.case._pendingIssues)
+    ? row.case_payload.case._pendingIssues
+    : [];
+  var combined = [];
+  fromTable.concat(fromPayload).forEach(function(remote){
+    if (!remote || !remote.id) return;
+    var mapped = {
+      id: remote.id,
+      caseId: localCaseId || row.id,
+      type: remote.type || 'falta_observacao',
+      status: remote.status || 'open',
+      target: remote.target || remote.request_target || remote.jaw || remote.targetJaw || '',
+      desc: remote.desc || remote.label || 'O laboratório solicitou atenção neste caso.',
+      requestedBy: 'lab',
+      createdAt: remote.created_at ? new Date(remote.created_at).toLocaleString('pt-BR') : (remote.createdAt || now()),
+      resolvedAt: remote.resolved_at ? new Date(remote.resolved_at).toLocaleString('pt-BR') : (remote.resolvedAt || null)
+    };
+    if (!combined.some(function(p){ return p.id === mapped.id; })) combined.push(mapped);
+  });
+  return combined;
+}
+
 function sbMapCaseRowToCDM(row) {
   var files = row.case_files || [];
   var upper = latestCaseFile(files, function(f){ return (f.file_type === 'stl' || f.file_type === 'ply' || f.file_type === 'obj' || f.file_type === 'scanner') && f.jaw === 'upper'; });
@@ -10842,6 +10995,12 @@ function sbMapCaseRowToCDM(row) {
   c._source = 'supabase';
   c.origin = 'supabase';
   c._files = files;
+  c._pendingIssues = sbMapPendingIssues(row, row.id);
+  if (c.statusCls === 'st-wait' && !c._pendingIssues.some(function(p){ return p && p.status === 'open'; })) {
+    c.statusCls = 'st-p';
+    c.status = 'Recebido';
+    c.prog = Math.max(c.prog || 0, 10);
+  }
   c._storage = {
     upperUrl: upper ? (upper.file_url || sbPublicUrlFromPath(upper.storage_path)) : '',
     lowerUrl: lower ? (lower.file_url || sbPublicUrlFromPath(lower.storage_path)) : '',

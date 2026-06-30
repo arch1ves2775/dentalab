@@ -4043,15 +4043,20 @@ async function sbRestoreSession() {
 async function sbLoadOrCreateProfile(user) {
   if (!isSupabaseReady() || !user) return null;
   try {
-    // Try to load existing profile
+    // maybeSingle() (not single()) so "0 rows" returns data:null instead
+    // of throwing -- single() treats 0 rows as an error, which was
+    // silently swallowed by the catch below and made the app fall back
+    // to the hardcoded 'Dr. Joao Almeida' / 'Clinica Sorriso' seed
+    // values, instead of creating (or loading) the real profile.
     var res = await _supabaseClient
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (res.error) throw res.error;
 
     if (res.data) {
-      // Profile exists — sync to local state
       userName        = res.data.name        || userName;
       userClinica     = res.data.clinic_name || res.data.lab_name || userClinica;
       currentUserRole = sbNormalizeRole(res.data.role || currentUserRole);
@@ -4064,27 +4069,32 @@ async function sbLoadOrCreateProfile(user) {
       return res.data;
     }
 
-    // No profile — create one from current local state
+    // No profile row yet -- create one from the email, never from the
+    // hardcoded seed values.
     var roleFromSignup = sbRoleFromAuthUser(user);
     currentUserRole = roleFromSignup;
     userPerfil = currentUserRole === 'laboratorio' ? 'protesico' : currentUserRole;
+    var nameFromEmail = user.email ? user.email.split('@')[0] : 'Utilizador';
     var newProfile = {
       id:          user.id,
       role:        currentUserRole,
-      name:        userName        || (user.email ? user.email.split('@')[0] : 'Utilizador'),
-      clinic_name: currentUserRole !== 'laboratorio' ? (userClinica || '') : '',
-      lab_name:    currentUserRole === 'laboratorio' ? userClinica : '',
-      email:       user.email      || ''
+      name:        nameFromEmail,
+      clinic_name: '',
+      lab_name:    '',
+      email:       user.email || ''
     };
     var ins = await _supabaseClient.from('profiles').insert(newProfile).select().single();
     if (ins.error) throw ins.error;
+    userName    = ins.data.name;
+    userClinica = ins.data.clinic_name || ins.data.lab_name || '';
     sbApplyLocalProfile(Object.assign({}, ins.data, {
-      clinic: ins.data.clinic_name || ins.data.lab_name || userClinica
+      clinic: ins.data.clinic_name || ins.data.lab_name || ''
     }));
     console.log('[Auth] Perfil criado:', ins.data);
     return ins.data;
   } catch (err) {
     console.log('[Auth] sbLoadOrCreateProfile erro:', err.message);
+    showToast('Erro ao carregar o perfil: ' + err.message);
     return null;
   }
 }
@@ -4196,8 +4206,20 @@ function backOb1(){
 }
 
 function finishOnboarding(){
-  const nome=document.getElementById('ob-nome').value||'Dr. Jo\u00E3o Almeida';
-  const clinica=document.getElementById('ob-clinica').value||'Cl\u00EDnica Sorriso';
+  const nomeInput    = document.getElementById('ob-nome').value.trim();
+  const clinicaInput = document.getElementById('ob-clinica').value.trim();
+  if (!nomeInput) {
+    showToast('Preencha o seu nome completo.');
+    document.getElementById('ob-nome').focus();
+    return;
+  }
+  if (!clinicaInput) {
+    showToast('Preencha o nome da clinica/laboratorio.');
+    document.getElementById('ob-clinica').focus();
+    return;
+  }
+  const nome=nomeInput;
+  const clinica=clinicaInput;
   const tel=document.getElementById('ob-tel').value||'+55 11 99999-9999';
   userName=nome; userClinica=clinica;
 
@@ -7696,23 +7718,25 @@ function stlvParseBinary(buf){
   var total=dv.getUint32(80,true);
   stlvLog('Binary tris: '+total);
 
-  // NOTE: decimation (skipping every Nth triangle) was removed.
-  // It broke mesh adjacency -- vertices that should coincide after
-  // a skip no longer do, so the weld-and-average-normals step in
-  // U3D_buildMeshFromBuffer silently fails to smooth them, producing
-  // the "speckled / point-cloud" look reported on real dental scans
-  // (200k-500k+ triangles from iTero/3Shape routinely exceeded the
-  // old 300k cap and got decimated). Modern mobile GPUs handle a
-  // full-resolution dense scanner mesh as a solid THREE.Mesh fine,
-  // so we now always read every triangle, preserving true topology.
-  var keep = total;
+  // iOS Safari WebGL limit: ~256MB. Each tri = 9 floats pos + 9 floats nor = 72 bytes
+  // 130k tris x 72 bytes = ~9MB - should be fine, but let's cap at 80k for safety
+  // Real dental scanner STLs (iTero/3Shape exports) can have 200k+
+  // triangles but are still light enough for a solid THREE.Mesh on
+  // modern mobile GPUs -- the previous 80k cap was too aggressive and
+  // its fixed-stride decimation (skipping every Nth triangle) breaks
+  // mesh adjacency, which is what produced visible speckling even after
+  // normal smoothing. Raising the cap preserves far more real topology.
+  var MAX_TRIS = 300000;
+  var step = total > MAX_TRIS ? Math.ceil(total / MAX_TRIS) : 1;
+  var keep = Math.floor(total / step);
+  if(step>1) stlvLog('Decimating 1/'+step+' -> '+keep+' tris');
 
   // Interleaved buffer: pos(xyz) + normal(xyz) per vertex = 6 floats per vertex
   // 3 vertices per tri = 18 floats per tri
   var data = new Float32Array(keep * 18);
   var di = 0;
 
-  for(var t=0; t<total; t++){
+  for(var t=0; t<total; t+=step){
     var off = 84 + t*50;
     // Face normal from STL header
     var fnx=dv.getFloat32(off,   true);

@@ -3967,6 +3967,11 @@ async function sbSignup(email, password) {
 // ── sbLogout ─────────────────────────────────────────────────────────
 // Termina a sessão Supabase e volta ao ecrã de onboarding.
 async function sbLogout() {
+  sbStopRealtimeSync();
+  if (typeof _dentalabSyncTimer !== 'undefined' && _dentalabSyncTimer) {
+    clearInterval(_dentalabSyncTimer);
+    _dentalabSyncTimer = null;
+  }
   try {
     if (isSupabaseReady()) {
       var res = await _supabaseClient.auth.signOut();
@@ -5983,11 +5988,62 @@ function sbRememberRemoteItems(kind, ids) {
 
 function sbStartBackgroundSync() {
   if (_dentalabSyncTimer) clearInterval(_dentalabSyncTimer);
+  // Safety-net polling — Realtime (sbStartRealtimeSync) is now the
+  // primary update path, this just catches anything Realtime might
+  // miss (e.g. a dropped websocket reconnecting silently).
   _dentalabSyncTimer = setInterval(function(){
     if (!isSupabaseReady() || !currentUserId) return;
     syncSupabaseCasesIntoCDM();
     if (CURRENT_CHAT.labId && CURRENT_CHAT.clinicId) sbLoadChatMessages();
-  }, 20000);
+  }, 60000);
+  sbStartRealtimeSync();
+}
+
+// ── sbStartRealtimeSync ─────────────────────────────────────────────
+// Subscreve em tempo real às tabelas cases, case_messages e
+// pending_issues via Supabase Realtime. Assim que outro utilizador
+// insere ou actualiza uma linha, o evento chega instantaneamente —
+// sem esperar pelo polling de 60s. Reaproveita as mesmas funções de
+// refresh já existentes (syncSupabaseCasesIntoCDM, sbLoadChatMessages,
+// renderAlertas) para não duplicar lógica de renderização.
+var _dentalabRealtimeChannel = null;
+
+function sbStartRealtimeSync() {
+  if (!isSupabaseReady() || !currentUserId) return;
+  if (_dentalabRealtimeChannel) {
+    try { _supabaseClient.removeChannel(_dentalabRealtimeChannel); } catch(e) {}
+    _dentalabRealtimeChannel = null;
+  }
+
+  _dentalabRealtimeChannel = _supabaseClient
+    .channel('dentalab-realtime-' + currentUserId)
+    // ── Novos casos ou casos actualizados ──
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, function(payload) {
+      console.log('[Realtime] cases:', payload.eventType);
+      syncSupabaseCasesIntoCDM();
+    })
+    // ── Mensagens novas no chat aberto ──
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'case_messages' }, function(payload) {
+      console.log('[Realtime] case_messages: nova mensagem');
+      if (CURRENT_CHAT.labId && CURRENT_CHAT.clinicId) sbLoadChatMessages();
+      else if (typeof updateConvBadge === 'function') updateConvBadge();
+    })
+    // ── Pendências / alertas ──
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pending_issues' }, function(payload) {
+      console.log('[Realtime] pending_issues:', payload.eventType);
+      syncSupabaseCasesIntoCDM();
+      if (currentTab === 'alertas' && typeof renderAlertas === 'function') renderAlertas();
+    })
+    .subscribe(function(status) {
+      console.log('[Realtime] Estado da subscrição:', status);
+    });
+}
+
+function sbStopRealtimeSync() {
+  if (_dentalabRealtimeChannel && isSupabaseReady()) {
+    try { _supabaseClient.removeChannel(_dentalabRealtimeChannel); } catch(e) {}
+    _dentalabRealtimeChannel = null;
+  }
 }
 // ── MyLab: Lab deadline-sorted view ─────────────────────────────────────
 // App's simulated "today" — matches the prazoISO dates in CDM seed data.
@@ -8813,6 +8869,17 @@ function U3D_buildMeshFromBuffer(buf, slot){
   // result back out per (non-indexed) vertex slot. This is the same
   // smoothing a proper indexed mesh would get from
   // computeVertexNormals(), without needing an index buffer at all.
+  // Weld key precision: 4 decimal places is too coarse for dense
+  // scanner meshes that are often modelled in millimetres with very
+  // fine, closely-packed geometry (especially upper-arch scans, which
+  // tend to have denser/noisier triangulation than lower-arch). At
+  // that density, vertices that are spatially identical can differ in
+  // their 5th decimal place and miss each other in the weld map,
+  // leaving them unsmoothed -- exactly the speckled look seen only on
+  // some arches/files and not others. Six decimals matches scanner
+  // float32 precision without over-merging genuinely distinct points.
+  var WELD_PRECISION = 6;
+
   var weldMap = {};
   var sumX = [], sumY = [], sumZ = [];
   var weldId = new Int32Array(nVerts);
@@ -8825,19 +8892,22 @@ function U3D_buildMeshFromBuffer(buf, slot){
     var e2x=cx-ax, e2y=cy-ay, e2z=cz-az;
     var fnx=e1y*e2z-e1z*e2y, fny=e1z*e2x-e1x*e2z, fnz=e1x*e2y-e1y*e2x;
     var fnl=Math.sqrt(fnx*fnx+fny*fny+fnz*fnz);
-    if (fnl>1e-12) { fnx/=fnl; fny/=fnl; fnz/=fnl; } else { fnx=0; fny=0; fnz=1; }
+    // Degenerate triangles (near-zero area) skip their normal entirely
+    // rather than contributing an arbitrary direction (see below).
+    var isDegenerate = fnl <= 1e-12;
+    if (!isDegenerate) { fnx/=fnl; fny/=fnl; fnz/=fnl; }
 
     for (var vv = 0; vv < 3; vv++) {
       var vi = t + vv;
       var vx=positions[vi*3], vy=positions[vi*3+1], vz=positions[vi*3+2];
-      var key = vx.toFixed(4)+'|'+vy.toFixed(4)+'|'+vz.toFixed(4);
+      var key = vx.toFixed(WELD_PRECISION)+'|'+vy.toFixed(WELD_PRECISION)+'|'+vz.toFixed(WELD_PRECISION);
       var wid = weldMap[key];
       if (wid === undefined) {
         wid = sumX.length;
         weldMap[key] = wid;
         sumX.push(0); sumY.push(0); sumZ.push(0);
       }
-      sumX[wid]+=fnx; sumY[wid]+=fny; sumZ[wid]+=fnz;
+      if (!isDegenerate) { sumX[wid]+=fnx; sumY[wid]+=fny; sumZ[wid]+=fnz; }
       weldId[vi] = wid;
     }
   }
@@ -8847,7 +8917,28 @@ function U3D_buildMeshFromBuffer(buf, slot){
     var wid2 = weldId[vi2];
     var sx=sumX[wid2], sy=sumY[wid2], sz=sumZ[wid2];
     var sl=Math.sqrt(sx*sx+sy*sy+sz*sz);
-    if (sl>1e-12) { sx/=sl; sy/=sl; sz/=sl; } else { sz=1; }
+    if (sl>1e-12) {
+      sx/=sl; sy/=sl; sz/=sl;
+    } else {
+      // This vertex's weld group had zero net normal -- either every
+      // triangle touching it was degenerate, or (more likely with the
+      // tighter precision above) it is a genuinely isolated vertex
+      // with only one triangle and that triangle was degenerate.
+      // Recompute a normal directly from this vertex's own (non-welded)
+      // triangle instead of an arbitrary fixed (0,0,1), so it still
+      // points outward correctly rather than creating a bright/dark
+      // speckle unrelated to the local surface.
+      var triBase = vi2 - (vi2 % 3);
+      var pax=positions[triBase*3],   pay=positions[triBase*3+1],   paz=positions[triBase*3+2];
+      var pbx=positions[(triBase+1)*3], pby=positions[(triBase+1)*3+1], pbz=positions[(triBase+1)*3+2];
+      var pcx=positions[(triBase+2)*3], pcy=positions[(triBase+2)*3+1], pcz=positions[(triBase+2)*3+2];
+      var pe1x=pbx-pax, pe1y=pby-pay, pe1z=pbz-paz;
+      var pe2x=pcx-pax, pe2y=pcy-pay, pe2z=pcz-paz;
+      var pnx=pe1y*pe2z-pe1z*pe2y, pny=pe1z*pe2x-pe1x*pe2z, pnz=pe1x*pe2y-pe1y*pe2x;
+      var pnl=Math.sqrt(pnx*pnx+pny*pny+pnz*pnz);
+      if (pnl>1e-12) { sx=pnx/pnl; sy=pny/pnl; sz=pnz/pnl; }
+      else { sx=0; sy=0; sz=1; } // last-resort: truly zero-area triangle, no real surface to point along
+    }
     normals[vi2*3]=sx; normals[vi2*3+1]=sy; normals[vi2*3+2]=sz;
   }
 
@@ -9612,6 +9703,25 @@ async function ensureLabForCurrentUser() {
       showToast('Código do laboratório: ' + existing.data.invite_code);
       return existing.data;
     }
+
+    // Guard against the foreign-key race: labs.owner_id references
+    // profiles.id, but right after signup/login the profile INSERT may
+    // not have fully propagated yet when this runs. Verify the profile
+    // row is actually visible first, with a couple of short retries to
+    // absorb that replication lag, instead of failing straight to the
+    // "violates foreign key constraint" error.
+    var profileRow = null;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      var pres = await _supabaseClient.from('profiles').select('id').eq('id', currentUserId).maybeSingle();
+      if (pres.data) { profileRow = pres.data; break; }
+      await new Promise(function(r){ setTimeout(r, 400); });
+    }
+    if (!profileRow) {
+      console.log('[Supabase] ensureLabForCurrentUser: perfil ainda nao visivel apos 3 tentativas.');
+      showToast('Perfil ainda a sincronizar — tente novamente em alguns segundos.');
+      return null;
+    }
+
     var labName = userClinica || userName || 'Laboratório';
     var payload = {
       name: labName,

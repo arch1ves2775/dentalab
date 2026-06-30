@@ -1927,8 +1927,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
           Lower / Mandíbula
           <span class="nc-scanner-slot-name" id="nc-slot-lower-name"></span>
         </button>
+        <button class="nc-scanner-slot" id="nc-slot-bite" onclick="ncPickScannerSlot('bite')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg>
+          Extra / Gengiva
+          <span class="nc-scanner-slot-name" id="nc-slot-bite-name"></span>
+        </button>
       </div>
-      <div style="font-size:11px;color:var(--hint);margin-bottom:12px;margin-top:-6px">Aceita STL, PLY e OBJ · Pelo menos um ficheiro obrigatório</div>
+      <div style="font-size:11px;color:var(--hint);margin-bottom:12px;margin-top:-6px">Aceita STL, PLY e OBJ · Upper/Lower obrigam pelo menos um · Extra é opcional</div>
     </div>
 
     <!-- MOLDE notice (shown when molde selected) -->
@@ -2177,6 +2182,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
             <div style="min-width:0;flex:1"><span style="font-size:11px;font-weight:700;color:#C0D0E0">Mandíbula / Lower</span><div style="font-size:10px;color:#4A6FA5;word-break:break-all" id="cdm-inicial-lower-name">Nenhum arquivo</div></div>
             <button id="cdm-inicial-lower-btn" class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="cdmUploadScannerSlot('inicial','Lower')">+ Adicionar</button>
           </div>
+          <div id="cdm-inicial-bite-row" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px">
+            <div style="min-width:0;flex:1"><span style="font-size:11px;font-weight:700;color:#C0D0E0">Extra / Gengiva / Scan body</span><div style="font-size:10px;color:#4A6FA5;word-break:break-all" id="cdm-inicial-bite-name">Nenhum arquivo</div></div>
+            <button id="cdm-inicial-bite-btn" class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="cdmUploadScannerSlot('inicial','Bite')">+ Adicionar</button>
+          </div>
         </div>
       </div>
 
@@ -2268,6 +2277,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
             <div style="min-width:0;flex:1"><span style="font-size:11px;font-weight:700;color:#C0D0E0">Mandíbula / Lower</span><div style="font-size:10px;color:var(--hint);word-break:break-all" id="mcd-inicial-lower-name">Nenhum arquivo</div></div>
             <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="mcUploadScannerSlot('inicial','Lower')">+ Adicionar</button>
           </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px">
+            <div style="min-width:0;flex:1"><span style="font-size:11px;font-weight:700;color:#C0D0E0">Extra / Gengiva / Scan body</span><div style="font-size:10px;color:var(--hint);word-break:break-all" id="mcd-inicial-bite-name">Nenhum arquivo</div></div>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="mcUploadScannerSlot('inicial','Bite')">+ Adicionar</button>
+          </div>
         </div>
       </div>
 
@@ -2297,6 +2310,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
           <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px">
             <div style="min-width:0;flex:1"><span style="font-size:11px;font-weight:700;color:#C0D0E0">Mandíbula / Lower</span><div style="font-size:10px;color:var(--hint);word-break:break-all" id="mcd-final-lower-name">Nenhum arquivo</div></div>
             <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="mcUploadScannerSlot('final','Lower')">+ Adicionar</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px">
+            <div style="min-width:0;flex:1"><span style="font-size:11px;font-weight:700;color:#C0D0E0">Extra / Gengiva / Scan body</span><div style="font-size:10px;color:var(--hint);word-break:break-all" id="mcd-final-bite-name">Nenhum arquivo</div></div>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:10.5px;flex-shrink:0" onclick="mcUploadScannerSlot('final','Bite')">+ Adicionar</button>
           </div>
         </div>
       </div>
@@ -2725,7 +2742,7 @@ let alertCount=0;
 
 // -- NOVO CASO state --
 var NC_PHOTOS = [];                         // [{dataUrl, file}]
-var NC_SCANNER = { upper: null, lower: null }; // File objects
+var NC_SCANNER = { upper: null, lower: null, bite: null }; // File objects
 var NC_SVC = '';                            // selected service name
 var NC_DELIVERY = '';                       // 'scanner' | 'molde' | ''
 var NC_URGENT = false;
@@ -3444,8 +3461,8 @@ function ncResetForm(){
   var scanSec = document.getElementById('nc-scanner-section'); if(scanSec) scanSec.style.display = 'none';
   var moldeN  = document.getElementById('nc-molde-notice');    if(moldeN)  moldeN.style.display  = 'none';
   // Scanner files
-  NC_SCANNER = { upper: null, lower: null };
-  ncUpdateScannerUI('upper'); ncUpdateScannerUI('lower');
+  NC_SCANNER = { upper: null, lower: null, bite: null };
+  ncUpdateScannerUI('upper'); ncUpdateScannerUI('lower'); ncUpdateScannerUI('bite');
   // Photos
   NC_PHOTOS = []; ncRenderPhotos();
   // Urgência
@@ -3511,13 +3528,15 @@ function createLabCase(data, source) {
     obs:        data.obs || '',
     implante:   data.implante || '',
     implantDesc:data.implantDesc || '',
-    hasSTL:     data.delivery === 'scanner' && !!(data.scannerUpper || data.scannerLower),
-    stlFileName:data.scannerUpper ? data.scannerUpper.name : (data.scannerLower ? data.scannerLower.name : ''),
+    hasSTL:     data.delivery === 'scanner' && !!(data.scannerUpper || data.scannerLower || data.scannerBite),
+    stlFileName:data.scannerUpper ? data.scannerUpper.name : (data.scannerLower ? data.scannerLower.name : (data.scannerBite ? data.scannerBite.name : '')),
     stlMockPath:'',
     scannerInicialUpper: data.scannerUpper  ? data.scannerUpper.name  : '',
     scannerInicialLower: data.scannerLower  ? data.scannerLower.name  : '',
+    scannerInicialBite:  data.scannerBite   ? data.scannerBite.name   : '',
     scannerFinalUpper:  '',
     scannerFinalLower:  '',
+    scannerFinalBite:   '',
     criado:     (function(){ var d=new Date(); return String(d.getDate()).padStart(2,'0')+'/'+(String(d.getMonth()+1).padStart(2,'0'))+'/'+d.getFullYear(); })(),
     etapas: [
       { l: 'Recebido',  s: 'cur'  },
@@ -3552,6 +3571,7 @@ function createLabCase(data, source) {
   // Store scanner File objects so the viewer can open them without fetch
   if (data.scannerUpper) CDM_LOCAL_FILES[caseId + ':inicial:Upper'] = data.scannerUpper;
   if (data.scannerLower) CDM_LOCAL_FILES[caseId + ':inicial:Lower'] = data.scannerLower;
+  if (data.scannerBite)  CDM_LOCAL_FILES[caseId + ':inicial:Bite']  = data.scannerBite;
 
   // ── Always inject card into MyLab dynamic list ───────────────────────
   _cdmInjectMyLabCard(caseId, caseObj, data.photos || []);
@@ -3580,6 +3600,7 @@ function _cdmInjectMyLabCard(caseId, c, photos) {
   var scanParts = [];
   if (c.scannerInicialUpper) scanParts.push('Upper');
   if (c.scannerInicialLower) scanParts.push('Lower');
+  if (c.scannerInicialBite)  scanParts.push('Extra');
   var scanText = c.delivery === 'scanner'
     ? (scanParts.length ? scanParts.join('+') : 'Scanner digital')
     : 'Molde f\u00edsico';
@@ -3692,9 +3713,9 @@ function sendCase(){
   if (!dente)   { errors.push('Dentes envolvidos'); ncMarkFieldError('nc-teeth-wrap'); }
   if (!prazo)   { errors.push('Data necess\u00e1ria / Prazo'); ncMarkFieldError('inp-prazo'); }
   if (!NC_DELIVERY){ errors.push('Forma de envio do caso'); }
-  if (NC_DELIVERY === 'scanner' && !NC_SCANNER.upper && !NC_SCANNER.lower){
-    errors.push('Adicione pelo menos um scanner (Upper ou Lower)');
-    ncMarkFieldError('nc-slot-upper'); ncMarkFieldError('nc-slot-lower');
+  if (NC_DELIVERY === 'scanner' && !NC_SCANNER.upper && !NC_SCANNER.lower && !NC_SCANNER.bite){
+    errors.push('Adicione pelo menos um ficheiro de scanner');
+    ncMarkFieldError('nc-slot-upper'); ncMarkFieldError('nc-slot-lower'); ncMarkFieldError('nc-slot-bite');
   }
   if (errors.length){ ncShowErrors(errors); return; }
   ncShowErrors([]);
@@ -3723,6 +3744,7 @@ function sendCase(){
     delivery:    NC_DELIVERY,
     scannerUpper:NC_SCANNER.upper,
     scannerLower:NC_SCANNER.lower,
+    scannerBite: NC_SCANNER.bite,
     photos:      NC_PHOTOS.map(function(p){ return { dataUrl: p.dataUrl, file: p.file }; }),
     implante:    selImplanteRef,
     implantDesc: selImplanteDesc,
@@ -3736,6 +3758,7 @@ function sendCase(){
   saveCaseToSupabase(CDM[newCaseId], {
     scannerUpper: NC_SCANNER.upper,
     scannerLower: NC_SCANNER.lower,
+    scannerBite: NC_SCANNER.bite,
     photos: NC_PHOTOS.map(function(p){ return { dataUrl: p.dataUrl, file: p.file }; })
   }).then(function(res) {
     if (res && res.source === 'supabase') {
@@ -5286,27 +5309,28 @@ function cdmRenderScannerSection(which, c) {
   var prefix = which === 'inicial' ? 'scannerInicial' : 'scannerFinal';
   var upper = c[prefix + 'Upper'] || '';
   var lower = c[prefix + 'Lower'] || '';
+  var bite  = c[prefix + 'Bite']  || '';
   // A single legacy STL (hasSTL/stlFileName, pre-Upper/Lower schema) is
   // treated as this scanner's Upper file automatically.
   var legacy = (which === 'inicial' && c.hasSTL) ? (c.stlFileName || '') : '';
   var effectiveUpper = upper || legacy;
-  var anyFile = effectiveUpper || lower;
+  var anyFile = effectiveUpper || lower || bite;
 
   var card  = safeEl('cdm-stl-' + which + '-card');
   var empty = safeEl('cdm-stl-' + which + '-empty');
   if (anyFile) {
     if (card)  card.style.display  = 'block';
     if (empty) empty.style.display = 'none';
-    var slotsPresent = [effectiveUpper, lower].filter(Boolean).length;
+    var slotsPresent = [effectiveUpper, lower, bite].filter(Boolean).length;
     var nameEl = safeEl('cdm-stl-' + which + '-name');
     var subEl  = safeEl('cdm-stl-' + which + '-sub');
     if (slotsPresent >= 2) {
       // Point 2: Upper + Lower both present -> occlusion framing.
-      if (nameEl) nameEl.textContent = 'Upper + Lower';
+      if (nameEl) nameEl.textContent = slotsPresent >= 3 ? 'Upper + Lower + Extra' : 'Upper + Lower';
       if (subEl)  subEl.innerHTML = 'Visualiza\u00e7\u00e3o em oclus\u00e3o<span class="mc-scanner-format" id="cdm-stl-' + which + '-fmt">STL</span>';
     } else {
       // Points 5/6: only one of the two -> say which, plainly.
-      if (nameEl) nameEl.textContent = effectiveUpper ? 'Upper carregado' : 'Lower carregado';
+      if (nameEl) nameEl.textContent = effectiveUpper ? 'Upper carregado' : (lower ? 'Lower carregado' : 'Extra carregado');
       if (subEl)  subEl.innerHTML = 'Toque para visualizar<span class="mc-scanner-format" id="cdm-stl-' + which + '-fmt">STL</span>';
     }
   } else {
@@ -5316,6 +5340,7 @@ function cdmRenderScannerSection(which, c) {
 
   var u = safeEl('cdm-' + which + '-upper-name'); if (u) u.textContent = effectiveUpper || 'Nenhum arquivo';
   var l = safeEl('cdm-' + which + '-lower-name'); if (l) l.textContent = lower || 'Nenhum arquivo';
+  var b = safeEl('cdm-' + which + '-bite-name');  if (b) b.textContent = bite || 'Nenhum arquivo';
   if (which === 'inicial') {
     // Use the case's own explicit pending-issue list as the single
     // source of truth for which slots are still requested, instead of
@@ -5400,13 +5425,15 @@ function cdmOpenStl(which) {
   var prefix = which === 'inicial' ? 'scannerInicial' : 'scannerFinal';
   var upperName = c[prefix + 'Upper'] || '';
   var lowerName = c[prefix + 'Lower'] || '';
+  var biteName  = c[prefix + 'Bite']  || '';
   var legacyName = (which === 'inicial' && c.hasSTL) ? (c.stlFileName || '') : '';
   var label = c.paciente + ' - Scanner ' + (which === 'inicial' ? 'Inicial' : 'Final');
 
   var localUpper = CDM_LOCAL_FILES[c.num + ':' + which + ':Upper'] || null;
   var localLower = CDM_LOCAL_FILES[c.num + ':' + which + ':Lower'] || null;
+  var localBite  = CDM_LOCAL_FILES[c.num + ':' + which + ':Bite']  || null;
 
-  if (localUpper || localLower) {
+  if (localUpper || localLower || localBite) {
     // Real local File object(s) on record for this case+slot -- always
     // go through the local-file pipeline, which already handles
     // Upper-only, Lower-only, or both correctly (point 2: "Nao obrigar
@@ -5417,21 +5444,25 @@ function cdmOpenStl(which) {
       patientName: label,
       caseKey: c.num + ':' + which,
       localUpperFile: localUpper,
-      localLowerFile: localLower
+      localLowerFile: localLower,
+      localBiteFile:  localBite
     });
     return;
   }
 
   var storageUpper = c._storage && which === 'inicial' ? c._storage.upperUrl : '';
   var storageLower = c._storage && which === 'inicial' ? c._storage.lowerUrl : '';
-  if (storageUpper || storageLower) {
+  var storageBite  = c._storage && which === 'inicial' ? c._storage.biteUrl  : '';
+  if (storageUpper || storageLower || storageBite) {
     U3D_open({
       patientName: label,
       caseKey: (c._supabaseId || c.num) + ':' + which,
       upperUrl: storageUpper || '',
       lowerUrl: storageLower || '',
+      biteUrl:  storageBite  || '',
       upperName: upperName || 'Upper',
-      lowerName: lowerName || 'Lower'
+      lowerName: lowerName || 'Lower',
+      biteName:  biteName  || 'Extra'
     });
     return;
   }
@@ -5440,7 +5471,7 @@ function cdmOpenStl(which) {
   // single-file-by-URL path, reserved for genuinely legacy CDM cases
   // (hasSTL/stlFileName from the original mocked dataset, never
   // uploaded locally in this session).
-  var fileName = upperName || lowerName || legacyName;
+  var fileName = upperName || lowerName || biteName || legacyName;
   if (!fileName) { showToast('Nenhum scanner ' + which + ' anexado.'); return; }
 
   var caseId = c.num || '';
@@ -5482,6 +5513,7 @@ function cdmUploadScannerSlot(which, slotLabel) {
     CDM_LOCAL_FILES[c.num + ':' + which + ':' + slotLabel] = file;
     sbAttachFilesToCase(c, (which === 'inicial' && slotLabel === 'Upper') ? { scannerUpper:file } :
                           (which === 'inicial' && slotLabel === 'Lower') ? { scannerLower:file } :
+                          (which === 'inicial' && slotLabel === 'Bite')  ? { scannerBite:file } :
                           { attachments:[{ file:file, slot:which + '-' + slotLabel, category:'scanner', jaw:slotLabel.toLowerCase() }] });
     showToast(slotLabel + ' (' + (which === 'inicial' ? 'Inicial' : 'Final') + ') atualizado: ' + file.name);
     cdmRenderScannerSection(which, c);
@@ -5606,16 +5638,21 @@ function cdmDownloadScanner(which) {
   var prefix = which === 'inicial' ? 'scannerInicial' : 'scannerFinal';
   var localUpper = CDM_LOCAL_FILES[c.num + ':' + which + ':Upper'] || null;
   var localLower = CDM_LOCAL_FILES[c.num + ':' + which + ':Lower'] || null;
+  var localBite  = CDM_LOCAL_FILES[c.num + ':' + which + ':Bite']  || null;
   var storageUpper = c._storage && which === 'inicial' ? c._storage.upperUrl : '';
   var storageLower = c._storage && which === 'inicial' ? c._storage.lowerUrl : '';
+  var storageBite  = c._storage && which === 'inicial' ? c._storage.biteUrl  : '';
   var upperName = c[prefix + 'Upper'] || '';
   var lowerName = c[prefix + 'Lower'] || '';
+  var biteName  = c[prefix + 'Bite']  || '';
   var legacyName = (which === 'inicial' && c.hasSTL) ? (c.stlFileName || '') : '';
   var did = false;
   if (localUpper) { dlSource(localUpper, localUpper.name); did = true; }
   if (localLower) { dlSource(localLower, localLower.name); did = true; }
+  if (localBite)  { dlSource(localBite,  localBite.name);  did = true; }
   if (storageUpper) { dlSource(storageUpper, upperName || 'scanner-upper.stl'); did = true; }
   if (storageLower) { dlSource(storageLower, lowerName || 'scanner-lower.stl'); did = true; }
+  if (storageBite)  { dlSource(storageBite,  biteName  || 'scanner-extra.stl'); did = true; }
   if (did) return;
   if (c.stlMockPath) { dlSource(c.stlMockPath, legacyName || c.stlFileName || 'scanner.stl'); return; }
   showToast('Arquivo original nao disponivel para baixar.');
@@ -8411,10 +8448,12 @@ function mcDownloadScanner(which) {
   var prefix = which === 'inicial' ? 'scannerInicial' : 'scannerFinal';
   var upper = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Upper'] || null;
   var lower = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Lower'] || null;
+  var bite  = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Bite']  || null;
   var flat = rec[prefix + 'File'] || null;
   var did = false;
   if (upper) { dlSource(upper, upper.name); did = true; }
   if (lower) { dlSource(lower, lower.name); did = true; }
+  if (bite)  { dlSource(bite,  bite.name);  did = true; }
   if (did) return;
   if (flat) { dlSource(flat, flat.name); return; }
   showToast('Arquivo original nao disponivel para baixar.');
@@ -8440,25 +8479,26 @@ function mcRenderScannerSection(which, rec) {
   var prefix = which === 'inicial' ? 'scannerInicial' : 'scannerFinal';
   var upper = rec[prefix + 'Upper'] || '';
   var lower = rec[prefix + 'Lower'] || '';
+  var bite  = rec[prefix + 'Bite']  || '';
   var legacy = rec[prefix] || '';
   var effectiveUpper = upper || legacy;
-  var anyFile = effectiveUpper || lower;
+  var anyFile = effectiveUpper || lower || bite;
 
   var card  = safeEl('mcd-stl-' + which + '-card');
   var empty = safeEl('mcd-stl-' + which + '-empty');
   if (anyFile) {
     if (card)  card.style.display  = 'block';
     if (empty) empty.style.display = 'none';
-    var slotsPresent = [effectiveUpper, lower].filter(Boolean).length;
+    var slotsPresent = [effectiveUpper, lower, bite].filter(Boolean).length;
     var nameEl = safeEl('mcd-stl-' + which + '-name');
     var subEl  = safeEl('mcd-stl-' + which + '-sub');
     if (slotsPresent >= 2) {
       // Point 2: Upper + Lower both present -> occlusion framing.
-      if (nameEl) nameEl.textContent = 'Upper + Lower';
+      if (nameEl) nameEl.textContent = slotsPresent >= 3 ? 'Upper + Lower + Extra' : 'Upper + Lower';
       if (subEl)  subEl.innerHTML = 'Visualiza\u00e7\u00e3o em oclus\u00e3o<span class="mc-scanner-format" id="mcd-stl-' + which + '-fmt">STL</span>';
     } else {
       // Points 5/6: only one of the two -> say which, plainly.
-      if (nameEl) nameEl.textContent = effectiveUpper ? 'Upper carregado' : 'Lower carregado';
+      if (nameEl) nameEl.textContent = effectiveUpper ? 'Upper carregado' : (lower ? 'Lower carregado' : 'Extra carregado');
       if (subEl)  subEl.innerHTML = 'Toque para visualizar<span class="mc-scanner-format" id="mcd-stl-' + which + '-fmt">STL</span>';
     }
   } else {
@@ -8468,6 +8508,7 @@ function mcRenderScannerSection(which, rec) {
 
   var u = safeEl('mcd-' + which + '-upper-name'); if (u) u.textContent = effectiveUpper || 'Nenhum arquivo';
   var l = safeEl('mcd-' + which + '-lower-name'); if (l) l.textContent = lower || 'Nenhum arquivo';
+  var b = safeEl('mcd-' + which + '-bite-name');  if (b) b.textContent = bite || 'Nenhum arquivo';
 }
 
 // Renders the photo gallery for a given slot ('antes'/'depois').
@@ -8567,9 +8608,18 @@ function mcOpenStl(which) {
   var biteName  = rec[prefix + 'Bite']  || '';
   var slotsPresent = [upperName, lowerName, biteName].filter(Boolean).length;
   var label = rec.paciente + ' - Scanner ' + (which === 'inicial' ? 'Inicial' : 'Final');
+  var localUpper = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Upper'] || null;
+  var localLower = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Lower'] || null;
+  var localBite  = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Bite']  || null;
 
-  if (slotsPresent >= 2) {
-    U3D_open({ patientName: label, caseKey: _mcActiveId + ':' + which });
+  if (localUpper || localLower || localBite || slotsPresent >= 2) {
+    U3D_open({
+      patientName: label,
+      caseKey: _mcActiveId + ':' + which,
+      localUpperFile: localUpper,
+      localLowerFile: localLower,
+      localBiteFile:  localBite
+    });
     return;
   }
 
@@ -9377,6 +9427,7 @@ function U3D_open(opts){
   // function body, after this point.
   if (opts.localUpperFile !== undefined) U3D_files.upper = opts.localUpperFile;
   if (opts.localLowerFile !== undefined) U3D_files.lower = opts.localLowerFile;
+  if (opts.localBiteFile  !== undefined) U3D_files.bite  = opts.localBiteFile;
 
   // Toggle picker/toolbar UI to match the mode: 'single' hides every
   // Lower-related control (this is the Universal3DViewer's replacement
@@ -9393,9 +9444,9 @@ function U3D_open(opts){
       // by URL (same file the old STLV_* viewer used) and render it
       // alone, through the exact same pipeline as Upper/Lower.
       U3D_loadSingleFromUrl(opts.singleFileUrl, opts.singleFileName);
-    } else if (opts.upperUrl || opts.lowerUrl) {
+    } else if (opts.upperUrl || opts.lowerUrl || opts.biteUrl) {
       U3D_rebuildFromUrls(opts);
-    } else if (U3D_files.upper || U3D_files.lower) {
+    } else if (U3D_files.upper || U3D_files.lower || U3D_files.bite) {
       // Arch mode: render as soon as EITHER Upper or Lower (or both) is
       // already selected/in memory for THIS case -- per spec, the two
       // files are never required together. U3D_rebuildFromLocalFiles()
@@ -9689,17 +9740,20 @@ function U3D_rebuildFromUrls(opts){
 
   Promise.all([
     opts.upperUrl ? U3D_fetchAsFile(opts.upperUrl, 'Upper') : Promise.resolve({ mesh:null, error:null, label:'Upper' }),
-    opts.lowerUrl ? U3D_fetchAsFile(opts.lowerUrl, 'Lower') : Promise.resolve({ mesh:null, error:null, label:'Lower' })
+    opts.lowerUrl ? U3D_fetchAsFile(opts.lowerUrl, 'Lower') : Promise.resolve({ mesh:null, error:null, label:'Lower' }),
+    opts.biteUrl  ? U3D_fetchAsFile(opts.biteUrl,  'Extra') : Promise.resolve({ mesh:null, error:null, label:'Extra' })
   ]).then(function(results){
-    var upperR = results[0], lowerR = results[1];
+    var upperR = results[0], lowerR = results[1], biteR = results[2];
     if (upperR.mesh) { U3D_meshes.upper = U3D_forceSolidMaterial(upperR.mesh, 'upper'); U3D_group.add(U3D_meshes.upper); }
     if (lowerR.mesh) { U3D_meshes.lower = U3D_forceSolidMaterial(lowerR.mesh, 'lower'); U3D_group.add(U3D_meshes.lower); }
-    var loadedCount = [upperR.mesh, lowerR.mesh].filter(Boolean).length;
+    if (biteR.mesh)  { U3D_meshes.bite  = U3D_forceSolidMaterial(biteR.mesh,  'bite');  U3D_group.add(U3D_meshes.bite);  }
+    var loadedCount = [upperR.mesh, lowerR.mesh, biteR.mesh].filter(Boolean).length;
     if (upperR.error) showToast('Upper não pôde ser carregado: ' + upperR.error);
     if (lowerR.error) showToast('Lower não pôde ser carregado: ' + lowerR.error);
+    if (biteR.error)  showToast('Extra não pôde ser carregado: ' + biteR.error);
     if (!loadedCount) return;
     var infoEl = document.getElementById('u3d-hdr-info');
-    if (infoEl) infoEl.textContent = [upperR.mesh&&'Upper', lowerR.mesh&&'Lower'].filter(Boolean).join(' + ');
+    if (infoEl) infoEl.textContent = [upperR.mesh&&'Upper', lowerR.mesh&&'Lower', biteR.mesh&&'Extra'].filter(Boolean).join(' + ');
     U3D_updateToggleButtons();
     U3D_fitCamera();
   });
@@ -10605,15 +10659,17 @@ function sbMcRecordToCasePayload(rec) {
     labColor: rec.labColor || '#34D399',
     prazo: rec.data || '',
     prazoISO: '',
-    delivery: rec.scannerInicial || rec.scannerFinal ? 'scanner' : 'molde',
+    delivery: rec.scannerInicial || rec.scannerFinal || rec.scannerInicialBite || rec.scannerFinalBite ? 'scanner' : 'molde',
     status: 'Recebido',
     statusCls: 'st-p',
     prog: 10,
     obs: rec.obs || '',
     scannerInicialUpper: rec.scannerInicial || '',
     scannerInicialLower: '',
+    scannerInicialBite: rec.scannerInicialBite || '',
     scannerFinalUpper: rec.scannerFinal || '',
     scannerFinalLower: '',
+    scannerFinalBite: rec.scannerFinalBite || '',
     photos: [],
     _source: 'mycases',
     origin: 'mycases',
@@ -10730,17 +10786,19 @@ function sbMapCaseRowToCDM(row) {
     labColor:   '#3B82F6',
     prazo:      prazoDisplay,
     prazoISO:   row.deadline || '',
-    delivery:   (upper || lower) ? 'scanner' : 'molde',
+    delivery:   (upper || lower || bite) ? 'scanner' : 'molde',
     status:     row.status === 'st-ok' ? 'Pronto' : row.status === 'st-done' ? 'Entregue' : row.status === 'st-a' ? 'Em Produção' : 'Recebido',
     statusCls:  row.status || 'st-p',
     prog:       row.status === 'st-ok' ? 80 : row.status === 'st-done' ? 100 : row.status === 'st-a' ? 45 : 10,
     obs:        row.notes || '',
-    hasSTL:     !!(upper || lower),
+    hasSTL:     !!(upper || lower || bite),
     stlFileName:(upper && upper.file_name) || (lower && lower.file_name) || '',
     scannerInicialUpper: upper ? upper.file_name : '',
     scannerInicialLower: lower ? lower.file_name : '',
+    scannerInicialBite:  bite  ? bite.file_name  : '',
     scannerFinalUpper:  '',
     scannerFinalLower:  '',
+    scannerFinalBite:   '',
     criado:     row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : '',
     photos:     photos,
     etapas: [
@@ -10773,9 +10831,10 @@ function sbMapCaseRowToCDM(row) {
   c.implantDesc = row.implant_desc || c.implantDesc || '';
   c.photos = (c._photosReplacedAt && c.photos && c.photos.length) ? c.photos : (photos.length ? photos : (c.photos || []));
   c.hasSTL = !!(upper || lower || bite || c.hasSTL);
-  c.stlFileName = (upper && (upper.original_name || upper.file_name)) || (lower && (lower.original_name || lower.file_name)) || c.stlFileName || '';
+  c.stlFileName = (upper && (upper.original_name || upper.file_name)) || (lower && (lower.original_name || lower.file_name)) || (bite && (bite.original_name || bite.file_name)) || c.stlFileName || '';
   c.scannerInicialUpper = upper ? (upper.original_name || upper.file_name) : (c.scannerInicialUpper || '');
   c.scannerInicialLower = lower ? (lower.original_name || lower.file_name) : (c.scannerInicialLower || '');
+  c.scannerInicialBite  = bite  ? (bite.original_name  || bite.file_name)  : (c.scannerInicialBite  || '');
   c._supabaseId = row.id;
   c._createdBy = row.created_by || null;
   c._clinicId = row.clinic_id || null;
@@ -11157,6 +11216,3 @@ create table if not exists pending_issues (
 
 </body>
 </html>
-
-
-

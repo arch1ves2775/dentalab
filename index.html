@@ -9092,8 +9092,17 @@ function U3D_init(){
   U3D_camera.up.set(0,1,0);
   U3D_camera.lookAt(0,0,0);
 
-  U3D_renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
-  U3D_renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  var isMobileWebGL = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+  U3D_renderer = new THREE.WebGLRenderer({
+    antialias: !isMobileWebGL,
+    alpha: false,
+    premultipliedAlpha: false,
+    preserveDrawingBuffer: false,
+    powerPreference: 'high-performance',
+    logarithmicDepthBuffer: false,
+    precision: 'highp'
+  });
+  U3D_renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileWebGL ? 1.25 : 2));
   vp.appendChild(U3D_renderer.domElement);
   U3D_renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;position:absolute;top:0;left:0;margin:0;padding:0';
 
@@ -9216,7 +9225,10 @@ function U3D_forceSolidMaterial(mesh, slot){
     opacity: 1,
     wireframe: false,
     depthTest: true,
-    depthWrite: true
+    depthWrite: true,
+    polygonOffset: true,
+    polygonOffsetFactor: slot === 'upper' ? -0.5 : (slot === 'lower' ? 0.5 : 0),
+    polygonOffsetUnits: slot === 'upper' ? -0.5 : (slot === 'lower' ? 0.5 : 0)
   });
   mesh.material.needsUpdate = true;
   mesh.visible = true;
@@ -9438,7 +9450,10 @@ function U3D_buildMeshFromBuffer(buf, slot, fileName){
     opacity: 1,
     wireframe: false,
     depthTest: true,
-    depthWrite: true
+    depthWrite: true,
+    polygonOffset: true,
+    polygonOffsetFactor: slot === 'upper' ? -0.5 : (slot === 'lower' ? 0.5 : 0),
+    polygonOffsetUnits: slot === 'upper' ? -0.5 : (slot === 'lower' ? 0.5 : 0)
   });
   var mesh = new THREE.Mesh(geo, mat);
   mesh.material.needsUpdate = true;
@@ -9971,8 +9986,8 @@ function U3D_fitCamera(){
   U3D_O.th = U3D_O.tTh; U3D_O.ph = U3D_O.tPh; U3D_O.r = U3D_O.tR;
 
   var radius = sphere.radius || maxDim/2;
-  U3D_camera.near = radius/100;
-  U3D_camera.far  = radius*100;
+  U3D_camera.near = Math.max(radius * 0.08, maxDim * 0.02, 0.01);
+  U3D_camera.far  = Math.max(distance + radius * 4, maxDim * 8, 10);
   U3D_camera.position.set(0,0,distance);
   U3D_camera.lookAt(0,0,0);
   U3D_camera.updateProjectionMatrix();

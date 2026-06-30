@@ -5317,18 +5317,67 @@ function cdmRenderScannerSection(which, c) {
   var u = safeEl('cdm-' + which + '-upper-name'); if (u) u.textContent = effectiveUpper || 'Nenhum arquivo';
   var l = safeEl('cdm-' + which + '-lower-name'); if (l) l.textContent = lower || 'Nenhum arquivo';
   if (which === 'inicial') {
-    var issue = openIssueForCase(_cdmActiveId);
-    var isScanIssue = issue && (issue.type === 'scanner_corrompido' || issue.type === 'scanner_incompleto');
-    var target = isScanIssue ? (issue.target || 'both') : '';
+    // Use the case's own explicit pending-issue list as the single
+    // source of truth for which slots are still requested, instead of
+    // re-deriving it via openIssueForCase() at render time. That
+    // derivation can silently fall back to derivedIssueForCase(), which
+    // infers the issue type from free-text (obs/status) and never sets
+    // `target` at all -- so right after retifying just the Upper slot
+    // (issue still open, target still 'both', but c.status/c.obs may
+    // already have shifted enough that the text-based inference no
+    // longer matches 'scanner_corrompido'), this section could render
+    // against a *different* issue object than the one
+    // replaceCaseScannerFromIssue() actually used, flipping Lower's
+    // button back to "+ Adicionar" until the case was reopened and
+    // both lookups happened to agree again.
+    var SCANNER_ISSUE_TYPES = ['scanner_corrompido', 'scanner_incompleto'];
+    var storedIssue = storedOpenIssueForCase(_cdmActiveId, SCANNER_ISSUE_TYPES);
+    var derivedIssue = storedIssue ? null : derivedIssueForCase(_cdmActiveId);
+    var issue = storedIssue || derivedIssue;
+    var isScanIssue = issue && SCANNER_ISSUE_TYPES.indexOf(issue.type) >= 0;
+    console.log('[ScannerSection] caseId=' + _cdmActiveId
+      + ' storedIssue=' + (storedIssue ? storedIssue.id + ':' + storedIssue.type + ':' + storedIssue.target : 'null')
+      + ' derivedIssue=' + (derivedIssue ? derivedIssue.id + ':' + derivedIssue.type + ':' + derivedIssue.target : 'null')
+      + ' isScanIssue=' + isScanIssue
+      + ' retifiedSlots=' + JSON.stringify(c._retifiedScannerSlots || {}));
+    // Validate target against the only 3 legitimate values. Any other
+    // value -- empty string, undefined, or a stray value that leaked
+    // in from an unrelated issue type (e.g. 'photos') -- defaults to
+    // 'both' rather than silently matching neither slot and hiding
+    // both Retificar buttons. This is what was happening in practice:
+    // target sometimes arrived as something other than the 3 valid
+    // values, and the old `issue.target || 'both'` fallback only
+    // covers the empty-string/undefined case, not a wrong-but-truthy one.
+    var VALID_TARGETS = ['upper', 'lower', 'both'];
+    var rawTarget = issue && issue.target;
+    var target = isScanIssue ? (VALID_TARGETS.indexOf(rawTarget) >= 0 ? rawTarget : 'both') : '';
+    // Self-healing guard: if BOTH slots are flagged as already-retified
+    // while the issue is still open, that's a contradiction -- an open
+    // scanner issue always means at least one arch is still pending.
+    // This happens on cases affected by the now-fixed leak where
+    // _retifiedScannerSlots from a previous, already-resolved request
+    // survived into a brand new one. Reset it here so those cases
+    // recover automatically the next time the detail is opened,
+    // instead of staying stuck until someone manually clears the field
+    // in Supabase.
+    if (isScanIssue && c._retifiedScannerSlots && c._retifiedScannerSlots.upper && c._retifiedScannerSlots.lower) {
+      console.log('[ScannerSection] Detected contradictory state (both slots retified on an open issue) -- resetting.');
+      c._retifiedScannerSlots = {};
+    }
     [['upper', 'Upper'], ['lower', 'Lower']].forEach(function(pair) {
       var btn = safeEl('cdm-inicial-' + pair[0] + '-btn');
       if (!btn) return;
-      var requested = isScanIssue && (target === 'both' || target === pair[0]);
-      var alreadyRetified = c._retifiedScannerSlots && c._retifiedScannerSlots[pair[0]];
-      var hiddenDuringScanIssue = isScanIssue && !requested;
+      var alreadyRetified = !!(c._retifiedScannerSlots && c._retifiedScannerSlots[pair[0]]);
+      // A slot already retified in this session must never show
+      // "Retificar" again even if the issue object still technically
+      // lists it as requested (e.g. while waiting on the other arch) --
+      // its own button is hidden entirely, exactly as before.
+      var requested = isScanIssue && !alreadyRetified && (target === 'both' || target === pair[0]);
+      var hiddenDuringScanIssue = isScanIssue && !requested && !alreadyRetified;
       btn.textContent = requested ? 'Retificar' : '+ Adicionar';
       btn.classList.toggle('retify-btn', !!requested);
       btn.style.display = (alreadyRetified || hiddenDuringScanIssue) ? 'none' : '';
+      btn.setAttribute('data-debug', 'isScanIssue=' + isScanIssue + ' issueType=' + (issue ? issue.type : 'none') + ' target=' + target + ' requested=' + requested + ' alreadyRetified=' + alreadyRetified);
       btn.setAttribute('onclick', requested
         ? "replaceCaseScannerFromIssue('" + issue.id + "','" + pair[0] + "')"
         : "cdmUploadScannerSlot('inicial','" + pair[1] + "')");
@@ -5585,12 +5634,26 @@ function openIssueForCaseType(caseId, type) {
   }
   var exact = candidates.find(function(p) { return p.type === type; });
   if (exact) return exact;
-  var inferred = candidates.find(function(p) {
+  // Text-inference fallback: ONLY for candidates with no real type at
+  // all (legacy/untyped issues). Must never re-classify an issue that
+  // already carries an explicit type (e.g. 'scanner_corrompido') --
+  // doing so used to MUTATE the live issue object's .type field in
+  // place (`inferred.type = type;`), permanently corrupting real
+  // scanner-rectification issues into 'falta_cor' (or whatever type
+  // was being searched for) whenever the case's combined obs/status/
+  // label text happened to contain a matching keyword. That corruption
+  // happened on every case-detail open -- before the scanner section
+  // even rendered -- which is why a genuine "substitute Upper/Lower
+  // STL" request kept silently turning into a plain color-rectification
+  // field, with the Retificar button and file-upload flow gone.
+  var untyped = candidates.filter(function(p) { return !p.type || p.type === 'falta_observacao'; });
+  var inferred = untyped.find(function(p) {
     return inferIssueTypeFromIssue(p, c) === type;
   });
   if (inferred) {
-    inferred.type = type;
-    return inferred;
+    // Return a copy with the inferred type filled in -- never mutate
+    // the stored issue itself.
+    return Object.assign({}, inferred, { type: type });
   }
   var derived = derivedIssueForCase(caseId);
   if (derived && derived.type === type) return derived;
@@ -5598,6 +5661,16 @@ function openIssueForCaseType(caseId, type) {
 }
 
 function inferIssueTypeFromIssue(issue, c) {
+  // Hard guard: never second-guess an issue that already has a real,
+  // recognized type. Free-text inference exists only to classify
+  // legacy/untyped issues -- it must never override a known type like
+  // 'scanner_corrompido' just because the case's obs/status text also
+  // happens to contain an unrelated keyword (e.g. "cor").
+  var KNOWN_TYPES = ['scanner_corrompido','scanner_incompleto','falta_cor','falta_material',
+    'retificar_prazo','falta_fotos','falta_dentes','falta_observacao'];
+  if (issue && issue.type && KNOWN_TYPES.indexOf(issue.type) >= 0 && issue.type !== 'falta_observacao') {
+    return issue.type;
+  }
   var text = [
     issue && issue.type,
     issue && issue.label,
@@ -6227,14 +6300,18 @@ var ISSUE_TYPES = {
   prazo_proximo:           { icon:'⏰', label:'Prazo em 24h',                urgency:'pendente', requestedTo:'clinica' }
 };
 
-function storedOpenIssueForCase(caseId) {
+function storedOpenIssueForCase(caseId, typeFilter) {
+  var matchesType = function(p) {
+    if (!typeFilter) return true;
+    return typeFilter.indexOf(p.type) >= 0;
+  };
   var local = PENDING_ISSUES.find(function(p) {
-    return String(p.caseId) === String(caseId) && p.status === 'open';
+    return String(p.caseId) === String(caseId) && p.status === 'open' && matchesType(p);
   });
   if (local) return local;
   var c = CDM[caseId];
   if (c && Array.isArray(c._pendingIssues)) {
-    return c._pendingIssues.find(function(p) { return p && p.status === 'open'; }) || null;
+    return c._pendingIssues.find(function(p) { return p && p.status === 'open' && matchesType(p); }) || null;
   }
   return null;
 }
@@ -6256,9 +6333,37 @@ function derivedIssueForCase(caseId) {
   if (!c) return null;
   var isAttention = c.statusCls === 'st-wait' || c.status === 'Aguardando Clínica' || c.status === 'Aguardando Clinica';
   if (!isAttention) return null;
+
+  // Prefer the case's own structured pending-issues list over text
+  // inference. c.obs is a single field that gets overwritten on every
+  // cdmSetStatus call (see line ~7410: "if (obs) c.obs = obs;"), so if
+  // this case ever had more than one type of rectification requested
+  // (color, then scanner, or any other order), c.obs only ever holds
+  // whichever one was MOST RECENT -- not necessarily the one that's
+  // still actually open. Reading it to guess the issue type, as the
+  // old code did unconditionally, could surface a stale request type
+  // (e.g. "color") while a completely different one (e.g. "scanner")
+  // was the real open issue. The structured list doesn't have this
+  // problem: each entry keeps its own type and status independently.
+  if (Array.isArray(c._pendingIssues)) {
+    var openIssues = c._pendingIssues.filter(function(p){ return p && p.status === 'open'; });
+    if (openIssues.length) {
+      // If there's an open scanner-type issue among them, prefer it --
+      // this function is consulted specifically by the scanner section,
+      // so a scanner issue should win over any other open type when
+      // both exist on the same case.
+      var scanIssue = openIssues.find(function(p){ return p.type === 'scanner_corrompido' || p.type === 'scanner_incompleto'; });
+      var chosen = scanIssue || openIssues[0];
+      return Object.assign({}, chosen, { _derived: false });
+    }
+  }
+
+  // Last resort only: no structured issue data available at all (e.g.
+  // a very old case from before pending_issues existed) -- fall back
+  // to guessing from free text.
   var type = inferIssueTypeFromCase(c);
   var it = ISSUE_TYPES[type] || ISSUE_TYPES.falta_observacao;
-  return {
+  var issue = {
     id: 'derived_' + caseId + '_' + type,
     caseId: caseId,
     type: type,
@@ -6269,6 +6374,11 @@ function derivedIssueForCase(caseId) {
     resolvedAt: null,
     _derived: true
   };
+  if ((type === 'scanner_corrompido' || type === 'scanner_incompleto') && c._retifiedScannerSlots) {
+    if (c._retifiedScannerSlots.upper && !c._retifiedScannerSlots.lower) issue.target = 'lower';
+    else if (c._retifiedScannerSlots.lower && !c._retifiedScannerSlots.upper) issue.target = 'upper';
+  }
+  return issue;
 }
 
 function openIssueForCase(caseId) {
@@ -6779,6 +6889,18 @@ function resolvePending(issueId, actionLabel) {
     }
   });
 
+  // Once a scanner-type pending issue is fully resolved, clear the
+  // per-request retified-slots tracker. It only has meaning WHILE a
+  // scanner issue is open (it marks which arch was already re-uploaded
+  // during that specific request); once resolved, isScanIssue becomes
+  // false on the next render, which removes the condition that kept
+  // the already-retified slot's button hidden -- leaving a stray
+  // "+ Adicionar" next to a file that was, in fact, already replaced.
+  // Clearing it here returns the section to its normal clean state.
+  if ((p.type === 'scanner_corrompido' || p.type === 'scanner_incompleto') && CDM[p.caseId]) {
+    CDM[p.caseId]._retifiedScannerSlots = {};
+  }
+
   // Check if this case has any other open issues
   var stillOpen = PENDING_ISSUES.some(function(i){ return String(i.caseId) === String(p.caseId) && i.status === 'open'; });
   if (!stillOpen && CDM[p.caseId]) {
@@ -6898,6 +7020,21 @@ function addPendingIssue(caseId, type, desc, target) {
     renderHomeCaseStats();
     return exists;
   }
+  // Reset the per-request retified-slots tracker whenever a brand new
+  // scanner rectification is opened. _retifiedScannerSlots only makes
+  // sense as state belonging to the CURRENT open scanner issue -- it
+  // marks which arch has already been re-uploaded while that specific
+  // request is in progress. Without this reset, the flag from a
+  // previous (already resolved) scanner request kept surviving inside
+  // the case object indefinitely (it round-trips through
+  // sbBuildCasePayload's shallow Object.assign copy into case_payload
+  // and back), so a brand new request would immediately render as if
+  // both Upper and Lower had already been retified -- hiding both
+  // buttons on the very first time the case was opened after the new
+  // request, which is exactly the symptom reported.
+  if ((type === 'scanner_corrompido' || type === 'scanner_incompleto') && CDM[caseId]) {
+    CDM[caseId]._retifiedScannerSlots = {};
+  }
   var id = 'pi_' + Date.now();
   var issue = { id: id, caseId: caseId, type: type, status: 'open',
     desc: desc, target: target || '', requestedBy: 'lab', createdAt: now(), resolvedAt: null };
@@ -6938,13 +7075,28 @@ async function persistPendingIssue(caseId, issue) {
     var row = {
       case_id: remoteCaseId,
       type: issue.type,
+      target: issue.target || null,
       label: (issue.target ? '[' + issue.target + '] ' : '') + (issue.desc || issueDisplayTitle(issue)),
       status: 'open',
       requested_by: currentUserId || null,
       requested_to: 'clinica'
     };
     var inserted = await _supabaseClient.from('pending_issues').insert(row).select().single();
-    if (inserted.error) throw inserted.error;
+    if (inserted.error) {
+      // If the live table predates the 'target' column migration, the
+      // insert fails on an unknown-column error. Retry once without it
+      // -- the [target] prefix embedded in label is still there as a
+      // fallback for mergePendingIssuesFromCaseRow to parse, so the
+      // issue still reaches the clinic instead of silently never being
+      // created at all (which is what made Retificar never appear).
+      var msg = String(inserted.error.message || '').toLowerCase();
+      if (msg.indexOf('target') >= 0 && (msg.indexOf('column') >= 0 || msg.indexOf('schema') >= 0)) {
+        console.log('[Supabase] pending_issues sem coluna target ainda -- tentando sem ela.');
+        delete row.target;
+        inserted = await _supabaseClient.from('pending_issues').insert(row).select().single();
+      }
+      if (inserted.error) throw inserted.error;
+    }
     if (inserted.data && inserted.data.id && issue.id !== inserted.data.id) {
       var oldId = issue.id;
       issue.id = inserted.data.id;
@@ -6981,10 +7133,21 @@ async function persistCasePayloadIssue(caseId) {
 }
 
 function mergePendingIssuesFromCaseRow(row, localCaseId) {
-  var issues = row && Array.isArray(row.pending_issues) ? row.pending_issues.slice() : [];
+  var fromTable = row && Array.isArray(row.pending_issues) ? row.pending_issues.slice() : [];
   var payloadIssues = row && row.case_payload && row.case_payload.case && Array.isArray(row.case_payload.case._pendingIssues)
     ? row.case_payload.case._pendingIssues
     : [];
+  // Diagnostic: confirms which of the two sources actually delivered
+  // data for this case. If fromTable is always 0 while payloadIssues
+  // has entries, that's a strong signal pending_issues table reads are
+  // being blocked (most likely Row Level Security on Supabase not
+  // granting SELECT to the clinic role) -- the issue still reaches the
+  // case via case_payload (embedded in the cases row, which the
+  // clinic can already read to see the case itself), but it's worth
+  // fixing the RLS policy directly so the dedicated table also works.
+  console.log('[Supabase] mergePendingIssues caseId=' + (localCaseId || (row && row.id))
+    + ' fromTable=' + fromTable.length + ' fromPayload=' + payloadIssues.length);
+  var issues = fromTable;
   payloadIssues.forEach(function(payloadIssue) {
     if (payloadIssue) issues.push(Object.assign({}, payloadIssue, { _fromPayload: true }));
   });
@@ -7587,9 +7750,40 @@ function _patientCard(c, dimmed){
 function stlvLog(m){console.log('[STL] '+m);}
 
 function stlvIsBinary(buf){
-  var dv=new DataView(buf);
-  var n=dv.getUint32(80,true);
-  return Math.abs(buf.byteLength-(80+4+n*50))<10;
+  // Guard: a binary STL header alone is 84 bytes (80-byte name + 4-byte
+  // triangle count). Some scanner exports (Medit/Trios preview arches,
+  // small test scans) produce very short files; reading dv.getUint32(80,…)
+  // on a buffer shorter than 84 bytes throws a RangeError, which some
+  // upstream callers were not catching, silently breaking that file's
+  // load instead of falling through to the ASCII parser where it
+  // belongs. Anything under 84 bytes cannot be a valid binary STL.
+  if (buf.byteLength < 84) return false;
+
+  var dv = new DataView(buf);
+  var n = dv.getUint32(80, true);
+
+  // Heuristic: byteLength must equal 84 + n*50 (header + n triangles of
+  // 50 bytes each). The previous version allowed a +/-10 byte slop,
+  // which exists to tolerate STL writers that pad/truncate slightly,
+  // but it also let an ASCII STL whose first 84 bytes happen to decode
+  // to a small `n` slip through as a false positive -- exactly the kind
+  // of "some files from the same scanner work, others don't" bug
+  // reported. Keep the exact-match check first (the common, well-formed
+  // case) and only fall back to the tolerant check if the buffer also
+  // does NOT start with the ASCII "solid" keyword, which is the
+  // definitive marker that should always win when present.
+  var expectedExact = 84 + n * 50;
+  if (buf.byteLength === expectedExact) return true;
+
+  var looksLikeAsciiHeader = false;
+  try {
+    var head = new TextDecoder().decode(new Uint8Array(buf, 0, Math.min(5, buf.byteLength))).toLowerCase();
+    looksLikeAsciiHeader = head.indexOf('solid') === 0;
+  } catch (e) { /* decoding failure -- treat as not-ASCII, fall through */ }
+
+  if (looksLikeAsciiHeader) return false;
+
+  return Math.abs(buf.byteLength - expectedExact) < 10;
 }
 
 // ==== PLY format support (Universal3DViewer: point 2 of the spec --
@@ -7603,6 +7797,102 @@ function u3dIsPLY(buf){
   if (buf.byteLength < 4) return false;
   var head = new TextDecoder().decode(new Uint8Array(buf, 0, Math.min(4, buf.byteLength)));
   return head === 'ply\\n' || head.slice(0,3) === 'ply';
+}
+
+// OBJ detection/parsing: the upload filters across the app (.stl,.ply,.obj)
+// have always accepted .obj files, but until now U3D_buildMeshFromBuffer
+// had no OBJ branch -- it fell through to the STL path, where stlvIsBinary
+// would (usually) say "not binary" and hand the buffer to stlvParseASCII,
+// whose regex only matches STL's "facet normal ... vertex ..." syntax.
+// An OBJ's "v x y z" / "f a b c" lines never match that regex, so zero
+// triangles were extracted and the load failed with "Malha vazia" --
+// a real, format-dependent failure that would only ever show up for
+// .obj exports, consistent with "some files from the same scanner
+// appear fine and others don't" if a scanner's software ever emits OBJ
+// for certain scan types.
+function u3dIsOBJ(name, buf){
+  // Strip any query string/fragment before checking the extension --
+  // Supabase Storage signed URLs commonly look like
+  // ".../scan.obj?token=..." and a plain /\.obj$/ check would miss
+  // those, silently sending a real OBJ down the STL path instead.
+  if (name) {
+    var bare = name.split('?')[0].split('#')[0];
+    if (/\.obj$/i.test(bare)) return true;
+  }
+  // Content sniff fallback when the filename isn't available: OBJ is
+  // ASCII text whose meaningful lines start with v/vn/vt/f/g/o/usemtl.
+  // STL ASCII always starts with "solid"; binary STL is never valid
+  // UTF-8 text in its first bytes the way a real OBJ consistently is.
+  try {
+    var sample = new TextDecoder().decode(new Uint8Array(buf, 0, Math.min(200, buf.byteLength)));
+    return /^\s*(v |vn |vt |f |g |o |#|mtllib|usemtl)/m.test(sample) && !/^\s*solid\b/.test(sample);
+  } catch (e) { return false; }
+}
+
+// Parses a standard ASCII Wavefront OBJ: reads "v x y z" vertex
+// positions and "f i j k ..." faces (1-based indices, optionally
+// "i/vt/vn" — only the position index before the first slash is used).
+// Faces with more than 3 vertices are fan-triangulated, matching the
+// same handling already used for PLY faces. Per-vertex normals are not
+// read from "vn" lines even when present, since every downstream mesh
+// in this app gets its normals from the same weld-and-average pass
+// (for consistent shading with the STL/PLY paths) rather than trusting
+// file-supplied normals, which dental scanner exports do not reliably
+// provide anyway.
+function u3dParseOBJ(buf){
+  var text = new TextDecoder().decode(buf);
+  var lines = text.split('\n');
+  var vx = [], vy = [], vz = [];
+  var posArr = [];
+
+  for (var li = 0; li < lines.length; li++) {
+    var line = lines[li].trim();
+    if (!line || line.charAt(0) === '#') continue;
+    var parts = line.split(/\s+/);
+    var tag = parts[0];
+
+    if (tag === 'v') {
+      vx.push(parseFloat(parts[1]));
+      vy.push(parseFloat(parts[2]));
+      vz.push(parseFloat(parts[3]));
+    } else if (tag === 'f') {
+      // Each face token may be "i", "i/vt", "i/vt/vn", or "i//vn".
+      // Only the leading position index is needed here.
+      var idx = [];
+      for (var fi = 1; fi < parts.length; fi++) {
+        var raw = parts[fi].split('/')[0];
+        if (!raw) continue;
+        var n = parseInt(raw, 10);
+        // OBJ indices are 1-based; negative indices are relative to
+        // the current end of the vertex list (rare but valid OBJ).
+        var resolved = n > 0 ? (n - 1) : (vx.length + n);
+        idx.push(resolved);
+      }
+      // Fan-triangulate any polygon with more than 3 vertices.
+      for (var k = 1; k < idx.length - 1; k++) {
+        var ia = idx[0], ib = idx[k], ic = idx[k+1];
+        if (ia < 0 || ib < 0 || ic < 0 || ia >= vx.length || ib >= vx.length || ic >= vx.length) continue;
+        posArr.push(vx[ia], vy[ia], vz[ia], vx[ib], vy[ib], vz[ib], vx[ic], vy[ic], vz[ic]);
+      }
+    }
+  }
+
+  if (posArr.length < 9) throw new Error('OBJ sem faces validas');
+
+  // Interleave as [px,py,pz, nx,ny,nz] per vertex, matching the exact
+  // layout U3D_buildMeshFromBuffer expects from every format. Normals
+  // are left at zero here -- U3D_buildMeshFromBuffer's own weld pass
+  // computes and overwrites them from geometry, the same as it does
+  // for STL, so this placeholder is never actually used downstream.
+  var nVerts = posArr.length / 3;
+  var data = new Float32Array(nVerts * 6);
+  for (var vi = 0; vi < nVerts; vi++) {
+    data[vi*6]   = posArr[vi*3];
+    data[vi*6+1] = posArr[vi*3+1];
+    data[vi*6+2] = posArr[vi*3+2];
+    // data[vi*6+3..5] stay 0 -- recomputed by the weld pass below.
+  }
+  return data;
 }
 
 // Parses any of the 3 standard PLY header formats (ascii / binary_little_endian /
@@ -8832,12 +9122,14 @@ function U3D_forceSolidMaterial(mesh, slot){
 // `slot` ('upper'|'lower'|'bite'|'scan') selects which solid color this
 // mesh gets when the file itself carries no vertex colors -- PLY vertex
 // colors (when present) are used instead, per spec point 3.
-function U3D_buildMeshFromBuffer(buf, slot){
+function U3D_buildMeshFromBuffer(buf, slot, fileName){
   var data, vcolors = null;
   if (u3dIsPLY(buf)) {
     var parsed = u3dParsePLY(buf);
     data = parsed.data;
     vcolors = parsed.colors; // null unless the PLY actually had red/green/blue
+  } else if (u3dIsOBJ(fileName, buf)) {
+    data = u3dParseOBJ(buf);
   } else {
     var isBin = stlvIsBinary(buf);
     data = isBin ? stlvParseBinary(buf) : stlvParseASCII(buf);
@@ -8990,7 +9282,7 @@ function U3D_readFile(file, label){
     var reader = new FileReader();
     reader.onload = function(e){
       try {
-        var mesh = U3D_buildMeshFromBuffer(e.target.result, label.toLowerCase());
+        var mesh = U3D_buildMeshFromBuffer(e.target.result, label.toLowerCase(), file.name);
         U3D_log(label + ' carregado (' + (file.size/1024).toFixed(0) + ' KB)');
         resolve({ mesh: mesh, error: null, label: label, fileName: file.name });
       } catch(err) {
@@ -9019,7 +9311,7 @@ function U3D_fetchAsFile(url, label){
       return resp.arrayBuffer();
     })
     .then(function(buf){
-      var mesh = U3D_buildMeshFromBuffer(buf, label.toLowerCase());
+      var mesh = U3D_buildMeshFromBuffer(buf, label.toLowerCase(), url);
       U3D_log(label + ' carregado (' + (buf.byteLength/1024).toFixed(0) + ' KB)');
       return { mesh: mesh, error: null, label: label };
     })
@@ -10566,7 +10858,16 @@ async function refreshCaseFromSupabase(localId) {
     var fresh = sbMapCaseRowToCDM(res.data);
     mergePendingIssuesFromCaseRow(res.data, localId);
     Object.assign(c, fresh);
+    console.log('[Supabase] refreshCaseFromSupabase: pendingIssues recebidas=' + (Array.isArray(res.data.pending_issues) ? res.data.pending_issues.length : 0) + ' caseId=' + localId);
     if (_cdmActiveId === localId) {
+      // Always re-render the scanner section here -- this is the first
+      // point where pending_issues from the server are guaranteed to be
+      // merged into PENDING_ISSUES/c._pendingIssues. The render that
+      // happens synchronously inside openCaseDetail (before this async
+      // call resolves) necessarily used whatever was already in memory,
+      // which can be stale or simply empty on a case opened for the
+      // first time this session -- that's what made the Retificar
+      // button intermittently fail to appear.
       cdmRenderScannerSection('inicial', c);
       cdmRenderScannerSection('final', c);
       cdmRenderPhotos(c.photos || []);
@@ -10738,6 +11039,7 @@ create table if not exists pending_issues (
   id           uuid primary key default gen_random_uuid(),
   case_id      uuid references cases(id) on delete cascade,
   type         text not null,
+  target       text,
   label        text,
   status       text default 'open' check (status in ('open','resolved')),
   requested_by uuid references profiles(id),

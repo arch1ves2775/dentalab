@@ -4069,18 +4069,23 @@ async function sbLoadOrCreateProfile(user) {
       return res.data;
     }
 
-    // No profile row yet -- create one from the email, never from the
-    // hardcoded seed values.
+    // No profile row yet -- create one. Prefer the real name/clinic
+    // already collected by the signup form (userName/userClinica were
+    // set in sbSignupUI before sbSignup -> sbLoadOrCreateProfile runs).
+    // Only fall back to the email-derived name when those are truly
+    // empty (e.g. a session restored with no prior onboarding data).
     var roleFromSignup = sbRoleFromAuthUser(user);
     currentUserRole = roleFromSignup;
     userPerfil = currentUserRole === 'laboratorio' ? 'protesico' : currentUserRole;
     var nameFromEmail = user.email ? user.email.split('@')[0] : 'Utilizador';
+    var finalName    = userName    && userName.trim()    ? userName    : nameFromEmail;
+    var finalClinica = userClinica && userClinica.trim() ? userClinica : '';
     var newProfile = {
       id:          user.id,
       role:        currentUserRole,
-      name:        nameFromEmail,
-      clinic_name: '',
-      lab_name:    '',
+      name:        finalName,
+      clinic_name: currentUserRole !== 'laboratorio' ? finalClinica : '',
+      lab_name:    currentUserRole === 'laboratorio' ? finalClinica : '',
       email:       user.email || ''
     };
     var ins = await _supabaseClient.from('profiles').insert(newProfile).select().single();

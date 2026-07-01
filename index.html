@@ -2359,25 +2359,83 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
       </div>
       <div class="mc-form-section mc-form-row">
         <div><div class="mc-form-label">Nº do paciente</div><input class="mc-form-input" id="mcf-npac" placeholder="PAC-0001 (opcional)"></div>
-        <div><div class="mc-form-label">Data</div><input class="mc-form-input" id="mcf-data" type="date"></div>
+        <div><div class="mc-form-label">Data do caso</div><input class="mc-form-input" id="mcf-data" type="date"></div>
       </div>
       <div class="mc-form-section">
         <div class="mc-form-label">Tipo de tratamento</div>
-        <select class="mc-form-input" id="mcf-tipo">
-          <option value="faceta">Faceta</option>
-          <option value="coroa">Coroa</option>
-          <option value="implante">Implante</option>
-          <option value="reabilitacao">Reabilitação</option>
-          <option value="outros">Outros</option>
+        <select class="mc-form-input" id="mcf-tipo" onchange="mcRenderMaterialOptions()">
+          <option value="faceta">Faceta cerâmica</option>
+          <option value="coroa">Coroa zircónia</option>
+          <option value="implante">Coroa sobre implante</option>
+          <option value="reabilitacao">Prótese acrílica parcial</option>
+          <option value="placa">Placa de bruxismo rígida</option>
+          <option value="outros">Outro serviço</option>
         </select>
       </div>
-      <div class="mc-form-section mc-form-row">
-        <div><div class="mc-form-label">Dentes</div><input class="mc-form-input" id="mcf-dente" placeholder="opcional"></div>
-        <div><div class="mc-form-label">Material</div><input class="mc-form-input" id="mcf-material" placeholder="opcional"></div>
+      <div class="mc-form-section">
+        <div class="mc-form-label">Dentes</div>
+        <div id="mcf-teeth-wrap">
+          <div class="nc-arch" id="mcf-arch-upper">
+            <div class="nc-arch-label">Superior</div>
+            <div class="nc-quad-labels">
+              <div class="nc-quad-lbl" style="flex:1;text-align:right;padding-right:8px">Q2</div>
+              <div style="width:7px;flex-shrink:0"></div>
+              <div class="nc-quad-lbl" style="flex:1;text-align:left;padding-left:8px">Q1</div>
+            </div>
+            <div class="nc-arch-row" id="mcf-row-upper"></div>
+          </div>
+          <div class="nc-arch-divider"></div>
+          <div class="nc-arch" id="mcf-arch-lower">
+            <div class="nc-arch-row" id="mcf-row-lower"></div>
+            <div class="nc-quad-labels" style="margin-top:3px;margin-bottom:0">
+              <div class="nc-quad-lbl" style="flex:1;text-align:right;padding-right:8px">Q3</div>
+              <div style="width:7px;flex-shrink:0"></div>
+              <div class="nc-quad-lbl" style="flex:1;text-align:left;padding-left:8px">Q4</div>
+            </div>
+            <div class="nc-arch-label" style="margin-top:4px">Inferior</div>
+          </div>
+          <div class="nc-teeth-summary" id="mcf-teeth-summary">
+            <span id="mcf-teeth-count-lbl" class="nc-teeth-count" style="display:none"></span>
+            <span id="mcf-teeth-list-lbl" class="nc-teeth-list">Toca nos dentes para selecionar</span>
+            <button class="nc-teeth-edit-btn" type="button" onclick="mcToggleManualTeeth()" id="mcf-teeth-edit-btn">editar manualmente</button>
+          </div>
+          <div class="nc-teeth-manual" id="mcf-teeth-manual">
+            <input class="mc-form-input" id="mcf-dente" placeholder="Ex: 11, 21, 22" autocomplete="off" oninput="mcSyncManualToTeeth()" style="margin-bottom:0">
+          </div>
+        </div>
       </div>
-      <div class="mc-form-section mc-form-row">
-        <div><div class="mc-form-label">Cor</div><input class="mc-form-input" id="mcf-shade" placeholder="opcional"></div>
-        <div><div class="mc-form-label">Laboratório</div><input class="mc-form-input" id="mcf-lab" placeholder="opcional"></div>
+      <div class="mc-form-section">
+        <div class="mc-form-label">Material</div>
+        <div id="mcf-material-wrap">
+          <div class="nc-mat-placeholder" id="mcf-mat-placeholder">Escolha o tipo de tratamento para ver materiais</div>
+          <div class="nc-mat-chips" id="mcf-mat-chips" style="display:none"></div>
+        </div>
+        <div id="mcf-subtype-wrap" style="display:none">
+          <div class="nc-subtype-label" id="mcf-subtype-label">Subtipo</div>
+          <div class="nc-subtype-chips" id="mcf-subtype-chips"></div>
+        </div>
+        <div id="mcf-conexao-wrap" style="display:none">
+          <div class="nc-conexao-label">Tipo de conexão</div>
+          <div class="nc-conexao-chips" id="mcf-conexao-chips"></div>
+        </div>
+      </div>
+      <div class="mc-form-section">
+        <div class="mc-form-label">Cor</div>
+        <div class="chip-row" id="mcf-chip-shade">
+          <span class="chip" onclick="mcSelectShade(this)">A1</span>
+          <span class="chip" onclick="mcSelectShade(this)">A2</span>
+          <span class="chip" onclick="mcSelectShade(this)">A3</span>
+          <span class="chip" onclick="mcSelectShade(this)">A3.5</span>
+          <span class="chip" onclick="mcSelectShade(this)">B1</span>
+          <span class="chip" onclick="mcSelectShade(this)">BL1</span>
+          <span class="chip" onclick="mcSelectShade(this)">BL2</span>
+          <span class="chip" onclick="mcSelectShade(this)">Outra</span>
+        </div>
+        <input class="mc-form-input" id="mcf-shade" placeholder="Especificar cor..." autocomplete="off" style="display:none;margin-top:8px">
+      </div>
+      <div class="mc-form-section">
+        <div class="mc-form-label">Laboratório</div>
+        <select class="mc-form-input" id="mcf-lab"></select>
       </div>
       <div class="mc-form-section">
         <div class="mc-form-label">Observações</div>
@@ -2401,16 +2459,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 
       <div class="mc-form-section">
         <div class="mc-form-label">🦷 Scanner Inicial</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg,#0B1120);border-radius:10px;padding:10px 12px">
-          <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerInicial-name">Nenhum ficheiro</span>
-          <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0;margin-left:8px" type="button" onclick="mcFormPickStl('scannerInicial')">+ Adicionar Scanner Inicial</button>
+        <div style="display:flex;flex-direction:column;gap:8px;background:var(--bg,#0B1120);border-radius:10px;padding:10px 12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerInicialUpper-name">Maxila: nenhum ficheiro</span>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerInicialUpper')">+ Maxila</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerInicialLower-name">Mandíbula: nenhum ficheiro</span>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerInicialLower')">+ Mandíbula</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerInicialBite-name">Extra: nenhum ficheiro</span>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerInicialBite')">+ Extra</button>
+          </div>
         </div>
       </div>
       <div class="mc-form-section">
         <div class="mc-form-label">🦷 Scanner Final</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg,#0B1120);border-radius:10px;padding:10px 12px">
-          <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerFinal-name">Nenhum ficheiro</span>
-          <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0;margin-left:8px" type="button" onclick="mcFormPickStl('scannerFinal')">+ Adicionar Scanner Final</button>
+        <div style="display:flex;flex-direction:column;gap:8px;background:var(--bg,#0B1120);border-radius:10px;padding:10px 12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerFinalUpper-name">Maxila: nenhum ficheiro</span>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerFinalUpper')">+ Maxila</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerFinalLower-name">Mandíbula: nenhum ficheiro</span>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerFinalLower')">+ Mandíbula</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerFinalBite-name">Extra: nenhum ficheiro</span>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerFinalBite')">+ Extra</button>
+          </div>
         </div>
       </div>
 
@@ -3703,6 +3781,14 @@ function cdmPromoteLocalCaseId(localId, remoteId) {
   CDM[remoteId] = c;
   delete CDM[localId];
 
+  Object.keys(CDM_LOCAL_FILES || {}).forEach(function(key){
+    var prefix = localId + ':';
+    if (key.indexOf(prefix) === 0) {
+      CDM_LOCAL_FILES[remoteId + ':' + key.slice(prefix.length)] = CDM_LOCAL_FILES[key];
+      delete CDM_LOCAL_FILES[key];
+    }
+  });
+
   var card = document.getElementById('cdm-card-' + localId);
   if (card) {
     card.id = 'cdm-card-' + remoteId;
@@ -3715,6 +3801,13 @@ function cdmPromoteLocalCaseId(localId, remoteId) {
     (CHAT_MESSAGES[k] || []).forEach(function(m){
       if (m && m.type === 'case' && m.caseId === localId) m.caseId = remoteId;
     });
+  });
+
+  document.querySelectorAll('.case-bubble[onclick]').forEach(function(bubble){
+    var onclick = bubble.getAttribute('onclick') || '';
+    if (onclick.indexOf("openCaseDetail('" + localId + "')") >= 0) {
+      bubble.setAttribute('onclick', "openCaseDetail('" + remoteId + "')");
+    }
   });
 }
 
@@ -3787,27 +3880,34 @@ function sendCase(){
     labColor:    labColors[selLabId] || '#3B82F6'
   };
   var selectedLabDbId = selLabDbId;
+  var selectedLabId = selLabId;
+  var selectedLabName = selLabName;
+  var selectedLabColor = labColors[selectedLabId] || '#3B82F6';
   var newCaseId = createLabCase(newCaseData, source);
   saveCaseToSupabase(CDM[newCaseId], {
     scannerUpper: NC_SCANNER.upper,
     scannerLower: NC_SCANNER.lower,
     scannerBite: NC_SCANNER.bite,
     photos: NC_PHOTOS.map(function(p){ return { dataUrl: p.dataUrl, file: p.file }; })
-  }).then(function(res) {
+  }).then(async function(res) {
     if (res && res.source === 'supabase') {
       cdmPromoteLocalCaseId(newCaseId, res.data.id);
       CDM[res.data.id]._files = res.files || [];
       CDM[res.data.id]._labDbId = selectedLabDbId || null;
       CDM[res.data.id]._clinicId = currentUserId || null;
       CDM[res.data.id]._createdBy = currentUserId || null;
-      sbSendCaseChatEvent(res.data.id, selectedLabDbId, currentUserId);
-      showToast('Caso enviado ao Supabase ✓');
+      var chatSaved = await sbSendCaseChatEvent(res.data.id, selectedLabDbId, currentUserId);
+      if (chatSaved && CURRENT_CHAT && CURRENT_CHAT.labId === selectedLabDbId && CURRENT_CHAT.clinicId === currentUserId) {
+        await sbLoadChatMessages();
+      }
+      await syncSupabaseCasesIntoCDM();
+      showToast(chatSaved ? 'Caso enviado ao Supabase ✓' : 'Caso salvo, mas a conversa não sincronizou.');
     } else {
       delete CDM[newCaseId];
       var unsyncedCard = document.getElementById('cdm-card-' + newCaseId);
       if (unsyncedCard) unsyncedCard.remove();
-      if (CHAT_MESSAGES[selLabId]) {
-        CHAT_MESSAGES[selLabId] = CHAT_MESSAGES[selLabId].filter(function(message){ return !(message.type === 'case' && message.caseId === newCaseId); });
+      if (CHAT_MESSAGES[selectedLabId]) {
+        CHAT_MESSAGES[selectedLabId] = CHAT_MESSAGES[selectedLabId].filter(function(message){ return !(message.type === 'case' && message.caseId === newCaseId); });
       }
       showToast('O caso não foi enviado: ' + ((res && res.error) || 'erro de sincronização.'));
     }
@@ -3821,13 +3921,13 @@ function sendCase(){
   // not already there looking at this lab's conversation.
   var chatScr = document.getElementById('scr-chat');
   var alreadyInChat = chatScr && chatScr.classList.contains('active');
-  var labColorFinal = labColors[selLabId] || '#3B82F6';
-  var labAvFinal = selLabId.substring(0,2);
+  var labColorFinal = selectedLabColor;
+  var labAvFinal = selectedLabId.substring(0,2);
 
   if (!alreadyInChat || _currentChatLabAv !== labAvFinal) {
     // Navigate: openChat will NOT re-render messages when lab matches,
     // so the bubble just injected is preserved.
-    openChat(labAvFinal, selLabName, labColorFinal, selLabDbId, currentUserId);
+    openChat(labAvFinal, selectedLabName, labColorFinal, selectedLabDbId, currentUserId);
   } else {
     // Already in the right chat — just scroll to the new bubble
     setTimeout(function(){ document.getElementById('msgs-area').scrollTop = 9999; }, 60);
@@ -4578,6 +4678,15 @@ function openNewCase(){
   var chatScr = document.getElementById('scr-chat');
   _ncSource = (chatScr && chatScr.classList.contains('active')) ? 'chat' : 'mylab';
   ncResetForm();
+  if (_ncSource === 'chat' && CURRENT_CHAT && CURRENT_CHAT.labId) {
+    var chatLabName = (document.getElementById('chat-name') || {}).textContent || selLabName;
+    var chatLabAv = (document.getElementById('chat-av') || {}).textContent || selLabId;
+    selLabId = chatLabAv || selLabId;
+    selLabName = chatLabName || selLabName;
+    selLabDbId = CURRENT_CHAT.labId;
+    var labOpt = document.querySelector('#lab-list .lab-opt[data-lab-db-id="' + CURRENT_CHAT.labId + '"]');
+    if (labOpt) selLab(labOpt, selLabId, selLabName, selLabDbId);
+  }
   openModal('modal-case');
 }
 
@@ -8256,7 +8365,7 @@ function mcTipoFromTitle(tipo) {
 }
 
 function mcTipoLabel(cat) {
-  return { faceta:'Faceta', coroa:'Coroa', implante:'Implante', reabilitacao:'Reabilitacao', outros:'Outro' }[cat] || 'Outro';
+  return { faceta:'Faceta', coroa:'Coroa', implante:'Implante', reabilitacao:'Reabilitacao', placa:'Placa', outros:'Outro' }[cat] || 'Outro';
 }
 
 // Placeholder thumbnail colors used to render mock photo tiles
@@ -8700,6 +8809,11 @@ function mcUploadScannerSlot(which, slotLabel) {
   if (!_mcActiveId) return;
   var rec = MC_DATA[_mcActiveId];
   if (!rec) return;
+  if (rec.origem !== 'manual' && which !== 'final') {
+    showToast('Casos vindos da DentaLab permitem adicionar apenas scanner final.');
+    return;
+  }
+  var normalizedSlotLabel = slotLabel || 'Upper';
 
   var input = document.createElement('input');
   setup3DFilePicker(input);
@@ -8721,11 +8835,11 @@ function mcUploadScannerSlot(which, slotLabel) {
     // Never overwrite an already-filled slot -- only write if the field
     // is currently empty, to prevent silent data loss when both slot
     // buttons are used independently.
-    if (slotLabel) {
-      var field = prefix + slotLabel; // e.g. 'scannerInicialUpper'
+    if (normalizedSlotLabel) {
+      var field = prefix + normalizedSlotLabel; // e.g. 'scannerInicialUpper'
       rec[field] = file.name;
       // Keep the real File object so U3D_open can render without fetch().
-      if (_mcActiveId) CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':' + slotLabel] = file;
+      if (_mcActiveId) CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':' + normalizedSlotLabel] = file;
     }
 
     // Update the legacy flat scanner fields only if they are currently
@@ -8741,7 +8855,7 @@ function mcUploadScannerSlot(which, slotLabel) {
     }
 
     rec.ultimaAlteracao = mcTodayBR();
-    var slotDisplay = slotLabel ? (slotLabel + ' (' + (which === 'inicial' ? 'Inicial' : 'Final') + ')') : ('Scanner ' + (which === 'inicial' ? 'Inicial' : 'Final'));
+    var slotDisplay = normalizedSlotLabel + ' (' + (which === 'inicial' ? 'Inicial' : 'Final') + ')';
     showToast(slotDisplay + ' atualizado: ' + file.name);
     mcOpenDetail(_mcActiveId);
     mcRender();
@@ -8756,7 +8870,272 @@ var _mcFormMode = 'create';
 var _mcFormEditId = null;
 // Draft photo/STL counts held only in the form while it's open, so
 // Cancelar discards them and Salvar commits them to MC_DATA.
-var _mcFormDraft = { fotosAntes: 0, fotosDepois: 0, scannerInicial: '', scannerFinal: '' };
+var _mcFormDraft = {};
+var MC_TEETH = new Set();
+var MC_TEETH_MANUAL_OPEN = false;
+var MC_MATERIAL = '';
+var MC_SUBTYPE = '';
+var MC_CONEXAO = '';
+var MC_SHADE = '';
+
+function mcEmptyFormDraft() {
+  return {
+    fotosAntes: 0,
+    fotosDepois: 0,
+    scannerInicial: '',
+    scannerInicialUpper: '',
+    scannerInicialLower: '',
+    scannerInicialBite: '',
+    scannerFinal: '',
+    scannerFinalUpper: '',
+    scannerFinalLower: '',
+    scannerFinalBite: '',
+    fotosAntesFiles: [],
+    fotosDepoisFiles: [],
+    scannerInicialUpperFile: null,
+    scannerInicialLowerFile: null,
+    scannerInicialBiteFile: null,
+    scannerFinalUpperFile: null,
+    scannerFinalLowerFile: null,
+    scannerFinalBiteFile: null
+  };
+}
+
+function mcFormatFromName(name) {
+  var n = String(name || '').toLowerCase();
+  if (n.endsWith('.ply')) return 'ply';
+  if (n.endsWith('.obj')) return 'obj';
+  return name ? 'stl' : '';
+}
+
+function mcFirstScannerName(draftOrRec, prefix) {
+  return draftOrRec[prefix + 'Upper'] || draftOrRec[prefix + 'Lower'] || draftOrRec[prefix + 'Bite'] || draftOrRec[prefix] || '';
+}
+
+function mcSelectedTipoLabel() {
+  var sel = safeEl('mcf-tipo');
+  if (!sel) return '';
+  return sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : sel.value;
+}
+
+function mcRenderLabOptions(selectedName) {
+  var sel = safeEl('mcf-lab');
+  if (!sel) return;
+  var labs = (CONNECTED_LABS || []).filter(Boolean);
+  var html = '<option value="">Sem laboratório</option>';
+  labs.forEach(function(lab){
+    var name = lab.name || '';
+    html += '<option value="' + sbEscapeHtml(name) + '">' + sbEscapeHtml(name) + '</option>';
+  });
+  if (selectedName && !labs.some(function(lab){ return lab && lab.name === selectedName; })) {
+    html += '<option value="' + sbEscapeHtml(selectedName) + '">' + sbEscapeHtml(selectedName) + '</option>';
+  }
+  sel.innerHTML = html;
+  sel.value = selectedName || '';
+}
+
+function mcTeethInit(value) {
+  MC_TEETH = new Set();
+  String(value || '').split(/[,\s;]+/).map(function(x){ return x.trim(); }).filter(Boolean).forEach(function(n){
+    if (/^\d{2}$/.test(n)) MC_TEETH.add(n);
+  });
+  mcTeethRenderRow('mcf-row-upper', TEETH_UPPER, false);
+  mcTeethRenderRow('mcf-row-lower', TEETH_LOWER, true);
+  MC_TEETH_MANUAL_OPEN = false;
+  var manual = safeEl('mcf-teeth-manual'); if (manual) manual.classList.remove('open');
+  var btn = safeEl('mcf-teeth-edit-btn'); if (btn) btn.textContent = 'editar manualmente';
+  var input = safeEl('mcf-dente'); if (input) input.value = value || '';
+  mcTeethUpdateSummary();
+}
+
+function mcTeethRenderRow(rowId, teeth, isLower) {
+  var row = safeEl(rowId);
+  if (!row) return;
+  var mid = teeth.length / 2;
+  var html = '';
+  teeth.forEach(function(n, i){
+    var type = TEETH_TYPE[n] || 'm';
+    var sel = MC_TEETH.has(n) ? ' sel' : '';
+    var cls = isLower ? ' lower' : '';
+    var heights = { m:'42px', pm:'38px', c:'40px', i:'36px' };
+    html += '<button class="nc-tooth' + cls + sel + '" id="mct-' + n + '" type="button" onclick="mcTeethToggle(\'' + n + '\')" style="min-height:' + (heights[type] || '38px') + '" aria-label="Dente ' + n + '">'
+      + '<span class="nc-tooth-num">' + n + '</span></button>';
+    if (i === mid - 1) html += '<div class="nc-arch-mid"></div>';
+  });
+  row.innerHTML = html;
+}
+
+function mcTeethToggle(n) {
+  if (MC_TEETH.has(n)) MC_TEETH.delete(n);
+  else MC_TEETH.add(n);
+  var btn = safeEl('mct-' + n);
+  if (btn) btn.classList.toggle('sel', MC_TEETH.has(n));
+  mcTeethUpdateSummary();
+}
+
+function mcTeethUpdateSummary() {
+  var count = MC_TEETH.size;
+  var summary = safeEl('mcf-teeth-summary');
+  var countLbl = safeEl('mcf-teeth-count-lbl');
+  var listLbl = safeEl('mcf-teeth-list-lbl');
+  var sorted = Array.from(MC_TEETH).sort(function(a,b){ return parseInt(a) - parseInt(b); });
+  if (summary) summary.classList.toggle('has', count > 0);
+  if (countLbl) {
+    countLbl.style.display = count ? 'inline' : 'none';
+    countLbl.textContent = count ? (count + ' dente' + (count === 1 ? '' : 's')) : '';
+  }
+  if (listLbl) listLbl.textContent = count ? sorted.join(', ') : 'Toca nos dentes para selecionar';
+  var input = safeEl('mcf-dente');
+  if (input && !MC_TEETH_MANUAL_OPEN) input.value = sorted.join(', ');
+}
+
+function mcToggleManualTeeth() {
+  MC_TEETH_MANUAL_OPEN = !MC_TEETH_MANUAL_OPEN;
+  var wrap = safeEl('mcf-teeth-manual');
+  var btn = safeEl('mcf-teeth-edit-btn');
+  if (wrap) wrap.classList.toggle('open', MC_TEETH_MANUAL_OPEN);
+  if (btn) btn.textContent = MC_TEETH_MANUAL_OPEN ? 'fechar edição manual' : 'editar manualmente';
+  var input = safeEl('mcf-dente');
+  if (MC_TEETH_MANUAL_OPEN && input) input.value = Array.from(MC_TEETH).sort(function(a,b){ return parseInt(a)-parseInt(b); }).join(', ');
+}
+
+function mcSyncManualToTeeth() {
+  var input = safeEl('mcf-dente');
+  var val = input ? input.value : '';
+  MC_TEETH = new Set();
+  String(val || '').split(/[,\s;]+/).map(function(x){ return x.trim(); }).filter(Boolean).forEach(function(n){
+    if (/^\d{2}$/.test(n)) MC_TEETH.add(n);
+  });
+  mcTeethRenderRow('mcf-row-upper', TEETH_UPPER, false);
+  mcTeethRenderRow('mcf-row-lower', TEETH_LOWER, true);
+  mcTeethUpdateSummary();
+  if (input) input.value = val;
+}
+
+function mcGetTeethLabel() {
+  var input = safeEl('mcf-dente');
+  var manualVal = MC_TEETH_MANUAL_OPEN && input ? input.value.trim() : '';
+  if (manualVal) return manualVal;
+  return Array.from(MC_TEETH).sort(function(a,b){ return parseInt(a)-parseInt(b); }).join(', ');
+}
+
+function mcRenderMaterialOptions(selectedMaterial) {
+  MC_MATERIAL = ''; MC_SUBTYPE = ''; MC_CONEXAO = '';
+  var placeholder = safeEl('mcf-mat-placeholder');
+  var chipsWrap = safeEl('mcf-mat-chips');
+  var subWrap = safeEl('mcf-subtype-wrap');
+  var conWrap = safeEl('mcf-conexao-wrap');
+  if (subWrap) subWrap.style.display = 'none';
+  if (conWrap) conWrap.style.display = 'none';
+  if (!placeholder || !chipsWrap) return;
+  var resolved = matResolve(mcSelectedTipoLabel()) || {
+    mats: [
+      { name:'Zircónia', sub:['Multilayer','HT','MT','LT'] },
+      { name:'e.max', sub:['HT','LT','MO','HO'] },
+      { name:'Metalocerâmica' },
+      { name:'Acrílico convencional' },
+      { name:'Resina' },
+      { name:'Outro' }
+    ],
+    showConexao: false
+  };
+  placeholder.style.display = 'none';
+  chipsWrap.style.display = 'flex';
+  chipsWrap.innerHTML = resolved.mats.map(function(m){
+    var selected = selectedMaterial && String(selectedMaterial).toLowerCase().indexOf(m.name.toLowerCase()) >= 0;
+    if (selected) MC_MATERIAL = m.name;
+    return '<button type="button" class="nc-mat-chip' + (selected ? ' sel' : '') + '" onclick="mcSelMaterial(this,\'' + m.name.replace(/'/g,"\\'") + '\')">' + sbEscapeHtml(m.name) + '</button>';
+  }).join('');
+  if (resolved.showConexao) {
+    var conChips = safeEl('mcf-conexao-chips');
+    if (conChips && conWrap) {
+      conChips.innerHTML = ['Ti-base','Pilar personalizado','UCLA'].map(function(c){
+        var selected = selectedMaterial && String(selectedMaterial).toLowerCase().indexOf(c.toLowerCase()) >= 0;
+        if (selected) MC_CONEXAO = c;
+        return '<button type="button" class="nc-con-chip' + (selected ? ' sel' : '') + '" onclick="mcSelConexao(this,\'' + c + '\')">' + c + '</button>';
+      }).join('');
+      conWrap.style.display = 'block';
+    }
+  }
+  if (MC_MATERIAL) mcRenderSubtypeForMaterial(selectedMaterial || '');
+}
+
+function mcSelMaterial(el, name) {
+  MC_MATERIAL = name;
+  MC_SUBTYPE = '';
+  document.querySelectorAll('#mcf-mat-chips .nc-mat-chip').forEach(function(c){ c.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  mcRenderSubtypeForMaterial('');
+}
+
+function mcRenderSubtypeForMaterial(selectedMaterial) {
+  var resolved = matResolve(mcSelectedTipoLabel());
+  var subWrap = safeEl('mcf-subtype-wrap');
+  var subLabel = safeEl('mcf-subtype-label');
+  var subChips = safeEl('mcf-subtype-chips');
+  if (!resolved || !subWrap || !subChips) { if (subWrap) subWrap.style.display = 'none'; return; }
+  var matEntry = resolved.mats.find(function(m){ return m.name === MC_MATERIAL; });
+  if (!matEntry || !matEntry.sub || !matEntry.sub.length) { subWrap.style.display = 'none'; return; }
+  if (subLabel) subLabel.textContent = MC_MATERIAL + ' — Subtipo';
+  subChips.innerHTML = matEntry.sub.map(function(s){
+    var selected = selectedMaterial && String(selectedMaterial).toLowerCase().indexOf(s.toLowerCase()) >= 0;
+    if (selected) MC_SUBTYPE = s;
+    return '<button type="button" class="nc-sub-chip' + (selected ? ' sel' : '') + '" onclick="mcSelSubtype(this,\'' + s + '\')">' + s + '</button>';
+  }).join('');
+  subWrap.style.display = 'block';
+}
+
+function mcSelSubtype(el, name) {
+  MC_SUBTYPE = name;
+  document.querySelectorAll('#mcf-subtype-chips .nc-sub-chip').forEach(function(c){ c.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+}
+
+function mcSelConexao(el, name) {
+  MC_CONEXAO = name;
+  document.querySelectorAll('#mcf-conexao-chips .nc-con-chip').forEach(function(c){ c.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+}
+
+function mcGetMaterialLabel() {
+  return [MC_MATERIAL, MC_SUBTYPE, MC_CONEXAO].filter(Boolean).join(' ');
+}
+
+function mcSelectShade(el) {
+  document.querySelectorAll('#mcf-chip-shade .chip').forEach(function(c){ c.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  MC_SHADE = el ? el.textContent : '';
+  var custom = safeEl('mcf-shade');
+  if (custom) {
+    custom.style.display = MC_SHADE === 'Outra' ? 'block' : 'none';
+    if (MC_SHADE !== 'Outra') custom.value = '';
+  }
+}
+
+function mcSetShadeValue(value) {
+  MC_SHADE = '';
+  document.querySelectorAll('#mcf-chip-shade .chip').forEach(function(c){
+    var hit = c.textContent === value;
+    c.classList.toggle('sel', hit);
+    if (hit) MC_SHADE = value;
+  });
+  var custom = safeEl('mcf-shade');
+  if (custom) {
+    var isCustom = value && !MC_SHADE;
+    custom.style.display = isCustom ? 'block' : 'none';
+    custom.value = isCustom ? value : '';
+    if (isCustom) {
+      var other = Array.prototype.find.call(document.querySelectorAll('#mcf-chip-shade .chip'), function(c){ return c.textContent === 'Outra'; });
+      if (other) other.classList.add('sel');
+      MC_SHADE = 'Outra';
+    }
+  }
+}
+
+function mcGetShadeValue() {
+  if (MC_SHADE === 'Outra') return (safeEl('mcf-shade') || {}).value || '';
+  return MC_SHADE || '';
+}
 
 function mcTodayISO() {
   var d = new Date();
@@ -8777,17 +9156,21 @@ function mcTodayBR() { return mcISOToBR(mcTodayISO()); }
 function mcOpenNewCase() {
   _mcFormMode = 'create';
   _mcFormEditId = null;
-  _mcFormDraft = { fotosAntes: 0, fotosDepois: 0, scannerInicial: '', scannerFinal: '', fotosAntesFiles: [], fotosDepoisFiles: [], scannerInicialFile: null, scannerFinalFile: null };
+  _mcFormDraft = mcEmptyFormDraft();
 
   var titleEl = safeEl('mcf-title'); if (titleEl) titleEl.textContent = 'Novo MyCase';
   var subEl = safeEl('mcf-subtitle'); if (subEl) subEl.textContent = 'Adicionar caso manualmente';
   var delBtn = safeEl('mcf-delete-btn'); if (delBtn) delBtn.style.display = 'none';
 
-  ['mcf-nome','mcf-npac','mcf-dente','mcf-material','mcf-shade','mcf-lab','mcf-obs'].forEach(function(id){
+  ['mcf-nome','mcf-npac','mcf-obs'].forEach(function(id){
     var el = safeEl(id); if (el) el.value = '';
   });
   var dataEl = safeEl('mcf-data'); if (dataEl) dataEl.value = mcTodayISO();
   var tipoEl = safeEl('mcf-tipo'); if (tipoEl) tipoEl.value = 'outros';
+  mcTeethInit('');
+  mcRenderMaterialOptions('');
+  mcSetShadeValue('');
+  mcRenderLabOptions('');
   var favToggle = safeEl('mcf-favorito-toggle'); if (favToggle) favToggle.classList.remove('off');
 
   mcFormRefreshMediaLabels();
@@ -8802,7 +9185,18 @@ function mcOpenEditCase() {
 
   _mcFormMode = 'edit';
   _mcFormEditId = _mcActiveId;
-  _mcFormDraft = { fotosAntes: rec.fotosAntes||0, fotosDepois: rec.fotosDepois||0, scannerInicial: rec.scannerInicial||'', scannerFinal: rec.scannerFinal||'', fotosAntesFiles: [], fotosDepoisFiles: [], scannerInicialFile: null, scannerFinalFile: null };
+  _mcFormDraft = Object.assign(mcEmptyFormDraft(), {
+    fotosAntes: rec.fotosAntes || 0,
+    fotosDepois: rec.fotosDepois || 0,
+    scannerInicial: rec.scannerInicial || '',
+    scannerInicialUpper: rec.scannerInicialUpper || rec.scannerInicial || '',
+    scannerInicialLower: rec.scannerInicialLower || '',
+    scannerInicialBite: rec.scannerInicialBite || '',
+    scannerFinal: rec.scannerFinal || '',
+    scannerFinalUpper: rec.scannerFinalUpper || rec.scannerFinal || '',
+    scannerFinalLower: rec.scannerFinalLower || '',
+    scannerFinalBite: rec.scannerFinalBite || ''
+  });
 
   var titleEl = safeEl('mcf-title'); if (titleEl) titleEl.textContent = 'Editar MyCase';
   var subEl = safeEl('mcf-subtitle'); if (subEl) subEl.textContent = rec.paciente;
@@ -8816,12 +9210,12 @@ function mcOpenEditCase() {
   setVal('mcf-nome', rec.paciente);
   setVal('mcf-npac', rec.npac);
   setVal('mcf-data', mcBRToISO(rec.data) || mcTodayISO());
-  setVal('mcf-dente', rec.dente);
-  setVal('mcf-material', rec.material);
-  setVal('mcf-shade', rec.shade);
-  setVal('mcf-lab', rec.lab);
   setVal('mcf-obs', rec.obs);
   var tipoEl = safeEl('mcf-tipo'); if (tipoEl) tipoEl.value = rec.categoria || 'outros';
+  mcTeethInit(rec.dente || '');
+  mcRenderMaterialOptions(rec.material || '');
+  mcSetShadeValue(rec.shade || '');
+  mcRenderLabOptions(rec.lab || '');
   var favToggle = safeEl('mcf-favorito-toggle');
   if (favToggle) favToggle.classList.toggle('off', !rec.favorito);
 
@@ -8839,6 +9233,17 @@ function mcFormRefreshMediaLabels() {
   if (si) si.textContent = _mcFormDraft.scannerInicial || 'Nenhum ficheiro';
   var sf = safeEl('mcf-scannerFinal-name');
   if (sf) sf.textContent = _mcFormDraft.scannerFinal || 'Nenhum ficheiro';
+  [
+    ['scannerInicialUpper', 'Maxila'],
+    ['scannerInicialLower', 'Mandíbula'],
+    ['scannerInicialBite', 'Extra'],
+    ['scannerFinalUpper', 'Maxila'],
+    ['scannerFinalLower', 'Mandíbula'],
+    ['scannerFinalBite', 'Extra']
+  ].forEach(function(item){
+    var el = safeEl('mcf-' + item[0] + '-name');
+    if (el) el.textContent = item[1] + ': ' + (_mcFormDraft[item[0]] || 'nenhum ficheiro');
+  });
 }
 
 // Photos: mock counter increment (no real file storage yet), mirrors the
@@ -8886,6 +9291,10 @@ function mcFormPickStl(which) {
     if (!nameLower.endsWith('.stl') && !nameLower.endsWith('.ply') && !nameLower.endsWith('.obj')) { showToast('Selecione um ficheiro .stl, .ply ou .obj'); return; }
     _mcFormDraft[which] = file.name;
     _mcFormDraft[which + 'File'] = file;
+    var prefix = which.indexOf('scannerInicial') === 0 ? 'scannerInicial' : (which.indexOf('scannerFinal') === 0 ? 'scannerFinal' : which);
+    if (prefix === 'scannerInicial' || prefix === 'scannerFinal') {
+      _mcFormDraft[prefix] = mcFirstScannerName(_mcFormDraft, prefix);
+    }
     mcFormRefreshMediaLabels();
   });
   input.click();
@@ -8894,8 +9303,27 @@ function mcFormRemoveStl(which) {
   if (!_mcFormDraft[which]) { showToast('Nenhum STL para remover.'); return; }
   _mcFormDraft[which] = '';
   _mcFormDraft[which + 'File'] = null;
+  var prefix = which.indexOf('scannerInicial') === 0 ? 'scannerInicial' : (which.indexOf('scannerFinal') === 0 ? 'scannerFinal' : which);
+  if (prefix === 'scannerInicial' || prefix === 'scannerFinal') {
+    _mcFormDraft[prefix] = mcFirstScannerName(_mcFormDraft, prefix);
+  }
   mcFormRefreshMediaLabels();
   showToast('STL removido.');
+}
+
+function mcStoreDraftScannerFiles(caseId) {
+  if (!caseId) return;
+  [
+    ['scannerInicialUpperFile', 'inicial', 'Upper'],
+    ['scannerInicialLowerFile', 'inicial', 'Lower'],
+    ['scannerInicialBiteFile', 'inicial', 'Bite'],
+    ['scannerFinalUpperFile', 'final', 'Upper'],
+    ['scannerFinalLowerFile', 'final', 'Lower'],
+    ['scannerFinalBiteFile', 'final', 'Bite']
+  ].forEach(function(item){
+    var file = _mcFormDraft[item[0]];
+    if (file) CDM_LOCAL_FILES[caseId + ':' + item[1] + ':' + item[2]] = file;
+  });
 }
 
 function mcCloseForm() {
@@ -8920,23 +9348,33 @@ function mcSaveForm() {
     paciente: nome.trim(),
     npac: (safeEl('mcf-npac')||{}).value || '',
     data: dataStr,
-    dente: (safeEl('mcf-dente')||{}).value || '',
-    material: (safeEl('mcf-material')||{}).value || '',
-    shade: (safeEl('mcf-shade')||{}).value || '',
+    dente: mcGetTeethLabel(),
+    material: mcGetMaterialLabel(),
+    shade: mcGetShadeValue(),
     lab: (safeEl('mcf-lab')||{}).value || '',
     obs: (safeEl('mcf-obs')||{}).value || '',
-    tipo: mcTipoLabel(tipoSel),
+    tipo: mcSelectedTipoLabel() || mcTipoLabel(tipoSel),
     categoria: tipoSel,
     fotosAntes: _mcFormDraft.fotosAntes,
     fotosDepois: _mcFormDraft.fotosDepois,
-    scannerInicial: _mcFormDraft.scannerInicial,
-    scannerInicialFormato: _mcFormDraft.scannerInicial ? 'stl' : '',
-    scannerFinal: _mcFormDraft.scannerFinal,
-    scannerFinalFormato: _mcFormDraft.scannerFinal ? 'stl' : '',
+    scannerInicial: mcFirstScannerName(_mcFormDraft, 'scannerInicial'),
+    scannerInicialFormato: mcFormatFromName(mcFirstScannerName(_mcFormDraft, 'scannerInicial')),
+    scannerInicialUpper: _mcFormDraft.scannerInicialUpper,
+    scannerInicialLower: _mcFormDraft.scannerInicialLower,
+    scannerInicialBite: _mcFormDraft.scannerInicialBite,
+    scannerFinal: mcFirstScannerName(_mcFormDraft, 'scannerFinal'),
+    scannerFinalFormato: mcFormatFromName(mcFirstScannerName(_mcFormDraft, 'scannerFinal')),
+    scannerFinalUpper: _mcFormDraft.scannerFinalUpper,
+    scannerFinalLower: _mcFormDraft.scannerFinalLower,
+    scannerFinalBite: _mcFormDraft.scannerFinalBite,
     fotosAntesFiles: (_mcFormDraft.fotosAntesFiles || []).slice(),
     fotosDepoisFiles: (_mcFormDraft.fotosDepoisFiles || []).slice(),
-    scannerInicialFile: _mcFormDraft.scannerInicialFile || null,
-    scannerFinalFile: _mcFormDraft.scannerFinalFile || null,
+    scannerInicialUpperFile: _mcFormDraft.scannerInicialUpperFile || null,
+    scannerInicialLowerFile: _mcFormDraft.scannerInicialLowerFile || null,
+    scannerInicialBiteFile: _mcFormDraft.scannerInicialBiteFile || null,
+    scannerFinalUpperFile: _mcFormDraft.scannerFinalUpperFile || null,
+    scannerFinalLowerFile: _mcFormDraft.scannerFinalLowerFile || null,
+    scannerFinalBiteFile: _mcFormDraft.scannerFinalBiteFile || null,
     ultimaAlteracao: nowBR
   };
 
@@ -8945,6 +9383,7 @@ function mcSaveForm() {
     // (and ultimaAlteracao, bumped above) change on edit.
     var existing = MC_DATA[_mcFormEditId];
     Object.assign(existing, payload);
+    mcStoreDraftScannerFiles(_mcFormEditId);
     sbUpdateManualMyCase(existing);
     mcCloseForm();
     MC_FILTER = 'todos';
@@ -8954,6 +9393,7 @@ function mcSaveForm() {
     var mcId = 'mc-manual-' + (MC_NEXT_ID++);
     payload.criadoEm = nowBR;
     MC_DATA[mcId] = Object.assign({ id: mcId, origem: 'manual', labColor: '#34D399' }, payload);
+    mcStoreDraftScannerFiles(mcId);
     sbSaveManualMyCase(MC_DATA[mcId]);
     mcCloseForm();
     MC_FILTER = 'todos';
@@ -10896,16 +11336,16 @@ function sbMcRecordToCasePayload(rec) {
     labColor: rec.labColor || '#34D399',
     prazo: rec.data || '',
     prazoISO: '',
-    delivery: rec.scannerInicial || rec.scannerFinal || rec.scannerInicialBite || rec.scannerFinalBite ? 'scanner' : 'molde',
+    delivery: 'scanner',
     status: 'Recebido',
     statusCls: 'st-p',
     prog: 10,
     obs: rec.obs || '',
-    scannerInicialUpper: rec.scannerInicial || '',
-    scannerInicialLower: '',
+    scannerInicialUpper: rec.scannerInicialUpper || rec.scannerInicial || '',
+    scannerInicialLower: rec.scannerInicialLower || '',
     scannerInicialBite: rec.scannerInicialBite || '',
-    scannerFinalUpper: rec.scannerFinal || '',
-    scannerFinalLower: '',
+    scannerFinalUpper: rec.scannerFinalUpper || rec.scannerFinal || '',
+    scannerFinalLower: rec.scannerFinalLower || '',
     scannerFinalBite: rec.scannerFinalBite || '',
     photos: [],
     _source: 'mycases',
@@ -10918,8 +11358,12 @@ function sbMcDraftFiles() {
   var attachments = [];
   (_mcFormDraft.fotosAntesFiles || []).forEach(function(file, i){ attachments.push({ file:file, slot:'fotosAntes-' + i, category:'photo' }); });
   (_mcFormDraft.fotosDepoisFiles || []).forEach(function(file, i){ attachments.push({ file:file, slot:'fotosDepois-' + i, category:'photo' }); });
-  if (_mcFormDraft.scannerInicialFile) attachments.push({ file:_mcFormDraft.scannerInicialFile, slot:'scannerInicial', category:'scanner', jaw:'upper' });
-  if (_mcFormDraft.scannerFinalFile) attachments.push({ file:_mcFormDraft.scannerFinalFile, slot:'scannerFinal', category:'scanner', jaw:'upper' });
+  if (_mcFormDraft.scannerInicialUpperFile) attachments.push({ file:_mcFormDraft.scannerInicialUpperFile, slot:'scannerInicialUpper', category:'scanner', jaw:'upper' });
+  if (_mcFormDraft.scannerInicialLowerFile) attachments.push({ file:_mcFormDraft.scannerInicialLowerFile, slot:'scannerInicialLower', category:'scanner', jaw:'lower' });
+  if (_mcFormDraft.scannerInicialBiteFile)  attachments.push({ file:_mcFormDraft.scannerInicialBiteFile,  slot:'scannerInicialBite',  category:'scanner', jaw:'bite' });
+  if (_mcFormDraft.scannerFinalUpperFile) attachments.push({ file:_mcFormDraft.scannerFinalUpperFile, slot:'scannerFinalUpper', category:'scanner', jaw:'upper' });
+  if (_mcFormDraft.scannerFinalLowerFile) attachments.push({ file:_mcFormDraft.scannerFinalLowerFile, slot:'scannerFinalLower', category:'scanner', jaw:'lower' });
+  if (_mcFormDraft.scannerFinalBiteFile)  attachments.push({ file:_mcFormDraft.scannerFinalBiteFile,  slot:'scannerFinalBite',  category:'scanner', jaw:'bite' });
   return { attachments: attachments };
 }
 

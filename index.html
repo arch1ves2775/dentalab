@@ -10229,6 +10229,17 @@ function U3D_rotateModelByPixels(dx, dy){
   U3D_pivot.quaternion.premultiply(qPitch);
 }
 
+function U3D_rotateTouchModelByPixels(dx, dy){
+  // Fingers rarely travel perfectly straight. On mobile, when the user
+  // clearly swipes sideways, keep the arch turning horizontally instead
+  // of letting small vertical drift tip the model over.
+  var ax = Math.abs(dx), ay = Math.abs(dy);
+  if (ax > ay * 1.25) dy = 0;
+  else if (ay > ax * 1.8) dx = 0;
+  else dy *= 0.55;
+  U3D_rotateModelByPixels(dx, dy);
+}
+
 function U3D_panByPixels(dx, dy){
   if (!U3D_camera) return;
   var vp = document.getElementById('u3d-vp');
@@ -10292,7 +10303,7 @@ function U3D_attachOrbit(el){
     if(U3D_O.drag && e.touches.length===1){
       var dx=e.touches[0].clientX-U3D_O.lx, dy=e.touches[0].clientY-U3D_O.ly;
       U3D_O.lx=e.touches[0].clientX; U3D_O.ly=e.touches[0].clientY;
-      U3D_rotateModelByPixels(dx, dy);
+      U3D_rotateTouchModelByPixels(dx, dy);
     } else if(U3D_O.pinch && e.touches.length===2){
       var dx2=e.touches[0].clientX-e.touches[1].clientX, dy2=e.touches[0].clientY-e.touches[1].clientY;
       var d=Math.sqrt(dx2*dx2+dy2*dy2);

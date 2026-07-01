@@ -10094,12 +10094,14 @@ window.addEventListener('load', function(){ mcInit(); });
 
 var U3D_scene, U3D_camera, U3D_renderer, U3D_mounted = false;
 var U3D_mode = 'arch'; // 'arch' (Upper/Lower picker) | 'single' (one combined scan, legacy single-STL flow)
+var U3D_pivot = null;     // stable rotation pivot at the centered model origin
 var U3D_group = null;     // THREE.Group holding all loaded meshes
 var U3D_meshes = {};      // { upper: Mesh|null, lower: Mesh|null, bite: Mesh|null }
 var U3D_visible = { upper: true, lower: true, bite: true };
 var U3D_O = {
   th:0, ph:Math.PI/2, r:5,
   tTh:0, tPh:Math.PI/2, tR:5,
+  minR:0.25, maxR:1000,
   panX:0, panY:0, panZ:0,
   tPanX:0, tPanY:0, tPanZ:0,
   drag:false, pan:false, lx:0, ly:0,
@@ -10107,6 +10109,10 @@ var U3D_O = {
 };
 
 function U3D_log(m){ console.log('[STLM] '+m); }
+
+function U3D_clampZoom(){
+  U3D_O.tR = Math.max(U3D_O.minR || 1e-3, Math.min(U3D_O.maxR || 1e8, U3D_O.tR));
+}
 
 var U3D_scriptPromises = {};
 function U3D_loadScriptOnce(src){
@@ -10182,8 +10188,10 @@ function U3D_init(){
   var f2 = new THREE.DirectionalLight(0xaabbff, 0.15); f2.position.set(-6,2,0); U3D_scene.add(f2);
   var f3 = new THREE.DirectionalLight(0xffffff, 0.10); f3.position.set(0,-3,3); U3D_scene.add(f3);
 
+  U3D_pivot = new THREE.Group();
   U3D_group = new THREE.Group();
-  U3D_scene.add(U3D_group);
+  U3D_pivot.add(U3D_group);
+  U3D_scene.add(U3D_pivot);
 
   U3D_attachOrbit(U3D_renderer.domElement);
   window.addEventListener('resize', U3D_onResize);
@@ -10201,11 +10209,24 @@ function U3D_tick(){
   U3D_O.panX += (U3D_O.tPanX-U3D_O.panX)*E;
   U3D_O.panY += (U3D_O.tPanY-U3D_O.panY)*E;
   U3D_O.panZ += (U3D_O.tPanZ-U3D_O.panZ)*E;
-  var r=U3D_O.r, sp=Math.sin(U3D_O.ph), cp=Math.cos(U3D_O.ph), st=Math.sin(U3D_O.th), ct=Math.cos(U3D_O.th);
+  var r=U3D_O.r;
   var target = new THREE.Vector3(U3D_O.panX, U3D_O.panY, U3D_O.panZ);
-  U3D_camera.position.set(target.x + r*sp*st, target.y + r*cp, target.z + r*sp*ct);
+  U3D_camera.position.set(target.x, target.y, target.z + r);
   U3D_camera.lookAt(target);
   U3D_renderer.render(U3D_scene, U3D_camera);
+}
+
+function U3D_rotateModelByPixels(dx, dy){
+  if (!U3D_pivot || !U3D_camera || typeof THREE === 'undefined') return;
+  var speed = 0.006;
+  var forward = new THREE.Vector3();
+  U3D_camera.getWorldDirection(forward);
+  var right = new THREE.Vector3().crossVectors(forward, U3D_camera.up).normalize();
+  var up = new THREE.Vector3().crossVectors(right, forward).normalize();
+  var qYaw = new THREE.Quaternion().setFromAxisAngle(up, dx * speed);
+  var qPitch = new THREE.Quaternion().setFromAxisAngle(right, dy * speed);
+  U3D_pivot.quaternion.premultiply(qYaw);
+  U3D_pivot.quaternion.premultiply(qPitch);
 }
 
 function U3D_panByPixels(dx, dy){
@@ -10242,13 +10263,12 @@ function U3D_attachOrbit(el){
     if (U3D_O.pan) {
       U3D_panByPixels(dx, dy);
     } else {
-      U3D_O.tTh-=dx*0.006; U3D_O.tPh-=dy*0.006;
-      U3D_O.tPh=Math.max(0.02,Math.min(Math.PI-0.02,U3D_O.tPh));
+      U3D_rotateModelByPixels(dx, dy);
     }
   });
   el.addEventListener('wheel',function(e){
     U3D_O.tR *= e.deltaY>0?1.1:0.9;
-    U3D_O.tR = Math.max(1e-3,Math.min(1e8,U3D_O.tR));
+    U3D_clampZoom();
     e.preventDefault();
   },{passive:false});
   el.addEventListener('touchstart',function(e){
@@ -10272,12 +10292,11 @@ function U3D_attachOrbit(el){
     if(U3D_O.drag && e.touches.length===1){
       var dx=e.touches[0].clientX-U3D_O.lx, dy=e.touches[0].clientY-U3D_O.ly;
       U3D_O.lx=e.touches[0].clientX; U3D_O.ly=e.touches[0].clientY;
-      U3D_O.tTh-=dx*0.006; U3D_O.tPh-=dy*0.006;
-      U3D_O.tPh=Math.max(0.02,Math.min(Math.PI-0.02,U3D_O.tPh));
+      U3D_rotateModelByPixels(dx, dy);
     } else if(U3D_O.pinch && e.touches.length===2){
       var dx2=e.touches[0].clientX-e.touches[1].clientX, dy2=e.touches[0].clientY-e.touches[1].clientY;
       var d=Math.sqrt(dx2*dx2+dy2*dy2);
-      if(U3D_O.pd>0){ U3D_O.tR*=U3D_O.pd/d; U3D_O.tR=Math.max(1e-3,Math.min(1e8,U3D_O.tR)); }
+      if(U3D_O.pd>0){ U3D_O.tR*=U3D_O.pd/d; U3D_clampZoom(); }
       U3D_O.pd=d;
       var cx=(e.touches[0].clientX+e.touches[1].clientX)/2;
       var cy=(e.touches[0].clientY+e.touches[1].clientY)/2;
@@ -10772,6 +10791,7 @@ function U3D_resetState(){
     });
     U3D_group.position.set(0,0,0);
   }
+  if (U3D_pivot) U3D_pivot.quaternion.identity();
   U3D_files = { upper: null, lower: null, bite: null };
   U3D_visible = { upper: true, lower: true, bite: true };
   U3D_log('Estado do viewer reiniciado (novo caso/modelo detectado)');
@@ -10819,6 +10839,7 @@ function U3D_loadSingleFromUrl(url, displayName){
     U3D_meshes[k] = null;
   });
   U3D_group.position.set(0,0,0);
+  if (U3D_pivot) U3D_pivot.quaternion.identity();
 
   U3D_fetchAsFile(url, 'Scan').then(function(result){
     if (!result.mesh) {
@@ -10956,6 +10977,7 @@ function U3D_rebuildFromLocalFiles(){
     U3D_meshes[k] = null;
   });
   U3D_group.position.set(0,0,0);
+  if (U3D_pivot) U3D_pivot.quaternion.identity();
 
   Promise.all([
     U3D_readFile(U3D_files.upper, 'Upper'),
@@ -11006,6 +11028,7 @@ function U3D_rebuildFromUrls(opts){
     U3D_meshes[k] = null;
   });
   U3D_group.position.set(0,0,0);
+  if (U3D_pivot) U3D_pivot.quaternion.identity();
 
   Promise.all([
     opts.upperUrl ? U3D_fetchAsFile(opts.upperUrl, 'Upper') : Promise.resolve({ mesh:null, error:null, label:'Upper' }),
@@ -11101,9 +11124,9 @@ function U3D_boxFromMeshes(meshes){
   return box;
 }
 
-// Centers and frames the GROUP as a whole. When Extra/Bite exists, the
-// camera still uses Upper/Lower as the movement reference, so rotation,
-// pan and zoom feel identical with two or three scanners.
+// Centers and frames the GROUP as a whole. The invisible pivot stays at
+// the model origin, so rotation/pan/zoom feel the same with one, two or
+// three scanners.
 function U3D_fitCamera(){
   U3D_onResize();
   U3D_scene.updateMatrixWorld(true);
@@ -11113,6 +11136,7 @@ function U3D_fitCamera(){
   var box = U3D_boxFromMeshes(fitMeshes);
   var center = box.getCenter(new THREE.Vector3());
   U3D_group.position.set(0,0,0);
+  if (U3D_pivot) U3D_pivot.quaternion.identity();
   U3D_group.position.sub(center);
   U3D_scene.updateMatrixWorld(true);
 
@@ -11128,6 +11152,9 @@ function U3D_fitCamera(){
   U3D_O.panX = U3D_O.panY = U3D_O.panZ = 0;
 
   var radius = sphere.radius || maxDim/2;
+  U3D_O.minR = Math.max(radius * 0.35, maxDim * 0.18, 0.01);
+  U3D_O.maxR = Math.max(radius * 12, maxDim * 8, distance * 3, 10);
+  U3D_clampZoom();
   U3D_camera.near = Math.max(radius * 0.08, maxDim * 0.02, 0.01);
   U3D_camera.far  = Math.max(distance + radius * 4, maxDim * 8, 10);
   U3D_camera.position.set(0,0,distance);

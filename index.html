@@ -4825,11 +4825,37 @@ async function sbLoadChatMessages() {
       }
       return { type: own ? 'out' : 'in', text:row.message || '', plain:true, time:time };
     });
+    chatEnsureCaseBubblesForConversation(_currentChatLabAv);
     _renderChatMessages(_currentChatLabAv);
     if (newRemoteMessages.length) sbNotify('chat', 'Nova mensagem', newRemoteMessages.length === 1 ? 'Você recebeu uma nova mensagem.' : 'Você recebeu ' + newRemoteMessages.length + ' novas mensagens.');
   } catch (err) {
     console.log('[Supabase] sbLoadChatMessages erro:', err.message);
+    chatEnsureCaseBubblesForConversation(_currentChatLabAv);
+    _renderChatMessages(_currentChatLabAv);
   }
+}
+
+function chatEnsureCaseBubblesForConversation(av) {
+  if (!av || !CURRENT_CHAT || !CURRENT_CHAT.labId || !CURRENT_CHAT.clinicId) return;
+  CHAT_MESSAGES[av] = CHAT_MESSAGES[av] || [];
+  var existing = {};
+  CHAT_MESSAGES[av].forEach(function(m){
+    if (m && m.type === 'case' && m.caseId) existing[String(m.caseId)] = true;
+  });
+  Object.keys(CDM || {}).forEach(function(id){
+    var c = CDM[id];
+    if (!c) return;
+    var sameLab = c._labDbId && String(c._labDbId) === String(CURRENT_CHAT.labId);
+    var sameClinic = c._clinicId && String(c._clinicId) === String(CURRENT_CHAT.clinicId);
+    if (!sameLab || !sameClinic || existing[String(id)]) return;
+    CHAT_MESSAGES[av].push({
+      type: 'case',
+      caseId: id,
+      out: c._createdBy ? String(c._createdBy) === String(currentUserId) : currentUserRole !== 'laboratorio',
+      senderRole: c._createdBy && String(c._createdBy) === String(currentUserId) ? currentUserRole : '',
+      time: c.criado || ''
+    });
+  });
 }
 
 async function sbSendChatMessage(textValue, file) {
@@ -5304,6 +5330,7 @@ function _chatScannerAttachment(m) {
 }
 
 function _renderChatMessages(av) {
+  chatEnsureCaseBubblesForConversation(av);
   var msgs = CHAT_MESSAGES[av];
   var area = document.getElementById('msgs-area');
   if (!area) return;
@@ -5581,9 +5608,17 @@ function cdmOpenStl(which) {
   var legacyName = (which === 'inicial' && c.hasSTL) ? (c.stlFileName || '') : '';
   var label = c.paciente + ' - Scanner ' + (which === 'inicial' ? 'Inicial' : 'Final');
 
-  var localUpper = CDM_LOCAL_FILES[c.num + ':' + which + ':Upper'] || null;
-  var localLower = CDM_LOCAL_FILES[c.num + ':' + which + ':Lower'] || null;
-  var localBite  = CDM_LOCAL_FILES[c.num + ':' + which + ':Bite']  || null;
+  var localKeys = [_cdmActiveId, c._supabaseId, c.id, c.num].filter(Boolean);
+  function localScannerFile(slotLabel) {
+    for (var i = 0; i < localKeys.length; i++) {
+      var hit = CDM_LOCAL_FILES[localKeys[i] + ':' + which + ':' + slotLabel];
+      if (hit) return hit;
+    }
+    return null;
+  }
+  var localUpper = localScannerFile('Upper');
+  var localLower = localScannerFile('Lower');
+  var localBite  = localScannerFile('Bite');
 
   if (localUpper || localLower || localBite) {
     // Real local File object(s) on record for this case+slot -- always
@@ -5594,7 +5629,7 @@ function cdmOpenStl(which) {
     // whether THREE.js needs to lazy-load first or is already ready.
     U3D_open({
       patientName: label,
-      caseKey: c.num + ':' + which,
+      caseKey: (c._supabaseId || _cdmActiveId || c.num) + ':' + which,
       localUpperFile: localUpper,
       localLowerFile: localLower,
       localBiteFile:  localBite

@@ -3901,7 +3901,11 @@ function sendCase(){
         await sbLoadChatMessages();
       }
       await syncSupabaseCasesIntoCDM();
-      showToast(chatSaved ? 'Caso enviado ao Supabase ✓' : 'Caso salvo, mas a conversa não sincronizou.');
+      if (res.fileErrors && res.fileErrors.length) {
+        showToast('Caso salvo, mas ' + res.fileErrors.length + ' anexo(s) não subiram. Tente reenviar o scanner.');
+      } else {
+        showToast(chatSaved ? 'Caso enviado ao Supabase ✓' : 'Caso salvo, mas a conversa não sincronizou.');
+      }
     } else {
       delete CDM[newCaseId];
       var unsyncedCard = document.getElementById('cdm-card-' + newCaseId);
@@ -9999,6 +10003,23 @@ function U3D_readFile(file, label){
       }
     };
     reader.onerror = function(){
+      U3D_log(label + ': FileReader falhou, tentando arrayBuffer()');
+      if (file.arrayBuffer) {
+        file.arrayBuffer().then(function(buf){
+          try {
+            var mesh = U3D_buildMeshFromBuffer(buf, label.toLowerCase(), file.name);
+            U3D_log(label + ' carregado via arrayBuffer (' + (file.size/1024).toFixed(0) + ' KB)');
+            resolve({ mesh: mesh, error: null, label: label, fileName: file.name });
+          } catch(err) {
+            U3D_log(label + ': ERRO ao processar arrayBuffer - ' + err.message);
+            resolve({ mesh: null, error: err.message, label: label });
+          }
+        }).catch(function(err){
+          U3D_log(label + ': ERRO ao ler ficheiro - ' + err.message);
+          resolve({ mesh: null, error: 'falha ao ler o ficheiro', label: label });
+        });
+        return;
+      }
       U3D_log(label + ': ERRO ao ler ficheiro');
       resolve({ mesh: null, error: 'falha ao ler o ficheiro', label: label });
     };
@@ -11193,46 +11214,79 @@ function sbCollectUploadItems(fileData) {
   return items;
 }
 
+function sbContentTypeForFile(file, fallbackType) {
+  var explicit = file && file.type ? file.type : '';
+  if (explicit) return explicit;
+  var name = String(file && file.name ? file.name : '').toLowerCase();
+  if (name.endsWith('.stl')) return 'model/stl';
+  if (name.endsWith('.ply')) return 'application/octet-stream';
+  if (name.endsWith('.obj')) return 'text/plain';
+  if (fallbackType === 'photo') return 'image/jpeg';
+  if (fallbackType === 'pdf') return 'application/pdf';
+  return 'application/octet-stream';
+}
+
+async function sbUploadBodyForFile(file, contentType) {
+  if (!file || !file.arrayBuffer) return file;
+  try {
+    var buf = await file.arrayBuffer();
+    if (!buf || buf.byteLength === 0) throw new Error('ficheiro vazio ou indisponível');
+    return new Blob([buf], { type: contentType || file.type || 'application/octet-stream' });
+  } catch (err) {
+    console.log('[Supabase] Falha ao preparar ficheiro para upload:', (file && file.name) || 'arquivo', err.message);
+    throw err;
+  }
+}
+
 async function sbUploadCaseFiles(caseId, fileData) {
   if (!isSupabaseReady() || !caseId || !fileData) return [];
   var bucket = _supabaseClient.storage.from('case-files');
   var uploaded = [];
+  var uploadErrors = [];
   var items = sbCollectUploadItems(fileData);
 
   for (var i = 0; i < items.length; i++) {
-    var item = items[i];
-    var file = item.file;
-    if (!file) continue;
-    var original = file.name || ('arquivo-' + (i + 1));
-    var safeName = sbSafeName(original);
-    var path = caseId + '/' + item.category + '/' + Date.now() + '-' + i + '-' + safeName;
-    var up = await bucket.upload(path, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
-    if (up.error) throw up.error;
-    var fileUrl = sbPublicUrlFromPath(path);
-    var row = {
-      case_id: caseId,
-      file_type: item.fileType,
-      jaw: item.jaw || null,
-      file_url: fileUrl || path,
-      file_name: safeName,
-      original_name: original,
-      storage_path: path,
-      size_bytes: file.size || null,
-      mime_type: file.type || 'application/octet-stream',
-      uploaded_by: currentUserId || null,
-      uploaded_at: new Date().toISOString(),
-      file_payload: {
-        slot: item.slot || '',
-        category: item.category || '',
-        displayName: original,
-        publicUrl: fileUrl || '',
-        storagePath: path
-      }
-    };
-    var ins = await _supabaseClient.from('case_files').insert(row).select().single();
-    if (ins.error) throw ins.error;
-    uploaded.push(ins.data);
+    try {
+      var item = items[i];
+      var file = item.file;
+      if (!file) continue;
+      var original = file.name || ('arquivo-' + (i + 1));
+      var safeName = sbSafeName(original);
+      var path = caseId + '/' + item.category + '/' + Date.now() + '-' + i + '-' + safeName;
+      var contentType = sbContentTypeForFile(file, item.fileType);
+      var uploadBody = await sbUploadBodyForFile(file, contentType);
+      var up = await bucket.upload(path, uploadBody, { upsert: false, contentType: contentType });
+      if (up.error) throw up.error;
+      var fileUrl = sbPublicUrlFromPath(path);
+      var row = {
+        case_id: caseId,
+        file_type: item.fileType,
+        jaw: item.jaw || null,
+        file_url: fileUrl || path,
+        file_name: safeName,
+        original_name: original,
+        storage_path: path,
+        size_bytes: file.size || (uploadBody && uploadBody.size) || null,
+        mime_type: contentType,
+        uploaded_by: currentUserId || null,
+        uploaded_at: new Date().toISOString(),
+        file_payload: {
+          slot: item.slot || '',
+          category: item.category || '',
+          displayName: original,
+          publicUrl: fileUrl || '',
+          storagePath: path
+        }
+      };
+      var ins = await _supabaseClient.from('case_files').insert(row).select().single();
+      if (ins.error) throw ins.error;
+      uploaded.push(ins.data);
+    } catch (err) {
+      uploadErrors.push({ name: (items[i] && items[i].file && items[i].file.name) || 'arquivo', error: err.message || String(err) });
+      console.log('[Supabase] upload de anexo falhou:', uploadErrors[uploadErrors.length - 1]);
+    }
   }
+  uploaded._errors = uploadErrors;
   return uploaded;
 }
 
@@ -11287,7 +11341,7 @@ async function saveCaseToSupabase(caseData, fileData) {
     if (res.error) throw res.error;
     var files = await sbUploadCaseFiles(generatedCaseId, fileData);
     console.log('[Supabase] Caso guardado:', generatedCaseId);
-    return { success: true, source: 'supabase', data: Object.assign({ id: generatedCaseId }, payload), files: files };
+    return { success: true, source: 'supabase', data: Object.assign({ id: generatedCaseId }, payload), files: files, fileErrors: files._errors || [] };
   } catch (err) {
     console.log('[Supabase] saveCaseToSupabase erro:', err.message);
     return { success: false, error: err.message };

@@ -2446,14 +2446,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
         <div class="mc-form-label">📷 Fotos Antes</div>
         <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg,#0B1120);border-radius:10px;padding:10px 12px">
           <span style="font-size:12px;color:var(--muted)" id="mcf-fotosAntes-count">Nenhuma foto</span>
-          <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px" type="button" onclick="mcFormAddPhoto('fotosAntes')">+ Adicionar Foto Antes</button>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:11px" type="button" onclick="mcFormRemovePhotos('fotosAntes')">Remover</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:11px" type="button" onclick="mcFormAddPhoto('fotosAntes')">+ Adicionar</button>
+          </div>
         </div>
       </div>
       <div class="mc-form-section">
         <div class="mc-form-label">📷 Fotos Depois</div>
         <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg,#0B1120);border-radius:10px;padding:10px 12px">
           <span style="font-size:12px;color:var(--muted)" id="mcf-fotosDepois-count">Nenhuma foto</span>
-          <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px" type="button" onclick="mcFormAddPhoto('fotosDepois')">+ Adicionar Foto Depois</button>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:11px" type="button" onclick="mcFormRemovePhotos('fotosDepois')">Remover</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 10px;font-size:11px" type="button" onclick="mcFormAddPhoto('fotosDepois')">+ Adicionar</button>
+          </div>
         </div>
       </div>
 
@@ -2462,15 +2468,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
         <div style="display:flex;flex-direction:column;gap:8px;background:var(--bg,#0B1120);border-radius:10px;padding:10px 12px">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerInicialUpper-name">Maxila: nenhum ficheiro</span>
-            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerInicialUpper')">+ Maxila</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormRemoveStl('scannerInicialUpper')">Remover</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerInicialUpper')">+ Maxila</button>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerInicialLower-name">Mandíbula: nenhum ficheiro</span>
-            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerInicialLower')">+ Mandíbula</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormRemoveStl('scannerInicialLower')">Remover</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerInicialLower')">+ Mandíbula</button>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerInicialBite-name">Extra: nenhum ficheiro</span>
-            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerInicialBite')">+ Extra</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormRemoveStl('scannerInicialBite')">Remover</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerInicialBite')">+ Extra</button>
           </div>
         </div>
       </div>
@@ -2479,15 +2488,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
         <div style="display:flex;flex-direction:column;gap:8px;background:var(--bg,#0B1120);border-radius:10px;padding:10px 12px">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerFinalUpper-name">Maxila: nenhum ficheiro</span>
-            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerFinalUpper')">+ Maxila</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormRemoveStl('scannerFinalUpper')">Remover</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerFinalUpper')">+ Maxila</button>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerFinalLower-name">Mandíbula: nenhum ficheiro</span>
-            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerFinalLower')">+ Mandíbula</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormRemoveStl('scannerFinalLower')">Remover</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerFinalLower')">+ Mandíbula</button>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span style="font-size:12px;color:var(--muted);word-break:break-all;flex:1;min-width:0" id="mcf-scannerFinalBite-name">Extra: nenhum ficheiro</span>
-            <button class="cdm-stl-btn" style="margin:0;padding:6px 12px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerFinalBite')">+ Extra</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormRemoveStl('scannerFinalBite')">Remover</button>
+            <button class="cdm-stl-btn" style="margin:0;padding:6px 9px;font-size:11px;flex-shrink:0" type="button" onclick="mcFormPickStl('scannerFinalBite')">+ Extra</button>
           </div>
         </div>
       </div>
@@ -4811,7 +4823,9 @@ async function sbLoadChatMessages() {
     var newRemoteMessages = sbRememberRemoteItems('chat', (res.data || []).map(function(row){ return row.id; })).filter(function(id){
       return remoteRows.some(function(row){ return row.id === id; });
     });
-    CHAT_MESSAGES[_currentChatLabAv] = (res.data || []).map(function(row) {
+    CHAT_MESSAGES[_currentChatLabAv] = (res.data || []).filter(function(row){
+      return !(row.message_type === 'case' && row.case_id && CDM[row.case_id] && isMyCaseRecord(CDM[row.case_id]));
+    }).map(function(row) {
       var own = row.sender_id === currentUserId;
       var time = row.created_at ? new Date(row.created_at).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '';
       if (row.message_type === 'case' && row.case_id) {
@@ -4845,6 +4859,7 @@ function chatEnsureCaseBubblesForConversation(av) {
   Object.keys(CDM || {}).forEach(function(id){
     var c = CDM[id];
     if (!c) return;
+    if (isMyCaseRecord(c)) return;
     var sameLab = c._labDbId && String(c._labDbId) === String(CURRENT_CHAT.labId);
     var sameClinic = c._clinicId && String(c._clinicId) === String(CURRENT_CHAT.clinicId);
     if (!sameLab || !sameClinic || existing[String(id)]) return;
@@ -4856,6 +4871,17 @@ function chatEnsureCaseBubblesForConversation(av) {
       time: c.criado || ''
     });
   });
+}
+
+function isMyCaseRecord(c) {
+  if (!c) return false;
+  return c._source === 'mycases' || c.origin === 'mycases' || !!c.mycase;
+}
+
+function isMyCaseRow(row) {
+  if (!row) return false;
+  var payloadCase = row.case_payload && row.case_payload.case ? row.case_payload.case : null;
+  return row.source === 'mycases' || row.workflow_type === 'mycases' || isMyCaseRecord(payloadCase);
 }
 
 async function sbSendChatMessage(textValue, file) {
@@ -5403,6 +5429,13 @@ function cdmRefreshHeaderStatus(c) {
 function openCaseDetail(id) {
   try {
   var c = CDM[String(id)]; if(!c){showToast('Caso n\u00E3o encontrado');return;}
+  if (isMyCaseRecord(c)) {
+    var mcId = 'mc-' + String(id);
+    if (!MC_DATA[mcId]) mcInit();
+    if (MC_DATA[mcId]) { mcOpenDetail(mcId); return; }
+    showToast('Este caso pertence ao MyCases.');
+    return;
+  }
   refreshCaseFromSupabase(String(id));
   _cdmActive = c;
   _cdmActiveId = String(id);
@@ -5436,11 +5469,17 @@ function openCaseDetail(id) {
   var etEl=document.getElementById('cdm-etapas');
   if(etEl){
     var h='';
-    for(var i=0;i<c.etapas.length;i++){
-      var e=c.etapas[i];
+    var etapas = Array.isArray(c.etapas) && c.etapas.length ? c.etapas : [
+      { l: 'Recebido', s: 'cur' },
+      { l: 'Em Produção', s: 'pend' },
+      { l: 'Pronto', s: 'pend' },
+      { l: 'Entregue', s: 'pend' }
+    ];
+    for(var i=0;i<etapas.length;i++){
+      var e=etapas[i];
       var ip=e.s==='done'?'M20 6 9 17l-5-5':e.s==='cur'?'M12 5v14M5 12h14':'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 5v5l4 2';
       h+='<div class="cdm-etapa"><div class="cdm-edot '+e.s+'"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="'+ip+'"/></svg></div><div class="cdm-elabel '+e.s+'">'+e.l+'</div></div>';
-      if(i<c.etapas.length-1)h+='<div class="cdm-eline '+e.s+'"></div>';
+      if(i<etapas.length-1)h+='<div class="cdm-eline '+e.s+'"></div>';
     }
     etEl.innerHTML=h;
   }
@@ -5714,6 +5753,68 @@ function closeCaseDetail(){
   document.body.style.overflow='';_cdmActive=null;
   // _cdmActiveId is intentionally NOT cleared here — confirmSt and
   // cdmMarcarPronto may still need it after the detail closes.
+}
+
+async function cdmAdminDeleteCase(caseId) {
+  if (!isCaseAdmin()) {
+    showToast('Apenas a conta administradora pode apagar casos.');
+    return;
+  }
+  var c = CDM[caseId];
+  if (!c) {
+    showToast('Caso não encontrado.');
+    return;
+  }
+  var label = (c.paciente || 'este caso') + (c.num ? ' ' + c.num : '');
+  if (!confirm('Apagar definitivamente ' + label + '? Esta ação remove o caso da clínica e do laboratório.')) return;
+
+  var remoteId = c._supabaseId || (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(caseId)) ? caseId : null);
+  try {
+    if (isSupabaseReady() && remoteId) {
+      var storagePaths = [];
+      (c._files || []).forEach(function(f){
+        if (f && f.storage_path) storagePaths.push(f.storage_path);
+      });
+      if (storagePaths.length) {
+        var rm = await _supabaseClient.storage.from('case-files').remove(storagePaths);
+        if (rm.error) console.log('[AdminDelete] Storage não apagou todos os ficheiros:', rm.error.message);
+      }
+      var del = await _supabaseClient.from('cases').delete().eq('id', remoteId);
+      if (del.error) throw del.error;
+    }
+
+    [caseId, remoteId].filter(Boolean).forEach(function(id){
+      delete CDM[id];
+      var card = document.getElementById('cdm-card-' + id);
+      if (card) card.remove();
+      Object.keys(CDM_LOCAL_FILES || {}).forEach(function(k){
+        if (k.indexOf(id + ':') === 0) delete CDM_LOCAL_FILES[k];
+      });
+    });
+    Object.keys(CHAT_MESSAGES || {}).forEach(function(k){
+      CHAT_MESSAGES[k] = (CHAT_MESSAGES[k] || []).filter(function(m){
+        return !(m && m.type === 'case' && (String(m.caseId) === String(caseId) || String(m.caseId) === String(remoteId)));
+      });
+    });
+    if (Array.isArray(PENDING_ISSUES)) {
+      PENDING_ISSUES = PENDING_ISSUES.filter(function(p){
+        return !(p && (String(p.caseId) === String(caseId) || String(p.caseId) === String(remoteId)));
+      });
+    }
+
+    closeCaseDetail();
+    if (typeof labRenderCasos === 'function') labRenderCasos();
+    if (typeof mcInit === 'function') mcInit();
+    if (typeof renderProfileStats === 'function') renderProfileStats();
+    if (typeof renderHomeCaseStats === 'function') renderHomeCaseStats();
+    if (typeof refreshConversationCaseCounts === 'function') refreshConversationCaseCounts();
+    if (typeof renderAlertas === 'function') renderAlertas();
+    if (typeof sbLoadChatMessages === 'function' && CURRENT_CHAT && CURRENT_CHAT.labId && CURRENT_CHAT.clinicId) sbLoadChatMessages();
+    showToast('Caso apagado.');
+  } catch (err) {
+    console.log('[AdminDelete] erro:', err.message);
+    showToast('Não foi possível apagar: ' + err.message);
+  }
 }
 
 // ── CDM Footer — dynamic button rendering ───────────────────────────────
@@ -6416,7 +6517,7 @@ var STATUS_ORDER = { 'st-wait':0, 'st-a':1, 'st-p':2, 'st-ok':3, 'st-done':4 };
 
 // Collect all CDM case IDs that should appear in the lab view
 function _labAllCaseIds() {
-  return Object.keys(CDM).filter(function(id){ return !!CDM[id]; });
+  return Object.keys(CDM).filter(function(id){ return !!CDM[id] && !isMyCaseRecord(CDM[id]); });
 }
 
 // Build the lab-view HTML: deadline-grouped, sorted cards
@@ -7869,7 +7970,7 @@ function openLabCases(){
   var dynamicIds = Object.keys(CDM).filter(function(id){
     var c = CDM[id];
     // dynamic cases have labAv stored; seed cases don't — keep seeds via seedIds
-    return c && c.labAv === labAv && seedIds.indexOf(id) < 0;
+    return c && !isMyCaseRecord(c) && c.labAv === labAv && seedIds.indexOf(id) < 0;
   });
   var allIds = seedIds.concat(dynamicIds);
 
@@ -7908,7 +8009,7 @@ function _lcUpdateHeaderCount(labAv) {
   var seedIds    = LAB_CASES[av] || [];
   var dynamicIds = Object.keys(CDM).filter(function(id){
     var c = CDM[id];
-    return c && c.labAv === av && seedIds.indexOf(id) < 0;
+    return c && !isMyCaseRecord(c) && c.labAv === av && seedIds.indexOf(id) < 0;
   });
   var total = seedIds.length + dynamicIds.length;
   el.textContent = total > 0 ? total : '\u00b7';
@@ -8420,7 +8521,13 @@ function mcInit() {
     // Manual MyCases belong exclusively to their creator. The server policy
     // enforces this too; this guard keeps the UI safe if stale data exists.
     if (c.mycase && (!c._createdBy || c._createdBy === currentUserId)) {
-      var saved = Object.assign({}, c.mycase, { id:'mc-' + id, _supabaseId:c._supabaseId || id });
+      var saved = Object.assign({}, c.mycase, { id:'mc-' + id, _supabaseId:c._supabaseId || id, _files:c._files || [] });
+      var beforePhotos = mcFilesForSlot(saved, 'fotosAntes');
+      var afterPhotos = mcFilesForSlot(saved, 'fotosDepois');
+      saved.fotosAntesFiles = beforePhotos;
+      saved.fotosDepoisFiles = afterPhotos;
+      saved.fotosAntes = beforePhotos.length;
+      saved.fotosDepois = afterPhotos.length;
       MC_DATA[saved.id] = saved;
       return;
     }
@@ -8428,6 +8535,8 @@ function mcInit() {
       var mcId = 'mc-' + id;
       MC_DATA[mcId] = {
         id: mcId,
+        _supabaseId: c._supabaseId || id,
+        _files: c._files || [],
         origem: 'lab',
         favorito: false,
         paciente: c.paciente,
@@ -8441,18 +8550,20 @@ function mcInit() {
         tipo: c.tipo,
         categoria: mcTipoFromTitle(c.tipo),
         obs: c.obs || '',
-        fotosAntes: 2,
+        fotosAntes: (c.photos && c.photos.length) ? c.photos.length : 0,
         fotosDepois: 0,
-        scannerInicial: c.hasSTL ? c.stlFileName : '',
+        fotosAntesFiles: c.photos || [],
+        fotosDepoisFiles: [],
+        scannerInicial: c.scannerInicialUpper || c.scannerInicialLower || c.scannerInicialBite || (c.hasSTL ? c.stlFileName : ''),
         scannerInicialFormato: 'stl',
-        scannerInicialUpper: c.hasSTL ? c.stlFileName : '',
-        scannerInicialLower: '',
-        scannerInicialBite: '',
-        scannerFinal: '',
+        scannerInicialUpper: c.scannerInicialUpper || (c.hasSTL ? c.stlFileName : ''),
+        scannerInicialLower: c.scannerInicialLower || '',
+        scannerInicialBite: c.scannerInicialBite || '',
+        scannerFinal: c.scannerFinalUpper || c.scannerFinalLower || c.scannerFinalBite || '',
         scannerFinalFormato: '',
-        scannerFinalUpper: '',
-        scannerFinalLower: '',
-        scannerFinalBite: '',
+        scannerFinalUpper: c.scannerFinalUpper || '',
+        scannerFinalLower: c.scannerFinalLower || '',
+        scannerFinalBite: c.scannerFinalBite || '',
         criadoEm: c.criado || mcTodayISO(),
         ultimaAlteracao: c.criado || mcTodayISO()
       };
@@ -8610,11 +8721,16 @@ function mcOpenDetail(id) {
   var obsWrap = safeEl('mcd-obs-wrap');
   if (obsWrap) { obsWrap.style.display = 'block'; set('mcd-obs', rec.obs ? rec.obs : 'Nao informado'); }
 
+  rec.fotosAntes = mcPhotoSources('antes').length;
+  rec.fotosDepois = mcPhotoSources('depois').length;
   mcRenderPhotoGrid('mcd-fotos-antes', rec.fotosAntes, 'antes', rec.paciente);
   mcRenderPhotoGrid('mcd-fotos-depois', rec.fotosDepois, 'depois', rec.paciente);
 
   mcRenderScannerSection('inicial', rec);
   mcRenderScannerSection('final', rec);
+  document.querySelectorAll('#modal-mc-detail button[onclick^="mcUploadScannerSlot"], #modal-mc-detail .mc-add-photo-btn, #modal-mc-detail .mc-add-photo-btn-full').forEach(function(btn){
+    btn.style.display = rec.origem === 'manual' ? '' : 'none';
+  });
 
   set('mcd-hist-criado', mcVal(rec.criadoEm));
   set('mcd-hist-alterado', mcVal(rec.ultimaAlteracao));
@@ -8627,10 +8743,7 @@ function mcOpenDetail(id) {
         '<button class="cdm-btn" onclick="mcOpenEditCase()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg> Editar caso</button>' +
         '<button class="cdm-btn" style="background:rgba(239,68,68,.1);color:#F87171;border-color:rgba(239,68,68,.25)" onclick="mcDeleteCase()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg> Excluir caso</button>';
     } else {
-      footer.innerHTML =
-        '<button class="cdm-btn" onclick="mcFormAddPhotoQuick(\'fotosDepois\')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/></svg> Fotos Depois</button>' +
-        '<button class="cdm-btn" onclick="mcUploadScannerSlot(\'final\',\'\')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg> Scanner Final</button>' +
-        '<button class="cdm-btn" onclick="mcEditObsOnly()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg> Observacoes</button>';
+      footer.innerHTML = '<div style="font-size:12px;color:var(--hint);text-align:center;width:100%">Caso importado do MyLab. Histórico bloqueado para edição.</div>';
     }
   }
 
@@ -8667,9 +8780,59 @@ function mcDownloadPhoto(slot, index) {
   var rec = _mcActiveId ? MC_DATA[_mcActiveId] : null;
   if (!rec) return;
   var key = slot === 'antes' ? 'fotosAntesFiles' : 'fotosDepoisFiles';
-  var file = rec[key] && rec[key][index - 1];
-  if (file) { dlSource(file, file.name); return; }
+  var item = rec[key] && rec[key][index - 1];
+  if ((typeof Blob !== 'undefined' && item instanceof Blob) || (typeof File !== 'undefined' && item instanceof File)) {
+    dlSource(item, item.name || ('foto-' + index));
+    return;
+  }
+  var url = mcFileUrl(item);
+  if (url) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = (item && (item.name || item.original_name || item.file_name)) || ('foto-' + index);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return;
+  }
   showToast('Arquivo original nao disponivel para baixar.');
+}
+
+function mcFilesForSlot(rec, slotPrefix) {
+  var files = (rec && rec._files) || [];
+  return files.filter(function(f){
+    var p = f.file_payload || {};
+    return f.file_type === 'photo' && String(p.slot || '').indexOf(slotPrefix + '-') === 0;
+  }).sort(function(a,b){
+    var as = String((a.file_payload || {}).slot || '');
+    var bs = String((b.file_payload || {}).slot || '');
+    return as.localeCompare(bs);
+  });
+}
+
+function mcFileUrl(item) {
+  if (!item) return '';
+  if (typeof item === 'string') return item;
+  if ((typeof Blob !== 'undefined' && item instanceof Blob) || (typeof File !== 'undefined' && item instanceof File)) {
+    return URL.createObjectURL(item);
+  }
+  return item.dataUrl || item.file_url || item.url || sbPublicUrlFromPath(item.storage_path) || '';
+}
+
+function mcPhotoSource(slot, index) {
+  var rec = _mcActiveId ? MC_DATA[_mcActiveId] : null;
+  if (!rec) return '';
+  var key = slot === 'antes' ? 'fotosAntesFiles' : 'fotosDepoisFiles';
+  return mcFileUrl(rec[key] && rec[key][index - 1]);
+}
+
+function mcPhotoSources(slot) {
+  var rec = _mcActiveId ? MC_DATA[_mcActiveId] : null;
+  if (!rec) return [];
+  var key = slot === 'antes' ? 'fotosAntesFiles' : 'fotosDepoisFiles';
+  return (rec[key] || []).map(function(item, i){
+    return { index: i + 1, src: mcFileUrl(item) };
+  }).filter(function(item){ return !!item.src; });
 }
 
 // Renders a Scanner Inicial/Final section for MyCases: Upper (Maxila)
@@ -8719,9 +8882,9 @@ function mcRenderScannerSection(which, rec) {
 function mcRenderPhotoGrid(elId, count, slot, pacienteName) {
   var el = safeEl(elId);
   if (!el) return;
-  var n = Math.min(count || 0, 6);
+  var sources = mcPhotoSources(slot).slice(0, 6);
 
-  if (n === 0) {
+  if (sources.length === 0) {
     el.innerHTML = '<button class="mc-add-photo-btn-full" type="button" onclick="mcQuickAddPhoto(\'' + slot + '\')">' +
       '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
       '+ Adicionar Foto</button>';
@@ -8729,11 +8892,13 @@ function mcRenderPhotoGrid(elId, count, slot, pacienteName) {
   }
 
   var html = '';
-  for (var i = 0; i < n; i++) {
-    var color = MC_PHOTO_COLORS[i % MC_PHOTO_COLORS.length];
-    html += '<div class="mc-photo-slot" role="button" tabindex="0" style="background:' + color + '" onclick="mcOpenLightbox(\'' + slot + '\',' + (i+1) + ',\'' + (pacienteName||'').replace(/'/g,"") + '\')">'
-         + dlIconButton('mcDownloadPhoto(\'' + slot + '\',' + (i+1) + ')', 'Baixar foto')
-         + 'Foto ' + (i+1) + '</div>';
+  for (var i = 0; i < sources.length; i++) {
+    var src = sources[i].src;
+    var idx = sources[i].index;
+    html += '<div class="mc-photo-slot" role="button" tabindex="0" style="background:#0F172A;overflow:hidden;padding:0" onclick="mcOpenLightbox(\'' + slot + '\',' + idx + ',\'' + (pacienteName||'').replace(/'/g,"") + '\')">'
+         + dlIconButton('mcDownloadPhoto(\'' + slot + '\',' + idx + ')', 'Baixar foto')
+         + '<img src="' + src + '" alt="Foto ' + idx + '" style="width:100%;height:100%;object-fit:cover;display:block">'
+         + '</div>';
   }
   html += '<button class="mc-add-photo-btn" type="button" onclick="mcQuickAddPhoto(\'' + slot + '\')">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
@@ -8745,6 +8910,7 @@ function mcQuickAddPhoto(slot) {
   if (!_mcActiveId) return;
   var rec = MC_DATA[_mcActiveId];
   if (!rec) return;
+  if (rec.origem !== 'manual') { showToast('Casos vindos da DentaLab nao podem ser editados.'); return; }
   var input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
@@ -8771,9 +8937,16 @@ function mcOpenLightbox(slot, index, pacienteName) {
   var img = safeEl('mc-lightbox-img');
   var label = safeEl('mc-lightbox-label');
   if (img) {
-    var color = MC_PHOTO_COLORS[(index-1) % MC_PHOTO_COLORS.length];
-    img.style.background = color;
-    img.textContent = 'Foto ' + (slot === 'antes' ? 'Antes' : 'Depois') + ' ' + index;
+    var src = mcPhotoSource(slot, index);
+    img.textContent = '';
+    img.innerHTML = '';
+    if (src) {
+      img.style.background = 'transparent';
+      img.innerHTML = '<img src="' + src + '" alt="Foto" style="width:100%;height:100%;object-fit:contain;display:block">';
+    } else {
+      showToast('Foto não encontrada.');
+      return;
+    }
   }
   if (label) label.textContent = (pacienteName ? pacienteName + ' - ' : '') + (slot === 'antes' ? 'Fotos Antes' : 'Fotos Depois');
   var box = safeEl('mc-lightbox');
@@ -8799,9 +8972,8 @@ function mcToggleFavoriteActive() {
 }
 
 // Single shared entry point for opening a MyCase's scanner viewer.
-// Routes into the Universal3DViewer (U3D_open): 2+ Upper/Lower/Bite
-// slots on record -> arch mode; 0-1 -> single-file mode, same pipeline
-// either way.
+// Routes every MyCase scanner into the same arch-mode Universal3DViewer
+// used by MyLab, even with a single Upper/Lower/Extra slot.
 function mcOpenStl(which) {
   var rec = _mcActiveId ? MC_DATA[_mcActiveId] : null;
   if (!rec) { showToast('Caso nao encontrado.'); return; }
@@ -8810,31 +8982,48 @@ function mcOpenStl(which) {
   var upperName = rec[prefix + 'Upper'] || '';
   var lowerName = rec[prefix + 'Lower'] || '';
   var biteName  = rec[prefix + 'Bite']  || '';
-  var slotsPresent = [upperName, lowerName, biteName].filter(Boolean).length;
   var label = rec.paciente + ' - Scanner ' + (which === 'inicial' ? 'Inicial' : 'Final');
-  var localUpper = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Upper'] || null;
-  var localLower = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Lower'] || null;
-  var localBite  = CDM_LOCAL_FILES[_mcActiveId + ':' + which + ':Bite']  || null;
+  var localKeys = [_mcActiveId, rec._supabaseId, rec.id].filter(Boolean);
+  var localUpper = null, localLower = null, localBite = null;
+  for (var i = 0; i < localKeys.length; i++) {
+    localUpper = localUpper || CDM_LOCAL_FILES[localKeys[i] + ':' + which + ':Upper'] || null;
+    localLower = localLower || CDM_LOCAL_FILES[localKeys[i] + ':' + which + ':Lower'] || null;
+    localBite  = localBite  || CDM_LOCAL_FILES[localKeys[i] + ':' + which + ':Bite']  || null;
+  }
+  var upperUrl = mcScannerUrlForSlot(rec, prefix + 'Upper');
+  var lowerUrl = mcScannerUrlForSlot(rec, prefix + 'Lower');
+  var biteUrl  = mcScannerUrlForSlot(rec, prefix + 'Bite');
+  var hasAnyRemoteUrl = !!(upperUrl || lowerUrl || biteUrl);
+  var openUpperUrl = upperUrl || (hasAnyRemoteUrl && localUpper ? URL.createObjectURL(localUpper) : '');
+  var openLowerUrl = lowerUrl || (hasAnyRemoteUrl && localLower ? URL.createObjectURL(localLower) : '');
+  var openBiteUrl  = biteUrl  || (hasAnyRemoteUrl && localBite  ? URL.createObjectURL(localBite)  : '');
 
-  if (localUpper || localLower || localBite || slotsPresent >= 2) {
+  if (localUpper || localLower || localBite || openUpperUrl || openLowerUrl || openBiteUrl) {
     U3D_open({
       patientName: label,
-      caseKey: _mcActiveId + ':' + which,
+      caseKey: (rec._supabaseId || _mcActiveId) + ':' + which,
       localUpperFile: localUpper,
       localLowerFile: localLower,
-      localBiteFile:  localBite
+      localBiteFile:  localBite,
+      upperUrl: openUpperUrl,
+      lowerUrl: openLowerUrl,
+      biteUrl: openBiteUrl
     });
     return;
   }
 
   var fileName = upperName || lowerName || biteName || (which === 'inicial' ? rec.scannerInicial : rec.scannerFinal);
   if (!fileName) { showToast('Nenhum scanner ' + which + ' anexado.'); return; }
-  U3D_open({
-    caseId: _mcActiveId,
-    patientName: label,
-    singleFileUrl: fileName,
-    singleFileName: fileName
+  showToast('Scanner ainda nao esta disponivel neste dispositivo. Aguarde o upload/sync terminar.');
+}
+
+function mcScannerUrlForSlot(rec, slotName) {
+  var files = (rec && rec._files) || [];
+  var found = latestCaseFile(files, function(f){
+    var payloadSlot = f.file_payload && f.file_payload.slot;
+    return payloadSlot === slotName;
   });
+  return found ? (found.file_url || sbPublicUrlFromPath(found.storage_path)) : '';
 }
 
 // FIX P0-3: mcUploadStl() and mcUploadScannerSlot() had overlapping field
@@ -8848,8 +9037,8 @@ function mcUploadScannerSlot(which, slotLabel) {
   if (!_mcActiveId) return;
   var rec = MC_DATA[_mcActiveId];
   if (!rec) return;
-  if (rec.origem !== 'manual' && which !== 'final') {
-    showToast('Casos vindos da DentaLab permitem adicionar apenas scanner final.');
+  if (rec.origem !== 'manual') {
+    showToast('Casos vindos da DentaLab nao podem ser editados.');
     return;
   }
   var normalizedSlotLabel = slotLabel || 'Upper';
@@ -9234,7 +9423,10 @@ function mcOpenEditCase() {
     scannerFinal: rec.scannerFinal || '',
     scannerFinalUpper: rec.scannerFinalUpper || rec.scannerFinal || '',
     scannerFinalLower: rec.scannerFinalLower || '',
-    scannerFinalBite: rec.scannerFinalBite || ''
+    scannerFinalBite: rec.scannerFinalBite || '',
+    fotosAntesFiles: (rec.fotosAntesFiles || []).slice(),
+    fotosDepoisFiles: (rec.fotosDepoisFiles || []).slice(),
+    _removedSlots: []
   });
 
   var titleEl = safeEl('mcf-title'); if (titleEl) titleEl.textContent = 'Editar MyCase';
@@ -9311,6 +9503,8 @@ function mcFormRemovePhotos(which) {
   if (!_mcFormDraft[which]) { showToast('Nenhuma foto para remover.'); return; }
   _mcFormDraft[which] = 0;
   _mcFormDraft[which + 'Files'] = [];
+  _mcFormDraft._removedSlots = _mcFormDraft._removedSlots || [];
+  _mcFormDraft._removedSlots.push(which === 'fotosAntes' ? 'fotosAntes-' : 'fotosDepois-');
   mcFormRefreshMediaLabels();
   showToast((which === 'fotosAntes' ? 'Fotos Antes' : 'Fotos Depois') + ' removidas.');
 }
@@ -9342,6 +9536,8 @@ function mcFormRemoveStl(which) {
   if (!_mcFormDraft[which]) { showToast('Nenhum STL para remover.'); return; }
   _mcFormDraft[which] = '';
   _mcFormDraft[which + 'File'] = null;
+  _mcFormDraft._removedSlots = _mcFormDraft._removedSlots || [];
+  _mcFormDraft._removedSlots.push(which);
   var prefix = which.indexOf('scannerInicial') === 0 ? 'scannerInicial' : (which.indexOf('scannerFinal') === 0 ? 'scannerFinal' : which);
   if (prefix === 'scannerInicial' || prefix === 'scannerFinal') {
     _mcFormDraft[prefix] = mcFirstScannerName(_mcFormDraft, prefix);
@@ -9365,13 +9561,41 @@ function mcStoreDraftScannerFiles(caseId) {
   });
 }
 
+function mcFilterFilesByRemovedSlots(files, removedSlots) {
+  if (!removedSlots || !removedSlots.length) return files || [];
+  return (files || []).filter(function(f){
+    var slot = String((f.file_payload || {}).slot || '');
+    return !removedSlots.some(function(mark){
+      return mark && (slot === mark || slot.indexOf(mark) === 0);
+    });
+  });
+}
+
+function mcClearLocalFilesForRemovedSlots(rec, caseId, removedSlots) {
+  if (!removedSlots || !removedSlots.length) return;
+  var keys = [caseId, rec && rec._supabaseId, rec && rec.id].filter(Boolean);
+  var slotMap = {
+    scannerInicialUpper: ['inicial','Upper'],
+    scannerInicialLower: ['inicial','Lower'],
+    scannerInicialBite:  ['inicial','Bite'],
+    scannerFinalUpper: ['final','Upper'],
+    scannerFinalLower: ['final','Lower'],
+    scannerFinalBite:  ['final','Bite']
+  };
+  removedSlots.forEach(function(mark){
+    var m = slotMap[mark];
+    if (!m) return;
+    keys.forEach(function(k){ delete CDM_LOCAL_FILES[k + ':' + m[0] + ':' + m[1]]; });
+  });
+}
+
 function mcCloseForm() {
   closeModal('modal-mc-new');
   _mcFormMode = 'create';
   _mcFormEditId = null;
 }
 
-function mcSaveForm() {
+async function mcSaveForm() {
   var nome = (safeEl('mcf-nome')||{}).value || '';
   if (!nome.trim()) { showToast('Informe o nome do paciente.'); return; }
 
@@ -9414,6 +9638,7 @@ function mcSaveForm() {
     scannerFinalUpperFile: _mcFormDraft.scannerFinalUpperFile || null,
     scannerFinalLowerFile: _mcFormDraft.scannerFinalLowerFile || null,
     scannerFinalBiteFile: _mcFormDraft.scannerFinalBiteFile || null,
+    _removedSlots: (_mcFormDraft._removedSlots || []).slice(),
     ultimaAlteracao: nowBR
   };
 
@@ -9421,22 +9646,40 @@ function mcSaveForm() {
     // Preserve id/origem/labColor/criadoEm -- only the editable fields
     // (and ultimaAlteracao, bumped above) change on edit.
     var existing = MC_DATA[_mcFormEditId];
+    existing._files = mcFilterFilesByRemovedSlots(existing._files || [], payload._removedSlots);
     Object.assign(existing, payload);
+    mcClearLocalFilesForRemovedSlots(existing, _mcFormEditId, payload._removedSlots);
     mcStoreDraftScannerFiles(_mcFormEditId);
-    sbUpdateManualMyCase(existing);
+    var updateResult = await sbUpdateManualMyCase(existing, payload._removedSlots);
+    if (updateResult && updateResult.success === false) {
+      showToast('Não foi possível salvar no Supabase: ' + (updateResult.error || 'erro desconhecido'));
+      return;
+    }
     mcCloseForm();
     MC_FILTER = 'todos';
     mcSetFilter('todos');
+    if (updateResult && updateResult.fileErrors && updateResult.fileErrors.length) {
+      showToast('Dados salvos, mas ' + updateResult.fileErrors.length + ' foto/arquivo não subiu. Tente trocar por JPG/PNG.');
+      return;
+    }
     showToast('Caso de ' + nome.trim() + ' atualizado!');
   } else {
     var mcId = 'mc-manual-' + (MC_NEXT_ID++);
     payload.criadoEm = nowBR;
     MC_DATA[mcId] = Object.assign({ id: mcId, origem: 'manual', labColor: '#34D399' }, payload);
     mcStoreDraftScannerFiles(mcId);
-    sbSaveManualMyCase(MC_DATA[mcId]);
+    var saveResult = await sbSaveManualMyCase(MC_DATA[mcId]);
+    if (saveResult && saveResult.success === false) {
+      showToast('Não foi possível salvar no Supabase: ' + (saveResult.error || 'erro desconhecido'));
+      return;
+    }
     mcCloseForm();
     MC_FILTER = 'todos';
     mcSetFilter('todos');
+    if (saveResult && saveResult.fileErrors && saveResult.fileErrors.length) {
+      showToast('Caso salvo, mas ' + saveResult.fileErrors.length + ' foto/arquivo não subiu. Tente trocar por JPG/PNG.');
+      return;
+    }
     showToast('Caso de ' + nome.trim() + ' adicionado ao MyCases!');
   }
 }
@@ -9482,14 +9725,14 @@ function mcConfirmDelete() {
   showToast('Caso excluido.');
 }
 
-// ==== Lab-origin quick actions (footer in detail modal) ====
-// Lab cases never get the full edit form -- only additive, post-delivery
-// updates (Fotos Depois, Scanner Final, Observacoes), never altering or
-// deleting the original delivered record.
+// ==== Lab-origin guard actions (footer/detail modal) ====
+// Cases imported from MyLab are historical records inside MyCases and
+// stay locked. Only manual MyCases can be edited.
 function mcFormAddPhotoQuick(which) {
   if (!_mcActiveId) return;
   var rec = MC_DATA[_mcActiveId];
   if (!rec) return;
+  if (rec.origem !== 'manual') { showToast('Casos vindos da DentaLab nao podem ser editados.'); return; }
   var input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
@@ -9512,6 +9755,7 @@ function mcEditObsOnly() {
   if (!_mcActiveId) return;
   var rec = MC_DATA[_mcActiveId];
   if (!rec) return;
+  if (rec.origem !== 'manual') { showToast('Casos vindos da DentaLab nao podem ser editados.'); return; }
   var novo = window.prompt('Observacoes finais:', rec.obs || '');
   if (novo === null) return;
   rec.obs = novo;
@@ -10865,7 +11109,7 @@ function clearDemoUI() {
 }
 
 function renderProfileStats() {
-  var cases = Object.keys(CDM).map(function(id){ return CDM[id]; }).filter(Boolean);
+  var cases = Object.keys(CDM).map(function(id){ return CDM[id]; }).filter(function(c){ return c && !isMyCaseRecord(c); });
   var completed = cases.filter(function(c){ return c.statusCls === 'st-done' || c.status === 'Entregue' || c.status === 'Finalizado'; }).length;
   var active = cases.length - completed;
   var sent = document.getElementById('ps-stat-sent');
@@ -10877,7 +11121,7 @@ function renderProfileStats() {
 }
 
 function renderHomeCaseStats() {
-  var cases = Object.keys(CDM).map(function(id){ return CDM[id]; }).filter(Boolean);
+  var cases = Object.keys(CDM).map(function(id){ return CDM[id]; }).filter(function(c){ return c && !isMyCaseRecord(c); });
   var finished = cases.filter(function(c){ return c.statusCls === 'st-done' || c.status === 'Entregue' || c.status === 'Finalizado'; }).length;
   var active = cases.length - finished;
   var pendingCaseIds = {};
@@ -11040,7 +11284,7 @@ function caseMatchesConversationLab(c, labRef) {
 function countActiveCasesForConversation(labRef, clinicId) {
   return Object.keys(CDM).filter(function(id){
     var c = CDM[id];
-    if (!c) return false;
+    if (!c || isMyCaseRecord(c)) return false;
     var caseClinicId = c._clinicId || c.clinicId || null;
     var sameLab = labRef ? caseMatchesConversationLab(c, labRef) : true;
     var sameClinic = (currentUserRole === 'laboratorio' && clinicId) ? (!caseClinicId || caseClinicId === clinicId) : true;
@@ -11119,7 +11363,7 @@ async function sbLoadConversationPreview(labRef, clinicId, card) {
       return;
     }
     var latestCase = Object.keys(CDM).map(function(id){ return CDM[id]; }).filter(function(c){
-      return c && caseMatchesConversationLab(c, labRef) && (!clinicId || !c._clinicId || c._clinicId === clinicId);
+      return c && !isMyCaseRecord(c) && caseMatchesConversationLab(c, labRef) && (!clinicId || !c._clinicId || c._clinicId === clinicId);
     })[0];
     preview.textContent = latestCase ? 'Caso: ' + latestCase.paciente : 'Nenhuma mensagem ainda';
     updateConversationCaseCount(card, labRef, clinicId);
@@ -11142,7 +11386,7 @@ function renderLabClinics(clinics, lab) {
     var name = clinic.clinic_name || clinic.name || 'Clínica';
     var caseCount = Object.keys(CDM).filter(function(id){
       var c = CDM[id];
-      return c && c._labDbId === lab.id && c._clinicId === clinic.id && c.statusCls !== 'st-done';
+      return c && !isMyCaseRecord(c) && c._labDbId === lab.id && c._clinicId === clinic.id && c.statusCls !== 'st-done';
     }).length;
     var card = document.createElement('div');
     card.className = 'lab-card';
@@ -11335,9 +11579,10 @@ async function saveCaseToSupabase(caseData, fileData) {
     var authenticatedUserId = authUserResult && authUserResult.data && authUserResult.data.user ? authUserResult.data.user.id : null;
     if (!authenticatedUserId) throw new Error('Sessão expirada. Entre novamente na sua conta.');
     currentUserId = authenticatedUserId;
+    var isManualMyCase = caseData && (caseData._source === 'mycases' || caseData.origin === 'mycases' || caseData.mycase);
     var linkedLab = (CONNECTED_LABS || []).find(function(lab){ return lab && lab.name === caseData.lab; });
-    var resolvedLabId = caseData.labDbId || caseData._labDbId || (linkedLab && linkedLab.id) || null;
-    if (currentUserRole !== 'laboratorio' && !resolvedLabId && (caseData._source === 'mylab' || caseData._source === 'chat')) {
+    var resolvedLabId = isManualMyCase ? null : (caseData.labDbId || caseData._labDbId || (linkedLab && linkedLab.id) || null);
+    if (!isManualMyCase && currentUserRole !== 'laboratorio' && !resolvedLabId && (caseData._source === 'mylab' || caseData._source === 'chat')) {
       throw new Error('Laboratório conectado não encontrado para este caso.');
     }
     var fullPayload = sbBuildCasePayload(caseData);
@@ -11359,7 +11604,7 @@ async function saveCaseToSupabase(caseData, fileData) {
       priority:        caseData.urg           || 'Normal',
       status:          caseData.statusCls     || 'st-p',
       notes:           caseData.obs           || '',
-      workflow_type:   'lab',
+      workflow_type:   isManualMyCase ? 'mycases' : 'lab',
       delivery_method: caseData.delivery      || '',
       implant_ref:     caseData.implante      || '',
       implant_desc:    caseData.implantDesc   || '',
@@ -11410,6 +11655,13 @@ async function sbAttachFilesToCase(caseObj, fileData) {
 }
 
 function sbMcRecordToCasePayload(rec) {
+  var cleanRec = Object.assign({}, rec);
+  [
+    'fotosAntesFiles','fotosDepoisFiles',
+    'scannerInicialUpperFile','scannerInicialLowerFile','scannerInicialBiteFile',
+    'scannerFinalUpperFile','scannerFinalLowerFile','scannerFinalBiteFile',
+    '_removedSlots'
+  ].forEach(function(k){ delete cleanRec[k]; });
   return {
     num: rec.id || '',
     npac: rec.npac || '',
@@ -11439,20 +11691,23 @@ function sbMcRecordToCasePayload(rec) {
     photos: [],
     _source: 'mycases',
     origin: 'mycases',
-    mycase: Object.assign({}, rec)
+    mycase: cleanRec
   };
 }
 
 function sbMcDraftFiles() {
   var attachments = [];
-  (_mcFormDraft.fotosAntesFiles || []).forEach(function(file, i){ attachments.push({ file:file, slot:'fotosAntes-' + i, category:'photo' }); });
-  (_mcFormDraft.fotosDepoisFiles || []).forEach(function(file, i){ attachments.push({ file:file, slot:'fotosDepois-' + i, category:'photo' }); });
-  if (_mcFormDraft.scannerInicialUpperFile) attachments.push({ file:_mcFormDraft.scannerInicialUpperFile, slot:'scannerInicialUpper', category:'scanner', jaw:'upper' });
-  if (_mcFormDraft.scannerInicialLowerFile) attachments.push({ file:_mcFormDraft.scannerInicialLowerFile, slot:'scannerInicialLower', category:'scanner', jaw:'lower' });
-  if (_mcFormDraft.scannerInicialBiteFile)  attachments.push({ file:_mcFormDraft.scannerInicialBiteFile,  slot:'scannerInicialBite',  category:'scanner', jaw:'bite' });
-  if (_mcFormDraft.scannerFinalUpperFile) attachments.push({ file:_mcFormDraft.scannerFinalUpperFile, slot:'scannerFinalUpper', category:'scanner', jaw:'upper' });
-  if (_mcFormDraft.scannerFinalLowerFile) attachments.push({ file:_mcFormDraft.scannerFinalLowerFile, slot:'scannerFinalLower', category:'scanner', jaw:'lower' });
-  if (_mcFormDraft.scannerFinalBiteFile)  attachments.push({ file:_mcFormDraft.scannerFinalBiteFile,  slot:'scannerFinalBite',  category:'scanner', jaw:'bite' });
+  function isUploadable(file) {
+    return file && ((typeof File !== 'undefined' && file instanceof File) || (typeof Blob !== 'undefined' && file instanceof Blob));
+  }
+  (_mcFormDraft.fotosAntesFiles || []).forEach(function(file, i){ if (isUploadable(file)) attachments.push({ file:file, slot:'fotosAntes-' + i, category:'photo' }); });
+  (_mcFormDraft.fotosDepoisFiles || []).forEach(function(file, i){ if (isUploadable(file)) attachments.push({ file:file, slot:'fotosDepois-' + i, category:'photo' }); });
+  if (isUploadable(_mcFormDraft.scannerInicialUpperFile)) attachments.push({ file:_mcFormDraft.scannerInicialUpperFile, slot:'scannerInicialUpper', category:'scanner', jaw:'upper' });
+  if (isUploadable(_mcFormDraft.scannerInicialLowerFile)) attachments.push({ file:_mcFormDraft.scannerInicialLowerFile, slot:'scannerInicialLower', category:'scanner', jaw:'lower' });
+  if (isUploadable(_mcFormDraft.scannerInicialBiteFile))  attachments.push({ file:_mcFormDraft.scannerInicialBiteFile,  slot:'scannerInicialBite',  category:'scanner', jaw:'bite' });
+  if (isUploadable(_mcFormDraft.scannerFinalUpperFile)) attachments.push({ file:_mcFormDraft.scannerFinalUpperFile, slot:'scannerFinalUpper', category:'scanner', jaw:'upper' });
+  if (isUploadable(_mcFormDraft.scannerFinalLowerFile)) attachments.push({ file:_mcFormDraft.scannerFinalLowerFile, slot:'scannerFinalLower', category:'scanner', jaw:'lower' });
+  if (isUploadable(_mcFormDraft.scannerFinalBiteFile))  attachments.push({ file:_mcFormDraft.scannerFinalBiteFile,  slot:'scannerFinalBite',  category:'scanner', jaw:'bite' });
   return { attachments: attachments };
 }
 
@@ -11466,33 +11721,65 @@ async function sbSaveManualMyCase(rec) {
   return result;
 }
 
-async function sbUpdateManualMyCase(rec) {
-  if (!isSupabaseReady() || !rec || !rec._supabaseId) return;
-  var caseObj = sbMcRecordToCasePayload(rec);
-  caseObj._supabaseId = rec._supabaseId;
-  await sbAttachFilesToCase(caseObj, sbMcDraftFiles());
-  var payload = {
-    patient_name: caseObj.paciente || '',
-    patient_number: caseObj.npac || '',
-    clinic_name: userClinica || '',
-    lab_name: caseObj.lab || '',
-    doctor_name: userName || '',
-    service_type: caseObj.tipo || '',
-    work_type: caseObj.tipo || '',
-    teeth: caseObj.dente || '',
-    material: caseObj.material || '',
-    shade: caseObj.shade || '',
-    urgency: caseObj.urg || 'Normal',
-    priority: caseObj.urg || 'Normal',
-    notes: caseObj.obs || '',
-    delivery_method: caseObj.delivery || '',
-    source: 'mycases',
-    case_payload: sbBuildCasePayload(caseObj),
-    updated_at: new Date().toISOString(),
-    last_synced_at: new Date().toISOString()
-  };
-  var res = await _supabaseClient.from('cases').update(payload).eq('id', rec._supabaseId);
-  if (res.error) console.log('[Supabase] sbUpdateManualMyCase erro:', res.error.message);
+async function sbRemoveCaseFilesBySlots(caseId, removedSlots) {
+  if (!isSupabaseReady() || !caseId || !removedSlots || !removedSlots.length) return;
+  try {
+    var res = await _supabaseClient.from('case_files').select('*').eq('case_id', caseId);
+    if (res.error) throw res.error;
+    var oldFiles = (res.data || []).filter(function(f){
+      var slot = String((f.file_payload || {}).slot || '');
+      return removedSlots.some(function(mark){ return mark && (slot === mark || slot.indexOf(mark) === 0); });
+    });
+    if (!oldFiles.length) return;
+    var paths = oldFiles.map(function(f){ return f.storage_path; }).filter(Boolean);
+    if (paths.length) await _supabaseClient.storage.from('case-files').remove(paths);
+    var ids = oldFiles.map(function(f){ return f.id; }).filter(Boolean);
+    if (ids.length) {
+      var del = await _supabaseClient.from('case_files').delete().in('id', ids);
+      if (del.error) throw del.error;
+    }
+  } catch (err) {
+    console.log('[Supabase] sbRemoveCaseFilesBySlots erro:', err.message);
+  }
+}
+
+async function sbUpdateManualMyCase(rec, removedSlots) {
+  if (!isSupabaseReady() || !rec || !rec._supabaseId) return { success:true, source:'local' };
+  try {
+    await sbRemoveCaseFilesBySlots(rec._supabaseId, removedSlots || []);
+    var uploaded = await sbUploadCaseFiles(rec._supabaseId, sbMcDraftFiles());
+    rec._files = (rec._files || []).concat(uploaded || []);
+    var caseObj = sbMcRecordToCasePayload(rec);
+    caseObj._supabaseId = rec._supabaseId;
+    var payload = {
+      patient_name: caseObj.paciente || '',
+      patient_number: caseObj.npac || '',
+      clinic_name: userClinica || '',
+      lab_name: caseObj.lab || '',
+      doctor_name: userName || '',
+      service_type: caseObj.tipo || '',
+      work_type: caseObj.tipo || '',
+      teeth: caseObj.dente || '',
+      material: caseObj.material || '',
+      shade: caseObj.shade || '',
+      urgency: caseObj.urg || 'Normal',
+      priority: caseObj.urg || 'Normal',
+      notes: caseObj.obs || '',
+      delivery_method: caseObj.delivery || '',
+      source: 'mycases',
+      workflow_type: 'mycases',
+      lab_id: null,
+      case_payload: sbBuildCasePayload(caseObj),
+      updated_at: new Date().toISOString(),
+      last_synced_at: new Date().toISOString()
+    };
+    var res = await _supabaseClient.from('cases').update(payload).eq('id', rec._supabaseId).select('id').single();
+    if (res.error) throw res.error;
+    return { success:true, source:'supabase', files:uploaded || [], fileErrors:(uploaded && uploaded._errors) || [] };
+  } catch (err) {
+    console.log('[Supabase] sbUpdateManualMyCase erro:', err.message);
+    return { success:false, error:err.message };
+  }
 }
 
 // ── loadCasesFromSupabase ───────────────────────────────────────────
@@ -11653,7 +11940,7 @@ function sbMapCaseRowToCDM(row) {
 async function syncSupabaseCasesIntoCDM() {
   var res = await loadCasesFromSupabase();
   if (!res || res.source !== 'supabase' || !Array.isArray(res.data)) return;
-  var remoteRows = res.data.filter(function(row){ return row.created_by && row.created_by !== currentUserId; });
+  var remoteRows = res.data.filter(function(row){ return !isMyCaseRow(row) && row.created_by && row.created_by !== currentUserId; });
   var newRemoteCases = sbRememberRemoteItems('cases', res.data.map(function(row){ return row.id; })).filter(function(id){
     return remoteRows.some(function(row){ return row.id === id; });
   });
@@ -11674,9 +11961,9 @@ async function syncSupabaseCasesIntoCDM() {
       Object.assign(CDM[id], c);
     } else {
       CDM[id] = c;
-      _cdmInjectMyLabCard(id, c, c.photos || []);
+      if (!isMyCaseRecord(c)) _cdmInjectMyLabCard(id, c, c.photos || []);
     }
-    mergePendingIssuesFromCaseRow(row, id);
+    if (!isMyCaseRow(row)) mergePendingIssuesFromCaseRow(row, id);
     changed++;
   });
   if (changed) {

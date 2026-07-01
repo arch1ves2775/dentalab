@@ -2571,6 +2571,8 @@ function dlIconButton(action, title) {
 // ─────────────────────────────────────────────────────────────────────────
 let userPerfil='dentista', userName='Dr. Jo\u00E3o Almeida', userClinica='Cl\u00EDnica Sorriso';
 var currentUserRole = 'dentista'; // canonical role variable
+var currentUserEmail = '';
+var DENTALAB_ADMIN_EMAIL = 'lucasp299@gmail.com';
 
 // Permission matrix — checked by every sensitive action
 var ROLE_PERMS = {
@@ -2604,8 +2606,17 @@ var ROLE_PERMS = {
 };
 
 function hasPerm(perm) {
+  if (perm === 'canAdminDeleteCases' || perm === 'canManageAllCases') return isCaseAdmin();
   var perms = ROLE_PERMS[currentUserRole] || ROLE_PERMS.dentista;
   return !!perms[perm];
+}
+
+function normalizeEmail(v) {
+  return String(v || '').trim().toLowerCase();
+}
+
+function isCaseAdmin() {
+  return normalizeEmail(currentUserEmail) === DENTALAB_ADMIN_EMAIL;
 }
 
 function requirePerm(perm) {
@@ -3890,6 +3901,7 @@ function sbClearLocalSession() {
 function sbApplyLocalProfile(profile) {
   if (!profile) return;
   currentUserId = profile.id || null;
+  currentUserEmail = profile.email || currentUserEmail || '';
   currentUserRole = sbNormalizeRole(profile.role);
   userPerfil = currentUserRole === 'laboratorio' ? 'protesico' : currentUserRole;
   userName = profile.name || sbLocalNameFromEmail(profile.email) || userName;
@@ -3958,6 +3970,7 @@ async function sbLogin(email, password) {
     var res = await _supabaseClient.auth.signInWithPassword({ email, password });
     if (res.error) throw res.error;
     currentUserId = res.data.user.id;
+    currentUserEmail = res.data.user.email || email || '';
     console.log('[Auth] Login OK:', email);
     await sbLoadOrCreateProfile(res.data.user);
     return { success: true, user: res.data.user };
@@ -3991,6 +4004,7 @@ async function sbSignup(email, password) {
     if (res.error) throw res.error;
     if (res.data.user) {
       currentUserId = res.data.user.id;
+      currentUserEmail = res.data.user.email || email || '';
       userName = name;
       userClinica = userClinica || 'Clinica / Laboratorio';
       currentUserRole = sbNormalizeRole(currentUserRole);
@@ -4029,6 +4043,7 @@ async function sbLogout() {
   sbResetAccountRuntimeState();
   sbClearLocalSession();
   currentUserId = null;
+  currentUserEmail = '';
   userName = '';
   userClinica = '';
   currentUserRole = 'dentista';
@@ -4076,6 +4091,7 @@ async function sbRestoreSession() {
     }
     var user = res.data.session.user;
     currentUserId = user.id;
+    currentUserEmail = user.email || '';
     console.log('[Auth] Sessao restaurada:', user.email);
     await sbLoadOrCreateProfile(user);
     _sbEnterApp();
@@ -4108,6 +4124,7 @@ async function sbLoadOrCreateProfile(user) {
 
     if (res.data) {
       userName        = res.data.name        || userName;
+      currentUserEmail = res.data.email || user.email || currentUserEmail || '';
       userClinica     = res.data.clinic_name || res.data.lab_name || userClinica;
       currentUserRole = sbNormalizeRole(res.data.role || currentUserRole);
       userPerfil      = currentUserRole === 'laboratorio' ? 'protesico' : currentUserRole;
@@ -5581,6 +5598,7 @@ function _cdmRenderFooter(caseId, c) {
   var svgTruck   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8zm3.5 10.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm-10 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/></svg>';
   var svgClock   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
   var svgInfo    = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>';
+  var svgTrash   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>';
 
   var btnMsg = '<button class="cdm-btn" onclick="cdmChat()">' + svgMsg + ' Mensagem</button>';
   var html = '';
@@ -5592,6 +5610,9 @@ function _cdmRenderFooter(caseId, c) {
     html += '<button class="cdm-btn" onclick="labSolicitarInfo(\''+caseId+'\')">' + svgInfo + ' Solicitar retificação</button>';
     if (c.statusCls !== 'st-done') {
       html += '<button class="cdm-btn grn" onclick="cdmMarcarPronto(\''+caseId+'\')">' + svgCheck + ' Pronto</button>';
+    }
+    if (isCaseAdmin()) {
+      html += '<button class="cdm-btn" style="background:rgba(239,68,68,.1);color:#F87171;border-color:rgba(239,68,68,.25)" onclick="cdmAdminDeleteCase(\'' + caseId + '\')">' + svgTrash + ' Apagar</button>';
     }
   } else {
     // Clínica sees: Mensagem | delivery-side button (state-dependent)
@@ -5615,6 +5636,9 @@ function _cdmRenderFooter(caseId, c) {
             + svgCheck
             + ' \u2713 Recebido em ' + (c.recebimentoConfirmado || '')
             + '</button>';
+    }
+    if (isCaseAdmin()) {
+      html += '<button class="cdm-btn" style="background:rgba(239,68,68,.1);color:#F87171;border-color:rgba(239,68,68,.25)" onclick="cdmAdminDeleteCase(\'' + caseId + '\')">' + svgTrash + ' Apagar</button>';
     }
   }
 
@@ -9959,9 +9983,9 @@ function U3D_updateToggleButtons(){
   // In 'single' mode there is only ever one mesh (stored in the
   // 'upper' slot internally) and no arch pairing -- Lower's controls
   // never appear in this mode, anywhere (toolbar, Modelos dropdown).
-  var slots = (U3D_mode === 'single') ? ['upper'] : ['upper','lower'];
+  var slots = (U3D_mode === 'single') ? ['upper'] : ['upper','lower','bite'];
 
-  ['upper','lower'].forEach(function(slot){
+  slots.forEach(function(slot){
     var hiddenBySingleMode = (U3D_mode === 'single' && slot === 'lower');
     var has = !hiddenBySingleMode && !!U3D_meshes[slot];
     var isOn = has && U3D_visible[slot];
@@ -9984,10 +10008,10 @@ function U3D_updateToggleButtons(){
     if (label) label.style.color = isOn ? '#E8F0FA' : '#5A6B82';
   });
 
-  // Keep the Upper/Lower visibility controls as a fixed floating stack
+  // Keep the Upper/Lower/Extra visibility controls as a fixed floating stack
   // in the upper-left of the viewer. In single-scan mode there is no
   // arch pairing to toggle, so the stack stays hidden.
-  var hasAny = (U3D_mode === 'single') ? !!U3D_meshes.upper : !!(U3D_meshes.upper || U3D_meshes.lower);
+  var hasAny = (U3D_mode === 'single') ? !!U3D_meshes.upper : !!(U3D_meshes.upper || U3D_meshes.lower || U3D_meshes.bite);
   var showModelsBtn = false;
   var modelsBtn = document.getElementById('u3d-models-btn');
   if (modelsBtn) modelsBtn.style.display = 'none';
@@ -10014,21 +10038,36 @@ function U3D_toggleVisibility(slot){
   U3D_updateToggleButtons();
 }
 
-// Centers and frames the GROUP as a whole (Box3 over every mesh
-// currently in U3D_group), so Upper+Lower+Bite keep their original
-// relative/occlusal alignment -- only the group's overall position is
-// shifted to the origin, never any individual mesh.
+function U3D_getFitMeshes(){
+  var primary = [];
+  if (U3D_meshes.upper) primary.push(U3D_meshes.upper);
+  if (U3D_meshes.lower) primary.push(U3D_meshes.lower);
+  if (primary.length) return primary;
+  return Object.keys(U3D_meshes).map(function(k){ return U3D_meshes[k]; }).filter(Boolean);
+}
+
+function U3D_boxFromMeshes(meshes){
+  var box = new THREE.Box3();
+  meshes.forEach(function(mesh){ box.expandByObject(mesh); });
+  return box;
+}
+
+// Centers and frames the GROUP as a whole. When Extra/Bite exists, the
+// camera still uses Upper/Lower as the movement reference, so rotation,
+// pan and zoom feel identical with two or three scanners.
 function U3D_fitCamera(){
   U3D_onResize();
   U3D_scene.updateMatrixWorld(true);
 
-  var box = new THREE.Box3().setFromObject(U3D_group);
+  var fitMeshes = U3D_getFitMeshes();
+  if (!fitMeshes.length) return;
+  var box = U3D_boxFromMeshes(fitMeshes);
   var center = box.getCenter(new THREE.Vector3());
   U3D_group.position.set(0,0,0);
   U3D_group.position.sub(center);
   U3D_scene.updateMatrixWorld(true);
 
-  box.setFromObject(U3D_group);
+  box = U3D_boxFromMeshes(fitMeshes);
   var sphere = box.getBoundingSphere(new THREE.Sphere());
   var size = box.getSize(new THREE.Vector3());
   var maxDim = Math.max(size.x, size.y, size.z) || 1;
@@ -11414,6 +11453,12 @@ create table if not exists pending_issues (
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
         </span>
         <span id="u3d-label-lower" style="font-size:12.5px;font-weight:700;color:#E8F0FA">Mandíbula</span>
+      </div>
+      <div id="u3d-row-bite" onclick="U3D_toggleVisibility('bite')" style="display:none;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;background:rgba(17,24,39,.92);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.32);min-width:118px">
+        <span id="u3d-check-bite" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #3B82F6;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#3B82F6">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <span id="u3d-label-bite" style="font-size:12.5px;font-weight:700;color:#E8F0FA">Extra</span>
       </div>
     </div>
   </div>

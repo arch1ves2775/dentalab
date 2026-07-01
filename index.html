@@ -5677,33 +5677,19 @@ function cdmOpenStl(which) {
   var localLower = localScannerFile('Lower');
   var localBite  = localScannerFile('Bite');
 
-  if (localUpper || localLower || localBite) {
-    // Real local File object(s) on record for this case+slot -- always
-    // go through the local-file pipeline, which already handles
-    // Upper-only, Lower-only, or both correctly (point 2: "Nao obrigar
-    // os dois"). U3D_open() pre-seeds U3D_files from these options
-    // right after its case-isolation reset, so this works correctly
-    // whether THREE.js needs to lazy-load first or is already ready.
-    U3D_open({
-      patientName: label,
-      caseKey: (c._supabaseId || _cdmActiveId || c.num) + ':' + which,
-      localUpperFile: localUpper,
-      localLowerFile: localLower,
-      localBiteFile:  localBite
-    });
-    return;
-  }
-
   var storageUpper = c._storage && which === 'inicial' ? c._storage.upperUrl : '';
   var storageLower = c._storage && which === 'inicial' ? c._storage.lowerUrl : '';
   var storageBite  = c._storage && which === 'inicial' ? c._storage.biteUrl  : '';
-  if (storageUpper || storageLower || storageBite) {
+  var openUpperUrl = localUpper ? URL.createObjectURL(localUpper) : (storageUpper || '');
+  var openLowerUrl = localLower ? URL.createObjectURL(localLower) : (storageLower || '');
+  var openBiteUrl  = localBite  ? URL.createObjectURL(localBite)  : (storageBite  || '');
+  if (openUpperUrl || openLowerUrl || openBiteUrl) {
     U3D_open({
       patientName: label,
       caseKey: (c._supabaseId || c.num) + ':' + which,
-      upperUrl: storageUpper || '',
-      lowerUrl: storageLower || '',
-      biteUrl:  storageBite  || '',
+      upperUrl: openUpperUrl,
+      lowerUrl: openLowerUrl,
+      biteUrl:  openBiteUrl,
       upperName: upperName || 'Upper',
       lowerName: lowerName || 'Lower',
       biteName:  biteName  || 'Extra'

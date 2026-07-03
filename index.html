@@ -3034,10 +3034,10 @@ window.addEventListener('load', function(){
 // ────────────────────────────────────────────────────────────────────────
 var MAT_CATALOGUE = [
   {
-    keys: ['coroa zircónia','coroa e.max','coroa metalocerâmica','coroa pfm','coroa provisória',
+    keys: ['coroa','coroa provisória',
            'coroa sobre implante','ponte fixa','ponte sobre implantes','ponte provisória',
            'maryland','provisório sobre implante','inlay','onlay','overlay',
-           'faceta cerâmica','faceta'],
+           'faceta'],
     // resolved per-service below — kept as fallback
     _fallback: true
   }
@@ -3048,7 +3048,7 @@ var MAT_CATALOGUE = [
 // Order matters: more specific entries should come first.
 var MAT_MAP = [
   // ── Coroas ──
-  { match: ['coroa zircónia','coroa sobre implante','ponte fixa','ponte sobre implantes'],
+  { match: ['coroa sobre implante','ponte fixa','ponte sobre implantes'],
     mats: [
       { name: 'Zircónia', sub: ['Multilayer','HT','MT','LT','STML','UTML'] },
       { name: 'e.max',    sub: ['HT','LT','MO','HO'] },
@@ -3059,21 +3059,13 @@ var MAT_MAP = [
     ],
     conexao: ['Ti-base','Pilar personalizado','UCLA']  // shown only for implant services
   },
-  { match: ['coroa e.max'],
+  { match: ['coroa'],
     mats: [
+      { name: 'Zircónia', sub: ['Multilayer','HT','MT','LT','STML','UTML'] },
       { name: 'e.max',    sub: ['HT','LT','MO','HO'] },
-      { name: 'Zircónia', sub: ['HT','MT','Multilayer'] },
       { name: 'Metalocerâmica' },
       { name: 'Resina híbrida' },
       { name: 'PMMA' },
-      { name: 'Outro' }
-    ]
-  },
-  { match: ['coroa metalocerâmica','coroa pfm'],
-    mats: [
-      { name: 'Metalocerâmica' },
-      { name: 'Zircónia', sub: ['HT','MT','Multilayer'] },
-      { name: 'Resina híbrida' },
       { name: 'Outro' }
     ]
   },
@@ -3301,7 +3293,7 @@ function ncGetMaterialLabel(){
 
 // ── SERVICE CATALOGUE ──
 var SVC_CATALOGUE = [
-  { cat:'Fixa', items:['Coroa zircónia','Coroa e.max','Coroa metalocerâmica','Faceta cerâmica','Inlay/Onlay','Ponte fixa','Maryland','Overlay'] },
+  { cat:'Fixa', items:['Coroa','Faceta','Inlay/Onlay','Ponte fixa','Maryland','Overlay'] },
   { cat:'Implantes', items:['Coroa sobre implante','Ponte sobre implantes','Protocolo sobre implantes','Barra sobre implantes','Pilar personalizado','Guia cirúrgica'] },
   { cat:'Removível', items:['Prótese acrílica total','Prótese acrílica parcial','Esquelética','Rebasamento','Reparo de prótese','Acrescentar dente','Acrescentar gancho'] },
   { cat:'Provisórios', items:['Coroa provisória','Ponte provisória','Provisório sobre implante','Mockup'] },
@@ -3622,6 +3614,8 @@ function createLabCase(data, source) {
     shade:      data.shade || '\u2014',
     urg:        data.urgent ? 'Urgente' : 'Normal',
     lab:        data.labName,
+    doctorName: data.doctorName || userName || '',
+    clinicName: data.clinicName || userClinica || '',
     labAv:      data.labId,
     labDbId:    data.labDbId || null,
     labColor:   data.labColor,
@@ -3726,13 +3720,14 @@ function _cdmInjectMyLabCard(caseId, c, photos) {
   var statusText = (issue && currentUserRole !== 'laboratorio') ? issueDisplayTitle(issue) : c.status;
   var statusBg = issue ? 'var(--red-bg)' : 'rgba(79,140,255,.14)';
   var statusFg = issue ? 'var(--red)' : 'var(--accent)';
+  var refLine = cdmCaseSecondaryLine(c);
 
   var html = '<div class="pc2-card" id="cdm-card-'+caseId+'" onclick="openCaseDetail(\''+caseId+'\')" style="animation:fadeUp .3s ease both">'
     + '<div class="pc2-top">'
     + '<div class="pc2-av" style="background:'+bgAlpha+';color:'+accentColor+'">'+ini+'</div>'
     + '<div class="pc2-info">'
     + '<div class="pc2-name">'+c.paciente+'</div>'
-    + '<div class="pc2-ref">'+(c.npac ? c.npac+' \u00b7 ' : '')+c.num+'</div>'
+    + '<div class="pc2-ref">'+sbEscapeHtml(refLine)+'</div>'
     + '<div class="pc2-tags">'
     + '<span class="pc2-status" style="background:'+statusBg+';color:'+statusFg+'">'+statusText+'</span>'
     + urgBadge + photoBadge
@@ -3891,6 +3886,8 @@ function sendCase(){
     photos:      NC_PHOTOS.map(function(p){ return { dataUrl: p.dataUrl, file: p.file }; }),
     implante:    selImplanteRef,
     implantDesc: selImplanteDesc,
+    doctorName:  userName || '',
+    clinicName:  userClinica || '',
     labId:       selLabId,
     labDbId:     selLabDbId,
     labName:     selLabName,
@@ -4620,13 +4617,14 @@ async function openChat(av,name,color,labDbId,clinicId){
   chat.style.transition='opacity .2s ease';
   chat.style.opacity='1';
   chat.style.pointerEvents='all';
+  var effectiveLabId = labDbId || (currentUserRole === 'laboratorio' && window.CURRENT_LAB ? window.CURRENT_LAB.id : null);
+  var effectiveClinicId = clinicId || (currentUserRole === 'laboratorio' ? null : currentUserId);
+  var nextChatKey = sbChatKey(effectiveLabId, effectiveClinicId) || av;
+  var labChanged = (nextChatKey !== (CURRENT_CHAT && CURRENT_CHAT.key ? CURRENT_CHAT.key : _currentChatLabAv));
   document.getElementById('chat-av').style.background=color;
   document.getElementById('chat-av').textContent=av;
   document.getElementById('chat-name').textContent=name;
-  var labChanged = (av !== _currentChatLabAv);
   _currentChatLabAv = av; // keep state in sync with DOM
-  var effectiveLabId = labDbId || (currentUserRole === 'laboratorio' && window.CURRENT_LAB ? window.CURRENT_LAB.id : null);
-  var effectiveClinicId = clinicId || (currentUserRole === 'laboratorio' ? null : currentUserId);
   CURRENT_CHAT = { labId: effectiveLabId, clinicId: effectiveClinicId, key: sbChatKey(effectiveLabId, effectiveClinicId) };
   document.getElementById('bottom-nav').style.display='none';
   document.getElementById('nb-conv').style.display='none';
@@ -6637,6 +6635,19 @@ function prazoBadgeHTML(c) {
   return '<span class="pc2-deadline-badge ' + cls + '">' + txt + '</span>';
 }
 
+function cdmCaseSecondaryLine(c) {
+  if (!c) return '';
+  var ref = [];
+  var doctor = c.doctorName || c.doctor_name || c.medico || c.dentista || '';
+  var clinic = c.clinicName || c.clinic_name || c.clinica || '';
+  if (currentUserRole === 'laboratorio' && doctor) ref.push(doctor);
+  if (currentUserRole === 'laboratorio' && clinic) ref.push(clinic);
+  if (!ref.length && c.npac) ref.push(c.npac);
+  if (c.num) ref.push(c.num);
+  if (currentUserRole !== 'laboratorio' && c.tipo) ref.push(c.tipo);
+  return ref.filter(Boolean).join(' · ');
+}
+
 // Status sort order within the same deadline group
 var STATUS_ORDER = { 'st-wait':0, 'st-a':1, 'st-p':2, 'st-ok':3, 'st-done':4 };
 
@@ -6711,6 +6722,7 @@ function _labCardHTML(caseId) {
   var statusColor = statusColors[c.statusCls] || 'var(--muted)';
   var deadlineBadge = prazoBadgeHTML(c);
   var urgBadge = isUrgent ? '<span class="pc2-urg-badge">\u26A1 Urgente</span>' : '';
+  var refLine = cdmCaseSecondaryLine(c);
   var acts = '<div class="pc2-acts" data-cid="' + caseId + '" data-av="' + (c.labAv||'') + '" data-lab="' + (c.lab||'').replace(/"/g,'&quot;') + '" data-labcolor="' + (c.labColor||'#3B82F6') + '">'
     + _pc2ActsHTML(caseId, c.labAv||'', c.lab||'', c.labColor||'#3B82F6')
     + '</div>';
@@ -6720,7 +6732,7 @@ function _labCardHTML(caseId) {
     + '<div class="pc2-av" style="background:' + accentColor + '22;color:' + accentColor + '">' + ini + '</div>'
     + '<div class="pc2-info">'
     + '<div class="pc2-name">' + c.paciente + '</div>'
-    + '<div class="pc2-ref">' + (c.npac||'') + ' \u00b7 ' + c.num + ' \u00b7 ' + c.tipo + '</div>'
+    + '<div class="pc2-ref">' + sbEscapeHtml(refLine) + '</div>'
     + '<div class="pc2-tags">'
     + '<span class="pc2-status" style="background:' + statusColor + '18;color:' + statusColor + '">' + c.status + '</span>'
     + urgBadge
@@ -11748,16 +11760,23 @@ function renderLabClinics(clinics, lab) {
   }
   clinics.forEach(function(clinic, idx) {
     var color = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444'][idx % 5];
-    var name = clinic.clinic_name || clinic.name || 'Clínica';
+    var personName = clinic.name || clinic.full_name || clinic.display_name || clinic.email || 'Dentista';
+    var clinicName = clinic.clinic_name || clinic.clinic || 'Clínica não informada';
+    var initials = sbLabInitials(personName);
     var caseCount = Object.keys(CDM).filter(function(id){
       var c = CDM[id];
       return c && !isMyCaseRecord(c) && c._labDbId === lab.id && c._clinicId === clinic.id && c.statusCls !== 'st-done';
     }).length;
     var card = document.createElement('div');
     card.className = 'lab-card';
-    card.onclick = function(){ openChat(sbLabInitials(name), name, color, lab.id, clinic.id); };
-    card.innerHTML = '<div class="lab-card-av" style="background:' + color + '">' + sbLabInitials(name) + '</div>'
-      + '<div class="lab-card-info"><div class="lab-card-name">' + name + '</div>'
+    card.setAttribute('data-lab-id', lab.id || '');
+    card.setAttribute('data-lab-name', lab.name || '');
+    card.setAttribute('data-lab-av', initials || '');
+    card.setAttribute('data-clinic-id', clinic.id || '');
+    card.onclick = function(){ openChat(initials, personName, color, lab.id, clinic.id); };
+    card.innerHTML = '<div class="lab-card-av" style="background:' + color + '">' + sbEscapeHtml(initials) + '</div>'
+      + '<div class="lab-card-info"><div class="lab-card-name" style="font-size:16px">' + sbEscapeHtml(personName) + '</div>'
+      + '<div class="lab-card-clinic" style="font-size:12px;color:var(--muted);margin-top:1px">' + sbEscapeHtml(clinicName) + '</div>'
       + '<div class="lab-card-prev">Carregando conversa...</div>'
       + '<div class="lab-card-foot"><span class="lab-card-dot off"></span><span class="lab-card-cases lab-card-status off">' + caseCount + ' caso' + (caseCount === 1 ? '' : 's') + ' ativo' + (caseCount === 1 ? '' : 's') + '</span></div></div>';
     homeLabs.appendChild(card);
@@ -12252,6 +12271,8 @@ function sbMapCaseRowToCDM(row) {
     material:   row.material || '',
     shade:      row.shade || '—',
     urg:        row.urgency || 'Normal',
+    doctorName: row.doctor_name || '',
+    clinicName: row.clinic_name || '',
     lab:        'Laboratório',
     labAv:      'LP',
     labColor:   '#3B82F6',
@@ -12289,6 +12310,8 @@ function sbMapCaseRowToCDM(row) {
   c.material = row.material || c.material || '';
   c.shade = row.shade || c.shade || '—';
   c.urg = row.urgency || row.priority || c.urg || 'Normal';
+  c.doctorName = row.doctor_name || c.doctorName || c.doctor_name || '';
+  c.clinicName = row.clinic_name || c.clinicName || c.clinic_name || '';
   c.lab = row.lab_name || c.lab || 'Laboratório';
   c.labAv = c.labAv || 'LP';
   c.labColor = c.labColor || '#3B82F6';

@@ -4639,12 +4639,13 @@ async function openChat(av,name,color,labDbId,clinicId){
     await syncSupabaseCasesIntoCDM();
     await sbLoadChatMessages();
   }
+  _lcUpdateHeaderCount();
   setTimeout(()=>document.getElementById('msgs-area').scrollTop=9999,60);
   // update qbtn
   // Sync buttons with current role
   applyRoleUI(currentUserRole);
   // Update case counter badge for this lab
-  _lcUpdateHeaderCount(av);
+  _lcUpdateHeaderCount();
 }
 
 function closeChat(){
@@ -4844,11 +4845,13 @@ async function sbLoadChatMessages() {
     });
     chatEnsureCaseBubblesForConversation(_currentChatLabAv);
     _renderChatMessages(_currentChatLabAv);
+    _lcUpdateHeaderCount();
     if (newRemoteMessages.length) sbNotify('chat', 'Nova mensagem', newRemoteMessages.length === 1 ? 'Você recebeu uma nova mensagem.' : 'Você recebeu ' + newRemoteMessages.length + ' novas mensagens.');
   } catch (err) {
     console.log('[Supabase] sbLoadChatMessages erro:', err.message);
     chatEnsureCaseBubblesForConversation(_currentChatLabAv);
     _renderChatMessages(_currentChatLabAv);
+    _lcUpdateHeaderCount();
   }
 }
 
@@ -8092,6 +8095,33 @@ function cdmMarcarPronto(caseId) {
 var LAB_CASES = DENTALAB_DEMO_DATA ? {'LP':['041','042','039','037'],'CS':['043'],'OR':['040','044']} : {};
 var STATUS_COL = {'st-alert':'#EF4444','st-p':'#3B82F6','st-a':'#A78BFA','st-ok':'#10B981','st-done':'#6B7280'};
 
+function cdmCaseMatchesCurrentChat(c) {
+  if (!c || isMyCaseRecord(c)) return false;
+  var chatLabId = CURRENT_CHAT && CURRENT_CHAT.labId ? String(CURRENT_CHAT.labId) : '';
+  var chatClinicId = CURRENT_CHAT && CURRENT_CHAT.clinicId ? String(CURRENT_CHAT.clinicId) : '';
+  var caseLabId = c._labDbId || c.labDbId || '';
+  var caseClinicId = c._clinicId || c.clinicId || '';
+  if (chatLabId && String(caseLabId) !== chatLabId) return false;
+  if (chatClinicId && String(caseClinicId) !== chatClinicId) return false;
+  if (!chatLabId && _currentChatLabAv && c.labAv !== _currentChatLabAv) return false;
+  return true;
+}
+
+function cdmCurrentChatCaseIds() {
+  var ids = Object.keys(CDM || {}).filter(function(id){ return cdmCaseMatchesCurrentChat(CDM[id]); });
+  if (!ids.length && DENTALAB_DEMO_DATA && _currentChatLabAv) {
+    ids = (LAB_CASES[_currentChatLabAv] || []).filter(function(id){ return !!CDM[id]; });
+  }
+  ids.sort(function(a, b){
+    var ca = CDM[a], cb = CDM[b];
+    var da = (ca && ca.prazoISO) ? ca.prazoISO : '';
+    var db = (cb && cb.prazoISO) ? cb.prazoISO : '';
+    if (da !== db) return da < db ? -1 : 1;
+    return String((cb && cb.criado) || '').localeCompare(String((ca && ca.criado) || ''));
+  });
+  return ids;
+}
+
 function openLabCases(){
   // Read labAv from state — not from DOM — so it works even before
   // openChat() is called (e.g. the static demo chat on first load).
@@ -8101,15 +8131,8 @@ function openLabCases(){
   var labName = nameEl ? nameEl.textContent.trim() : 'Laborat\u00F3rio';
   var labColor= avEl  ? (avEl.style.background || 'var(--accent)') : 'var(--accent)';
 
-  // ── Collect all case IDs for this lab ──────────────────────────────
-  // Seed cases (LAB_CASES map) + any dynamic cases created this session
-  var seedIds    = LAB_CASES[labAv] || [];
-  var dynamicIds = Object.keys(CDM).filter(function(id){
-    var c = CDM[id];
-    // dynamic cases have labAv stored; seed cases don't — keep seeds via seedIds
-    return c && !isMyCaseRecord(c) && c.labAv === labAv && seedIds.indexOf(id) < 0;
-  });
-  var allIds = seedIds.concat(dynamicIds);
+  // ── Collect all case IDs for the current real conversation ─────────
+  var allIds = cdmCurrentChatCaseIds();
 
   // ── Update header ──────────────────────────────────────────────────
   var lcAv = document.getElementById('lc-lab-av');
@@ -8139,22 +8162,19 @@ function closeLabCases(){
 
 // Updates the 📋 N counter in the chat header for the given labAv
 function _lcUpdateHeaderCount(labAv) {
-  // If called without a labAv (e.g. on first render), fall back to state
-  var av = labAv || _currentChatLabAv;
   var el = document.getElementById('lc-header-count');
   if (!el) return;
-  var seedIds    = LAB_CASES[av] || [];
-  var dynamicIds = Object.keys(CDM).filter(function(id){
+  var ids = cdmCurrentChatCaseIds();
+  var active = ids.filter(function(id){
     var c = CDM[id];
-    return c && !isMyCaseRecord(c) && c.labAv === av && seedIds.indexOf(id) < 0;
-  });
-  var total = seedIds.length + dynamicIds.length;
-  el.textContent = total > 0 ? total : '\u00b7';
+    return c && c.statusCls !== 'st-done' && c.status !== 'Entregue' && c.status !== 'Finalizado';
+  }).length;
+  el.textContent = ids.length > 0 ? active : '\u00b7';
 }
 function _renderLabList(ids){
   var el=document.getElementById('lc-list');if(!el)return;
   if(!ids||ids.length===0){
-    el.innerHTML='<div style="text-align:center;padding:48px 20px;color:var(--hint);font-size:14px">Nenhum caso associado a este laborat\u00f3rio.</div>';
+    el.innerHTML='<div style="text-align:center;padding:48px 20px;color:var(--hint);font-size:14px">Nenhum caso associado a esta conversa.</div>';
     return;
   }
   var ativos=[], concluidos=[];
@@ -12389,6 +12409,7 @@ async function syncSupabaseCasesIntoCDM() {
     refreshConversationCaseCounts();
     renderAlertas();
     renderProfileLabs();
+    _lcUpdateHeaderCount();
   } else {
     mcInit();
     renderProfileStats();
@@ -12397,6 +12418,7 @@ async function syncSupabaseCasesIntoCDM() {
     renderAlertas();
     pc2RenderAllActs();
     renderProfileLabs();
+    _lcUpdateHeaderCount();
     if (currentUserRole === 'laboratorio') loadLabClinics();
   }
   if (newRemoteCases.length) sbNotify('cases', 'Novo caso recebido', newRemoteCases.length === 1 ? 'Um novo caso foi enviado para você.' : newRemoteCases.length + ' novos casos foram enviados para você.');

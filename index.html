@@ -124,6 +124,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .big-btn:active{transform:scale(.98);opacity:.93}
 .big-btn:disabled{background:var(--surface3);box-shadow:none;color:var(--hint)}
 .ghost-btn{width:100%;padding:15px;border-radius:var(--radius-pill);background:#FFFFFF;color:var(--muted);border:1px solid var(--border);font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:10px}
+.ptr-indicator{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translate(-50%,-70px);z-index:2500;min-width:132px;height:38px;border-radius:999px;background:rgba(255,255,255,.96);border:1px solid var(--border);box-shadow:0 8px 24px rgba(15,23,42,.18);display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;font-weight:800;color:var(--accent);opacity:0;pointer-events:none;transition:transform .18s ease,opacity .18s ease}
+.ptr-indicator.show{opacity:1;transform:translate(-50%,0)}
+.ptr-indicator.ready{color:var(--green)}
+.ptr-spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(37,99,235,.22);border-top-color:var(--accent)}
+.ptr-indicator.loading .ptr-spinner{animation:stlvspin .8s linear infinite}
 .ghost-btn:active{background:var(--surface2)}
 
 /* ── HEADER ── */
@@ -4604,6 +4609,114 @@ function showTab(t){
     if(dx<0&&idx<TABS.length-1) showTab(TABS[idx+1]);
     else if(dx>0&&idx>0)        showTab(TABS[idx-1]);
   },{passive:true});
+})();
+
+// ── PULL TO REFRESH (mobile/PWA) ─────────────────────────────────────
+// Internal refresh: syncs Supabase/app state without reloading the page.
+(function(){
+  var ptr = { tracking:false, pulling:false, startY:0, dist:0, target:null, loading:false };
+
+  function ptrIndicator(){
+    var el = document.getElementById('ptr-indicator');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'ptr-indicator';
+      el.className = 'ptr-indicator';
+      el.innerHTML = '<span class="ptr-spinner"></span><span id="ptr-text">Puxe para atualizar</span>';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  function ptrSet(text, state, dist){
+    var el = ptrIndicator();
+    var label = document.getElementById('ptr-text');
+    if (label) label.textContent = text;
+    el.classList.toggle('show', !!state);
+    el.classList.toggle('ready', state === 'ready');
+    el.classList.toggle('loading', state === 'loading');
+    if (state && state !== 'loading') {
+      el.style.transform = 'translate(-50%,' + Math.min(48, Math.max(0, dist || 0)) + 'px)';
+    } else {
+      el.style.transform = '';
+    }
+  }
+  function ptrScrollableFrom(target){
+    var node = target;
+    while (node && node !== document.body) {
+      if (node.classList && (
+        node.classList.contains('scroll-wrap') ||
+        node.classList.contains('home-scroll') ||
+        node.classList.contains('msgs-area')
+      )) return node;
+      node = node.parentElement;
+    }
+    var active = document.querySelector('.screen.active');
+    return active ? (active.querySelector('.scroll-wrap,.home-scroll,.msgs-area') || active) : null;
+  }
+  function ptrBlocked(target){
+    return !target || !!(target.closest && target.closest('.modal-overlay.show,.modal-overlay.open,.cdm-sheet,#u3d-overlay,#cdm-lightbox,#mc-lightbox,input,textarea,select'));
+  }
+  async function ptrRefresh(){
+    if (ptr.loading) return;
+    ptr.loading = true;
+    ptrSet('Atualizando...', 'loading');
+    try {
+      if (isSupabaseReady()) {
+        await syncSupabaseCasesIntoCDM();
+        if (CURRENT_CHAT && CURRENT_CHAT.labId && CURRENT_CHAT.clinicId) await sbLoadChatMessages();
+      }
+      if (currentTab === 'alertas') renderAlertas();
+      if (currentTab === 'mycases') { mcInit(); mcRender(); }
+      if (currentTab === 'casos' && currentUserRole === 'laboratorio') labRenderCasos();
+      renderProfileStats();
+      renderHomeCaseStats();
+      refreshConversationCaseCounts();
+      _lcUpdateHeaderCount();
+      ptrSet('Atualizado', 'ready', 28);
+      showToast('Atualizado ✓');
+    } catch (err) {
+      console.log('[PullRefresh] erro:', err.message || err);
+      ptrSet('Falhou', 'ready', 28);
+      showToast('Não foi possível atualizar.');
+    } finally {
+      setTimeout(function(){ ptrSet('', false); ptr.loading = false; }, 650);
+    }
+  }
+
+  document.addEventListener('touchstart', function(e){
+    if (ptr.loading || ptrBlocked(e.target) || !e.touches || e.touches.length !== 1) return;
+    var scroller = ptrScrollableFrom(e.target);
+    if (!scroller || scroller.scrollTop > 2) return;
+    ptr.tracking = true;
+    ptr.pulling = false;
+    ptr.startY = e.touches[0].clientY;
+    ptr.dist = 0;
+    ptr.target = scroller;
+  }, { passive:true });
+
+  document.addEventListener('touchmove', function(e){
+    if (!ptr.tracking || !e.touches || e.touches.length !== 1) return;
+    if (!ptr.target || ptr.target.scrollTop > 2) { ptr.tracking = false; ptrSet('', false); return; }
+    var dy = e.touches[0].clientY - ptr.startY;
+    if (dy <= 0) { ptrSet('', false); return; }
+    ptr.dist = dy * 0.55;
+    ptr.pulling = ptr.dist > 8;
+    if (ptr.pulling) {
+      if (e.cancelable) e.preventDefault();
+      ptrSet(ptr.dist > 58 ? 'Solte para atualizar' : 'Puxe para atualizar', ptr.dist > 58 ? 'ready' : 'pulling', ptr.dist);
+    }
+  }, { passive:false });
+
+  document.addEventListener('touchend', function(){
+    if (!ptr.tracking) return;
+    var shouldRefresh = ptr.pulling && ptr.dist > 58;
+    ptr.tracking = false;
+    ptr.pulling = false;
+    ptr.dist = 0;
+    ptr.target = null;
+    if (shouldRefresh) ptrRefresh();
+    else ptrSet('', false);
+  }, { passive:true });
 })();
 
 async function openChat(av,name,color,labDbId,clinicId){

@@ -2845,6 +2845,7 @@ let alertCount=0;
 
 // -- NOVO CASO state --
 var NC_PHOTOS = [];                         // [{dataUrl, file}]
+var NC_MAX_PHOTOS = 30;
 var NC_SCANNER = { upper: null, lower: null, bite: null }; // File objects
 var NC_SVC = '';                            // selected service name
 var NC_DELIVERY = '';                       // 'scanner' | 'molde' | ''
@@ -3493,7 +3494,9 @@ function ncAddPhotos(){
     document.body.removeChild(input);
     var files = Array.from(this.files || []);
     if (!files.length) return;
-    var remaining = 8 - NC_PHOTOS.length;
+    var remaining = NC_MAX_PHOTOS - NC_PHOTOS.length;
+    if (remaining <= 0) { showToast('Limite de ' + NC_MAX_PHOTOS + ' fotos por caso.'); return; }
+    if (files.length > remaining) showToast('Foram adicionadas ' + remaining + ' fotos. Limite: ' + NC_MAX_PHOTOS + '.');
     files.slice(0, remaining).forEach(function(file){
       var reader = new FileReader();
       reader.onload = function(e){ NC_PHOTOS.push({ dataUrl: e.target.result, file: file }); ncRenderPhotos(); };
@@ -5787,24 +5790,7 @@ async function cdmAdminDeleteCase(caseId) {
       if (del.error) throw del.error;
     }
 
-    [caseId, remoteId].filter(Boolean).forEach(function(id){
-      delete CDM[id];
-      var card = document.getElementById('cdm-card-' + id);
-      if (card) card.remove();
-      Object.keys(CDM_LOCAL_FILES || {}).forEach(function(k){
-        if (k.indexOf(id + ':') === 0) delete CDM_LOCAL_FILES[k];
-      });
-    });
-    Object.keys(CHAT_MESSAGES || {}).forEach(function(k){
-      CHAT_MESSAGES[k] = (CHAT_MESSAGES[k] || []).filter(function(m){
-        return !(m && m.type === 'case' && (String(m.caseId) === String(caseId) || String(m.caseId) === String(remoteId)));
-      });
-    });
-    if (Array.isArray(PENDING_ISSUES)) {
-      PENDING_ISSUES = PENDING_ISSUES.filter(function(p){
-        return !(p && (String(p.caseId) === String(caseId) || String(p.caseId) === String(remoteId)));
-      });
-    }
+    sbRemoveCaseEverywhereLocal(caseId, remoteId);
 
     closeCaseDetail();
     if (typeof labRenderCasos === 'function') labRenderCasos();
@@ -5819,6 +5805,52 @@ async function cdmAdminDeleteCase(caseId) {
     console.log('[AdminDelete] erro:', err.message);
     showToast('Não foi possível apagar: ' + err.message);
   }
+}
+
+function sbRemoveCaseEverywhereLocal(caseId, remoteId) {
+  var ids = [caseId, remoteId].filter(Boolean).map(function(id){ return String(id); });
+  if (!ids.length) return false;
+  var removed = false;
+  ids.forEach(function(id){
+    if (CDM[id]) { delete CDM[id]; removed = true; }
+    var card = document.getElementById('cdm-card-' + id);
+    if (card) { card.remove(); removed = true; }
+    Object.keys(CDM_LOCAL_FILES || {}).forEach(function(k){
+      if (k.indexOf(id + ':') === 0) delete CDM_LOCAL_FILES[k];
+    });
+  });
+  Object.keys(CHAT_MESSAGES || {}).forEach(function(k){
+    var before = (CHAT_MESSAGES[k] || []).length;
+    CHAT_MESSAGES[k] = (CHAT_MESSAGES[k] || []).filter(function(m){
+      return !(m && m.type === 'case' && ids.indexOf(String(m.caseId)) >= 0);
+    });
+    if ((CHAT_MESSAGES[k] || []).length !== before) removed = true;
+  });
+  if (Array.isArray(PENDING_ISSUES)) {
+    var pBefore = PENDING_ISSUES.length;
+    PENDING_ISSUES = PENDING_ISSUES.filter(function(p){
+      return !(p && ids.indexOf(String(p.caseId)) >= 0);
+    });
+    if (PENDING_ISSUES.length !== pBefore) removed = true;
+  }
+  return removed;
+}
+
+function sbPruneDeletedSupabaseCases(remoteIds) {
+  var remoteSet = {};
+  (remoteIds || []).forEach(function(id){ if (id) remoteSet[String(id)] = true; });
+  var removed = 0;
+  Object.keys(CDM || {}).forEach(function(localId){
+    var c = CDM[localId];
+    if (!c) return;
+    var remoteId = c._supabaseId || (/^[0-9a-f-]{36}$/i.test(localId) ? localId : '');
+    if (!remoteId) return;
+    var isRemoteBacked = c._source === 'supabase' || c.origin === 'supabase' || !!c._supabaseId;
+    if (isRemoteBacked && !remoteSet[String(remoteId)]) {
+      if (sbRemoveCaseEverywhereLocal(localId, remoteId)) removed++;
+    }
+  });
+  return removed;
 }
 
 // ── CDM Footer — dynamic button rendering ───────────────────────────────
@@ -11802,6 +11834,24 @@ function sbBuildCasePayload(caseData) {
   };
 }
 
+function sbPayloadCaseWithoutHeavyFiles(caseData) {
+  var clean = Object.assign({}, caseData || {});
+  if (Array.isArray(clean.photos)) {
+    clean.photos = clean.photos.map(function(p, i) {
+      return {
+        name: (p && p.name) || (p && p.file && p.file.name) || ('foto-' + (i + 1)),
+        storageBacked: true
+      };
+    });
+  }
+  [
+    'scannerUpper','scannerLower','scannerBite',
+    'scannerInicialUpperFile','scannerInicialLowerFile','scannerInicialBiteFile',
+    'scannerFinalUpperFile','scannerFinalLowerFile','scannerFinalBiteFile'
+  ].forEach(function(k){ delete clean[k]; });
+  return clean;
+}
+
 function sbCollectUploadItems(fileData) {
   var items = [];
   fileData = fileData || {};
@@ -11918,7 +11968,7 @@ async function saveCaseToSupabase(caseData, fileData) {
     if (!isManualMyCase && currentUserRole !== 'laboratorio' && !resolvedLabId && (caseData._source === 'mylab' || caseData._source === 'chat')) {
       throw new Error('Laboratório conectado não encontrado para este caso.');
     }
-    var fullPayload = sbBuildCasePayload(caseData);
+    var fullPayload = sbBuildCasePayload(sbPayloadCaseWithoutHeavyFiles(caseData));
     var generatedCaseId = sbNewUuid();
     var payload = {
       id:             generatedCaseId,
@@ -12280,6 +12330,7 @@ function sbMapCaseRowToCDM(row) {
 async function syncSupabaseCasesIntoCDM() {
   var res = await loadCasesFromSupabase();
   if (!res || res.source !== 'supabase' || !Array.isArray(res.data)) return;
+  var pruned = sbPruneDeletedSupabaseCases(res.data.map(function(row){ return row && row.id; }));
   var remoteRows = res.data.filter(function(row){ return !isMyCaseRow(row) && row.created_by && row.created_by !== currentUserId; });
   var newRemoteCases = sbRememberRemoteItems('cases', res.data.map(function(row){ return row.id; })).filter(function(id){
     return remoteRows.some(function(row){ return row.id === id; });
@@ -12306,7 +12357,7 @@ async function syncSupabaseCasesIntoCDM() {
     if (!isMyCaseRow(row)) mergePendingIssuesFromCaseRow(row, id);
     changed++;
   });
-  if (changed) {
+  if (changed || pruned) {
     if (currentUserRole === 'laboratorio') { labRenderCasos(); loadLabClinics(); }
     pc2RenderAllActs();
     mcInit();

@@ -4758,6 +4758,7 @@ async function openChat(av,name,color,labDbId,clinicId){
   if (isSupabaseReady() && CURRENT_CHAT.labId && CURRENT_CHAT.clinicId) {
     await syncSupabaseCasesIntoCDM();
     await sbLoadChatMessages();
+    _renderChatMessages(av);
   }
   _lcUpdateHeaderCount();
   setTimeout(()=>document.getElementById('msgs-area').scrollTop=9999,60);
@@ -5411,18 +5412,54 @@ var CHAT_MESSAGES = {
 };
 if (!DENTALAB_DEMO_DATA) CHAT_MESSAGES = {};
 
+function chatOpenCaseFromBubble(caseId) {
+  var id = String(caseId || '');
+  var c = CDM[id];
+  if (!c) { showToast('Caso não encontrado'); return; }
+  if (c.recebimentoConfirmado) {
+    if (typeof mcInit === 'function') mcInit();
+    var mcIdDash = 'mc-' + id;
+    var mcIdUnderscore = 'mc_' + id;
+    if (MC_DATA[mcIdDash]) { mcOpenDetail(mcIdDash); return; }
+    if (MC_DATA[mcIdUnderscore]) { mcOpenDetail(mcIdUnderscore); return; }
+    cdmAddConfirmedCaseToMyCases(id, c);
+    if (typeof mcInit === 'function') mcInit();
+    if (MC_DATA[mcIdDash]) { mcOpenDetail(mcIdDash); return; }
+    if (MC_DATA[mcIdUnderscore]) { mcOpenDetail(mcIdUnderscore); return; }
+  }
+  openCaseDetail(id);
+}
+
+function chatCaseStatusPillHTML(c) {
+  var cls = (c && c.statusCls) || 'st-p';
+  var label = (c && c.status) || STATUS_LABELS[cls] || 'Recebido';
+  return '<span style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 9px;border-radius:999px;background:' + cdmStatusBg(cls) + ';color:' + cdmStatusColor(cls) + ';font-size:10px;font-weight:800;letter-spacing:.15px">'
+    + '<span style="width:6px;height:6px;border-radius:50%;background:' + cdmStatusColor(cls) + '"></span>'
+    + sbEscapeHtml(label)
+    + '</span>';
+}
+
+function refreshOpenChatCaseBubbles() {
+  var chat = document.getElementById('scr-chat');
+  if (chat && chat.classList.contains('active') && _currentChatLabAv) {
+    _renderChatMessages(_currentChatLabAv);
+  }
+}
+
 function _chatCaseBubbleInner(caseId) {
   var c = CDM[caseId]; if (!c) return '';
   var urgCls = c.urg === 'Urgente' ? 'ut-u' : 'ut-n';
   var urgTxt = c.urg === 'Urgente' ? '\u26A1 Urgente \u2014 48h' : '\u25CF Normal';
   var denteStr = c.dente ? ' \u00B7 dente ' + c.dente : '';
-  return '<div class="case-bubble" onclick="openCaseDetail(\'' + caseId + '\')" style="cursor:pointer;-webkit-tap-highlight-color:rgba(79,140,255,.2)">'
+  var cta = c.recebimentoConfirmado ? 'TOCA PARA ABRIR NO MYCASES \u203A' : 'TOCA PARA VER DETALHES \u203A';
+  return '<div class="case-bubble" onclick="chatOpenCaseFromBubble(\'' + caseId + '\')" style="cursor:pointer;-webkit-tap-highlight-color:rgba(79,140,255,.2)">'
     + '<div class="cb-type"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;font-size:13px"><path d="M12 3c-2 0-4 1-4.5 3C7 8 7 9 8 11c.5 1 1 2 1 4 0 2 .5 4 3 4s3-2 3-4c0-2 .5-3 1-4 1-2 1-3 .5-5C16 4 14 3 12 3z"/></svg> Caso cl\u00EDnico \u00B7 ' + c.lab + '</div>'
     + '<div class="cb-title">' + c.paciente + '</div>'
     + '<div style="font-size:11px;color:rgba(255,255,255,.45);margin:2px 0 5px">' + c.tipo + denteStr + '</div>'
     + '<div class="cb-detail">Shade: ' + c.shade + (c.obs ? ' \u00B7 ' + c.obs.slice(0, 40) : '') + '</div>'
     + '<span class="urg-tag ' + urgCls + '">' + urgTxt + '</span>'
-    + '<div style="margin-top:6px;font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.3px">TOCA PARA VER DETALHES \u203A</div>'
+    + chatCaseStatusPillHTML(c)
+    + '<div style="margin-top:6px;font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.3px">' + cta + '</div>'
     + '</div>';
 }
 
@@ -6320,10 +6357,12 @@ async function cdmConfirmarRecebimento(caseId) {
     if (typeof pc2RenderAllActs === 'function') pc2RenderAllActs();
     if (typeof loadLabClinics === 'function') loadLabClinics();
     if (typeof renderProfileStats === 'function') renderProfileStats();
+    refreshOpenChatCaseBubbles();
   }
   if (c.recebimentoConfirmado && !MC_DATA['mc_' + caseId] && !MC_DATA['mc-' + caseId]) {
     cdmAddConfirmedCaseToMyCases(caseId, c);
     if (typeof mcInit === 'function') mcInit();
+    refreshOpenChatCaseBubbles();
   }
 }
 // ────────────────────────────────────────────────────────────────────────
@@ -8501,6 +8540,7 @@ function cdmSetStatus(caseId, cls, label, obs) {
   renderProfileStats();
   renderHomeCaseStats();
   renderProfileLabs();
+  refreshOpenChatCaseBubbles();
 }
 
 function cdmAddConfirmedCaseToMyCases(caseId, c) {

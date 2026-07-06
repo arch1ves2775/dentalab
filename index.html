@@ -1738,7 +1738,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 <!-- ══ BOTTOM NAV ══ -->
 <div class="bottom-nav" id="bottom-nav" style="display:none">
   <button class="bn-tab" id="bn-conv" onclick="showTab('conv')">
-    <div style="position:relative"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nb" id="nb-conv">3</span></div>
+    <div style="position:relative"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nb" id="nb-conv" style="display:none">0</span></div>
     <span>Conversas</span>
   </button>
   <button class="bn-tab" id="bn-casos" onclick="showTab('casos')">
@@ -4569,6 +4569,7 @@ function showTab(t){
   if((t==='casos' || t==='mycases' || t==='alertas') && isSupabaseReady()) syncSupabaseCasesIntoCDM();
   if(t==='alertas') renderAlertas();
   if(t==='mycases') setTimeout(mcRender,50);
+  if(t==='conv') clearConvUnread();
 }
 
 // ── SWIPE TO CHANGE TAB ──────────────────────────────────────────────
@@ -4747,7 +4748,7 @@ async function openChat(av,name,color,labDbId,clinicId){
   _currentChatLabAv = av; // keep state in sync with DOM
   CURRENT_CHAT = { labId: effectiveLabId, clinicId: effectiveClinicId, key: sbChatKey(effectiveLabId, effectiveClinicId) };
   document.getElementById('bottom-nav').style.display='none';
-  document.getElementById('nb-conv').style.display='none';
+  clearConvUnread();
   // Only re-render the full message history when switching to a different
   // lab. If the lab is the same (e.g. sendCase() calls openChat() after
   // injecting a bubble), we keep the existing messages so the new bubble
@@ -5141,6 +5142,46 @@ function dismissAll(){ alResolveTodos(); }
 function updateAlertBadge(){
   const nb=document.getElementById('nb-alertas');
   if(alertCount>0){nb.textContent=alertCount;nb.style.display='flex'}else{nb.style.display='none'}
+}
+
+function convUnreadKey() {
+  return 'DENTALAB_UNREAD_CHAT_' + (currentUserId || 'local');
+}
+
+function getConvUnreadCount() {
+  try {
+    return Math.max(0, parseInt(localStorage.getItem(convUnreadKey()) || '0', 10) || 0);
+  } catch (err) {
+    return 0;
+  }
+}
+
+function setConvUnreadCount(count) {
+  var val = Math.max(0, parseInt(count || 0, 10) || 0);
+  try { localStorage.setItem(convUnreadKey(), String(val)); } catch (err) {}
+  updateConvBadge(val);
+}
+
+function updateConvBadge(count) {
+  var nb = document.getElementById('nb-conv');
+  if (!nb) return;
+  var val = typeof count === 'number' ? count : getConvUnreadCount();
+  if (val > 0) {
+    nb.textContent = val > 99 ? '99+' : String(val);
+    nb.style.display = 'flex';
+  } else {
+    nb.textContent = '0';
+    nb.style.display = 'none';
+  }
+}
+
+function incrementConvUnread(amount) {
+  var inc = Math.max(1, parseInt(amount || 1, 10) || 1);
+  setConvUnreadCount(getConvUnreadCount() + inc);
+}
+
+function clearConvUnread() {
+  setConvUnreadCount(0);
 }
 
 // -- LOGOUT --
@@ -6962,8 +7003,19 @@ function sbStartRealtimeSync() {
     // ── Mensagens novas no chat aberto ──
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'case_messages' }, function(payload) {
       console.log('[Realtime] case_messages: nova mensagem');
-      if (CURRENT_CHAT.labId && CURRENT_CHAT.clinicId) sbLoadChatMessages();
-      else if (typeof updateConvBadge === 'function') updateConvBadge();
+      var row = payload && payload.new ? payload.new : {};
+      var fromOtherUser = row.sender_id && String(row.sender_id) !== String(currentUserId || '');
+      var chatEl = document.getElementById('scr-chat');
+      var chatIsOpen = !!(chatEl && chatEl.classList.contains('active'));
+      var belongsToOpenChat = CURRENT_CHAT.labId && CURRENT_CHAT.clinicId
+        && String(row.lab_id || '') === String(CURRENT_CHAT.labId)
+        && String(row.clinic_id || '') === String(CURRENT_CHAT.clinicId)
+        && chatIsOpen;
+      if (belongsToOpenChat) {
+        sbLoadChatMessages();
+      } else if (fromOtherUser) {
+        incrementConvUnread(1);
+      }
     })
     // ── Pendências / alertas ──
     .on('postgres_changes', { event: '*', schema: 'public', table: 'pending_issues' }, function(payload) {

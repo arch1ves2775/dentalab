@@ -6292,7 +6292,15 @@ async function cdmConfirmarRecebimento(caseId) {
   if (!c.recebimentoConfirmado) {
     // Record timestamp
     var now_ = now();
+    c.statusCls = 'st-done';
+    c.status = 'Entregue';
+    c.prog = STATUS_PROG['st-done'] || 100;
+    if (c.etapas) {
+      c.etapas.forEach(function(e){ e.s = 'done'; });
+    }
     c.recebimentoConfirmado = now_;
+    cdmAddConfirmedCaseToMyCases(caseId, c);
+    if (typeof mcInit === 'function') mcInit();
     showToast('Recebimento confirmado. \u2705');
     var savedReceipt = await updateCaseMetadataInSupabase(caseId, c);
     if (!savedReceipt) {
@@ -6312,6 +6320,10 @@ async function cdmConfirmarRecebimento(caseId) {
     if (typeof pc2RenderAllActs === 'function') pc2RenderAllActs();
     if (typeof loadLabClinics === 'function') loadLabClinics();
     if (typeof renderProfileStats === 'function') renderProfileStats();
+  }
+  if (c.recebimentoConfirmado && !MC_DATA['mc_' + caseId] && !MC_DATA['mc-' + caseId]) {
+    cdmAddConfirmedCaseToMyCases(caseId, c);
+    if (typeof mcInit === 'function') mcInit();
   }
 }
 // ────────────────────────────────────────────────────────────────────────
@@ -7361,16 +7373,19 @@ function renderAlertas() {
 
   // Filter issues visible to this role + tab
   var allIssues = allCurrentIssues();
-  var visible = allIssues.filter(function(p) {
+  var roleVisibleIssues = allIssues.filter(function(p) {
+    if (isLab && isClinicOnlyNoticeIssue(p)) return false;
+    return true;
+  });
+  var visible = roleVisibleIssues.filter(function(p) {
     if (showTab === 'open'     && p.status !== 'open')     return false;
     if (showTab === 'resolved' && p.status !== 'resolved') return false;
-    if (isLab && isClinicOnlyNoticeIssue(p)) return false;
     // Both roles see blocking issues — perspective differs (clinic acts, lab monitors)
     return true;
   });
 
   // Update badge
-  var openCount = visible.filter(function(p){ return p.status === 'open'; }).length;
+  var openCount = roleVisibleIssues.filter(function(p){ return p.status === 'open'; }).length;
   alertCount = openCount;
   updateAlertBadge();
 
@@ -7757,8 +7772,10 @@ function resolvePending(issueId, actionLabel) {
   }
 
   // Check if this case has any other open issues
-  var stillOpen = PENDING_ISSUES.some(function(i){ return String(i.caseId) === String(p.caseId) && i.status === 'open'; });
-  if (!stillOpen && CDM[p.caseId]) {
+  var stillOpen = PENDING_ISSUES.some(function(i){
+    return String(i.caseId) === String(p.caseId) && i.status === 'open' && isCaseBlockingIssue(i);
+  });
+  if (!stillOpen && CDM[p.caseId] && isCaseBlockingIssue(p)) {
     restoreCaseStatusAfterPending(p.caseId);
   }
 
@@ -8486,25 +8503,8 @@ function cdmSetStatus(caseId, cls, label, obs) {
   renderProfileLabs();
 }
 
-// Post-delivery: notify, update chat, show toast
-function _cdmOnEntregue(caseId, c) {
-  // Inject delivery message into the lab's conversation history
-  if (CHAT_MESSAGES[c.labAv]) {
-    CHAT_MESSAGES[c.labAv].push({
-      type: 'in',
-      text: 'Caso ' + c.num + ' marcado como <strong>Entregue</strong>. \u2705',
-      time: now()
-    });
-  }
-  // If the lab chat is currently open, append the message live
-  if (_currentChatLabAv === c.labAv) {
-    addBubble('<div class="bubble in">Caso ' + c.num + ' marcado como <strong>Entregue</strong>. \u2705</div>', false);
-  }
-
-  // Show alert notification
-  showToast(c.num + ' marcado como Entregue! \uD83D\uDCE6 A cl\u00ednica pode agora confirmar recebimento.');
-
-  // Add a delivered entry to MyCase records (stub — no backend yet)
+function cdmAddConfirmedCaseToMyCases(caseId, c) {
+  if (!c || !c.recebimentoConfirmado) return;
   if (typeof MC_DATA !== 'undefined') {
     var mcId = 'mc_' + caseId;
     MC_DATA[mcId] = {
@@ -8541,6 +8541,32 @@ function _cdmOnEntregue(caseId, c) {
       fotosDepoisFiles: []
     };
   }
+}
+
+// Post-delivery: notify, update chat, show toast. MyCases conversion happens
+// only after the clinic confirms receipt in cdmConfirmarRecebimento().
+function _cdmOnEntregue(caseId, c) {
+  if (typeof MC_DATA !== 'undefined' && !c.recebimentoConfirmado) {
+    delete MC_DATA['mc_' + caseId];
+    delete MC_DATA['mc-' + caseId];
+    if (typeof mcRender === 'function') mcRender();
+  }
+
+  // Inject delivery message into the lab's conversation history
+  if (CHAT_MESSAGES[c.labAv]) {
+    CHAT_MESSAGES[c.labAv].push({
+      type: 'in',
+      text: 'Caso ' + c.num + ' marcado como <strong>Entregue</strong>. \u2705',
+      time: now()
+    });
+  }
+  // If the lab chat is currently open, append the message live
+  if (_currentChatLabAv === c.labAv) {
+    addBubble('<div class="bubble in">Caso ' + c.num + ' marcado como <strong>Entregue</strong>. \u2705</div>', false);
+  }
+
+  // Show alert notification
+  showToast(c.num + ' marcado como Entregue! \uD83D\uDCE6 A cl\u00ednica pode agora confirmar recebimento.');
 
   // Re-render the footer: lab now sees no Pronto; clinic now sees Confirmar Recebimento
   _cdmRenderFooter(caseId, c);
@@ -9163,7 +9189,7 @@ function mcInit() {
       MC_DATA[saved.id] = saved;
       return;
     }
-    if (c.statusCls === 'st-done' || c.status === 'Entregue' || c.status === 'Finalizado') {
+    if ((c.statusCls === 'st-done' || c.status === 'Entregue' || c.status === 'Finalizado') && c.recebimentoConfirmado) {
       var mcId = 'mc-' + id;
       MC_DATA[mcId] = {
         id: mcId,
@@ -13045,7 +13071,8 @@ function sbMapCaseRowToCDM(row) {
   c.prazoISO = row.deadline || c.prazoISO || '';
   c.delivery = row.delivery_method || c.delivery || ((upper || lower || bite) ? 'scanner' : 'molde');
   c.statusCls = row.status || c.statusCls || 'st-p';
-  c.status = c.status || (c.statusCls === 'st-ok' ? 'Pronto' : c.statusCls === 'st-done' ? 'Entregue' : c.statusCls === 'st-a' ? 'Em Produção' : 'Recebido');
+  c.status = c.statusCls === 'st-ok' ? 'Pronto' : c.statusCls === 'st-done' ? 'Entregue' : c.statusCls === 'st-a' ? 'Em Produção' : 'Recebido';
+  c.prog = STATUS_PROG[c.statusCls] || c.prog || 10;
   c.obs = row.notes || c.obs || '';
   c.implante = row.implant_ref || c.implante || '';
   c.implantDesc = row.implant_desc || c.implantDesc || '';
@@ -13209,6 +13236,7 @@ async function updateCaseMetadataInSupabase(caseId, caseObj) {
   }
   try {
     var payload = {
+      status: caseObj.statusCls || 'st-p',
       shade: caseObj.shade || '',
       material: caseObj.material || '',
       deadline: caseObj.prazoISO || null,

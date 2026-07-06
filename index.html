@@ -10277,6 +10277,20 @@ function U3D_clampZoom(){
   U3D_O.tR = Math.max(U3D_O.minR || 1e-3, Math.min(U3D_O.maxR || 1e8, U3D_O.tR));
 }
 
+function U3D_showLoading(text, subtext) {
+  var loadEl = document.getElementById('u3d-loading');
+  var loadTxt = document.getElementById('u3d-load-txt');
+  var loadSub = document.getElementById('u3d-load-subtxt');
+  if (loadEl) loadEl.style.display = 'flex';
+  if (loadTxt) loadTxt.textContent = text || 'Modelo sendo carregado...';
+  if (loadSub) loadSub.textContent = subtext || 'A transferir e processar o ficheiro 3D.';
+}
+
+function U3D_hideLoading() {
+  var loadEl = document.getElementById('u3d-loading');
+  if (loadEl) loadEl.style.display = 'none';
+}
+
 var U3D_scriptPromises = {};
 function U3D_loadScriptOnce(src){
   if (U3D_scriptPromises[src]) return U3D_scriptPromises[src];
@@ -10894,6 +10908,7 @@ function U3D_open(opts){
   // for the old standalone single-file STLV_* viewer -- one case, one
   // scan, no arch pairing), 'arch' shows the full Upper/Lower picker.
   U3D_applyModeToUI();
+  U3D_showLoading('Modelo sendo carregado...', 'A preparar visualizador 3D.');
 
   function proceed(){
     U3D_ensureMounted();
@@ -10922,15 +10937,12 @@ function U3D_open(opts){
   // surfaced to the UI.
   if (typeof THREE === 'undefined') {
     var loadTxt0 = document.getElementById('u3d-load-txt');
-    var loadEl0 = document.getElementById('u3d-loading');
-    if (loadEl0) loadEl0.style.display = 'flex';
-    if (loadTxt0) loadTxt0.textContent = 'A carregar biblioteca 3D...';
+    U3D_showLoading('Modelo sendo carregado...', 'A carregar biblioteca 3D...');
     var s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';
     s.crossOrigin = 'anonymous';
     s.onload = function(){
       U3D_ensureLoaderScripts().then(function(){
-        if (loadEl0) loadEl0.style.display = 'none';
         proceed();
       });
     };
@@ -11002,10 +11014,7 @@ function U3D_applyModeToUI(){
 // show the normal Upper/Lower picker panel so the user can load a local
 // file instead -- same UX as opening the viewer with no pre-seeded files.
 function U3D_loadSingleFromUrl(url, displayName){
-  var loadEl = document.getElementById('u3d-loading');
-  var loadTxt = document.getElementById('u3d-load-txt');
-  if (loadEl) loadEl.style.display = 'flex';
-  if (loadTxt) loadTxt.textContent = 'A carregar scan...';
+  U3D_showLoading('Modelo sendo carregado...', 'A transferir scan 3D.');
 
   Object.keys(U3D_meshes).forEach(function(k){
     var m = U3D_meshes[k];
@@ -11019,7 +11028,7 @@ function U3D_loadSingleFromUrl(url, displayName){
     if (!result.mesh) {
       // File not available in storage/network. Do not show the old
       // prototype upload picker; the case must be fixed at the source.
-      if (loadEl) loadEl.style.display = 'none';
+      U3D_hideLoading();
       U3D_log('loadSingleFromUrl: ficheiro nao disponivel (' + (result.error || 'desconhecido') + ')');
       showToast('Ficheiro 3D n\u00e3o dispon\u00edvel no caso.');
       return;
@@ -11036,7 +11045,7 @@ function U3D_loadSingleFromUrl(url, displayName){
 
     U3D_updateToggleButtons();
     U3D_fitCamera();
-    if (loadEl) loadEl.style.display = 'none';
+    U3D_hideLoading();
     U3D_log('Pronto: scan carregado');
   });
 }
@@ -11068,9 +11077,7 @@ function U3D_ensureMounted(){
 // now controlled ONLY by U3D_close()/U3D_open(), never by the
 // load/rebuild flow.
 function U3D_showPicker(){
-  var loadEl = document.getElementById('u3d-loading');
   var emptyEl = document.getElementById('u3d-empty');
-  if (loadEl) loadEl.style.display = 'none';
   if (emptyEl) emptyEl.style.display = 'none';
   U3D_updateFileStatusLabels();
 }
@@ -11134,7 +11141,7 @@ function U3D_onFileChosen(slot, fileInput){
 // can never get stuck: every code path ends in either a rendered scene
 // or a clear error message in u3d-load-txt.
 function U3D_rebuildFromLocalFiles(){
-  var loadTxt = document.getElementById('u3d-load-txt');
+  U3D_showLoading('Modelo sendo carregado...', 'A processar ficheiros locais.');
 
   // CRITICAL FIX: this function used to hide #u3d-empty (the whole
   // picker, including the Lower button) as soon as ANY file started
@@ -11176,6 +11183,7 @@ function U3D_rebuildFromLocalFiles(){
     U3D_updateFileStatusLabels();
 
     if (loadedCount === 0) {
+      U3D_hideLoading();
       return; // nothing to render yet -- panel already shows the real per-slot state, never a stuck spinner
     }
 
@@ -11188,6 +11196,7 @@ function U3D_rebuildFromLocalFiles(){
     // positions exactly as scanned -- never touch individual mesh
     // positions. This is the core occlusion-preserving requirement.
     U3D_fitCamera();
+    U3D_hideLoading();
 
     U3D_log('Pronto: upper='+(!!upperR.mesh)+' lower='+(!!lowerR.mesh)+' bite='+(!!biteR.mesh));
   });
@@ -11195,6 +11204,7 @@ function U3D_rebuildFromLocalFiles(){
 
 function U3D_rebuildFromUrls(opts){
   opts = opts || {};
+  U3D_showLoading('Modelo sendo carregado...', 'A transferir ficheiros 3D do caso.');
   U3D_updateFileStatusLabels();
   Object.keys(U3D_meshes).forEach(function(k){
     var m = U3D_meshes[k];
@@ -11217,11 +11227,12 @@ function U3D_rebuildFromUrls(opts){
     if (upperR.error) showToast('Upper não pôde ser carregado: ' + upperR.error);
     if (lowerR.error) showToast('Lower não pôde ser carregado: ' + lowerR.error);
     if (biteR.error)  showToast('Extra não pôde ser carregado: ' + biteR.error);
-    if (!loadedCount) return;
+    if (!loadedCount) { U3D_hideLoading(); return; }
     var infoEl = document.getElementById('u3d-hdr-info');
     if (infoEl) infoEl.textContent = [upperR.mesh&&'Upper', lowerR.mesh&&'Lower', biteR.mesh&&'Extra'].filter(Boolean).join(' + ');
     U3D_updateToggleButtons();
     U3D_fitCamera();
+    U3D_hideLoading();
   });
 }
 
@@ -12768,9 +12779,10 @@ create table if not exists pending_issues (
     </button>
   </div>
   <div id="u3d-vp" style="flex:1;position:relative;min-height:0;overflow:hidden;background:#0D1520">
-    <div id="u3d-loading" style="display:none;position:absolute;inset:0;z-index:10;background:#0D1520;flex-direction:column;align-items:center;justify-content:center;gap:14px">
-      <div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:stlvspin .7s linear infinite"></div>
-      <div id="u3d-load-txt" style="font-size:13px;color:#8BA3C0;text-align:center;padding:0 20px;white-space:pre-line">A iniciar...</div>
+    <div id="u3d-loading" style="display:none;position:absolute;inset:0;z-index:10;background:#0D1520;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:28px;text-align:center">
+      <div style="width:44px;height:44px;border:3px solid rgba(139,163,192,.25);border-top-color:#3B82F6;border-radius:50%;animation:stlvspin .75s linear infinite"></div>
+      <div id="u3d-load-txt" style="font-size:15px;color:#E8F0FA;font-weight:800;white-space:pre-line">Modelo sendo carregado...</div>
+      <div id="u3d-load-subtxt" style="font-size:12px;color:#8BA3C0;line-height:1.45;max-width:260px">A transferir e processar o ficheiro 3D.</div>
     </div>
 
     <!-- PROTOTYPE-ONLY fallback picker: shown ONLY before Upper+Lower

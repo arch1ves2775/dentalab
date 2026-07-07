@@ -7115,7 +7115,16 @@ var STATUS_ORDER = { 'st-wait':0, 'st-a':1, 'st-p':2, 'st-ok':3, 'st-done':4 };
 // Collect all CDM case IDs that should appear in the lab view
 function cdmShouldShowInMyLab(c) {
   if (!c || isMyCaseRecord(c)) return false;
-  return !(c.statusCls === 'st-done' && !!c.recebimentoConfirmado);
+  var delivered = c.statusCls === 'st-done' || c.status === 'Entregue' || c.status === 'Finalizado';
+  return !(delivered && !!c.recebimentoConfirmado);
+}
+
+function reconcileMyLabCaseCards() {
+  document.querySelectorAll('[id^="cdm-card-"]').forEach(function(card) {
+    var cid = card.id.replace('cdm-card-', '');
+    var c = CDM[cid];
+    if (!cdmShouldShowInMyLab(c)) card.remove();
+  });
 }
 
 function _labAllCaseIds() {
@@ -8150,6 +8159,7 @@ function mergePendingIssuesFromCaseRow(row, localCaseId) {
 var _pc2ActiveFilter = 'all';
 
 function pc2RenderAllActs() {
+  if (typeof reconcileMyLabCaseCards === 'function') reconcileMyLabCaseCards();
   document.querySelectorAll('.pc2-acts[data-cid]').forEach(function(el) {
     var cid      = el.getAttribute('data-cid');
     var av       = el.getAttribute('data-av')       || '';
@@ -13165,6 +13175,7 @@ function sbMapCaseRowToCDM(row) {
   c.statusCls = row.status || c.statusCls || 'st-p';
   c.status = c.statusCls === 'st-ok' ? 'Pronto' : c.statusCls === 'st-done' ? 'Entregue' : c.statusCls === 'st-a' ? 'Em Produção' : 'Recebido';
   c.prog = STATUS_PROG[c.statusCls] || c.prog || 10;
+  c.recebimentoConfirmado = c.recebimentoConfirmado || c.receipt_confirmed_at || c.recebimento_confirmado || '';
   c.obs = row.notes || c.obs || '';
   c.implante = row.implant_ref || c.implante || '';
   c.implantDesc = row.implant_desc || c.implantDesc || '';
@@ -13221,6 +13232,10 @@ async function syncSupabaseCasesIntoCDM() {
     }
     if (CDM[id]) {
       Object.assign(CDM[id], c);
+      if (!cdmShouldShowInMyLab(CDM[id])) {
+        var existingCard = document.getElementById('cdm-card-' + id);
+        if (existingCard) existingCard.remove();
+      }
     } else {
       CDM[id] = c;
       if (cdmShouldShowInMyLab(c)) _cdmInjectMyLabCard(id, c, c.photos || []);
@@ -13228,6 +13243,7 @@ async function syncSupabaseCasesIntoCDM() {
     if (!isMyCaseRow(row)) mergePendingIssuesFromCaseRow(row, id);
     changed++;
   });
+  reconcileMyLabCaseCards();
   if (changed || pruned) {
     if (currentUserRole === 'laboratorio') { labRenderCasos(); loadLabClinics(); }
     pc2RenderAllActs();

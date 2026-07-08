@@ -1474,7 +1474,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
     <div class="av" id="chat-av" style="width:38px;height:38px;border-radius:50%;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#3B82F6">LP</div>
     <div class="ch-info">
       <div class="ch-name" id="chat-name">Lab. Prótese Figueiredo</div>
-      <div class="ch-status">● online agora</div>
+      <div class="ch-status" id="chat-status">carregando status...</div>
     </div>
     <button class="hbtn" id="btn-lab-cases" onclick="openLabCases()" title="Casos do laboratório" style="position:relative;gap:4px;font-size:11px;font-weight:700;padding:0 10px;min-width:44px">
       📋 <span id="lc-header-count" style="font-size:12px;font-weight:800">·</span>
@@ -4157,6 +4157,7 @@ async function sbSignup(email, password) {
 // Termina a sessão Supabase e volta ao ecrã de onboarding.
 async function sbLogout() {
   sbStopRealtimeSync();
+  sbStopPresence();
   if (typeof _dentalabSyncTimer !== 'undefined' && _dentalabSyncTimer) {
     clearInterval(_dentalabSyncTimer);
     _dentalabSyncTimer = null;
@@ -4317,6 +4318,137 @@ async function sbUpdateProfile(fields) {
   }
 }
 
+var _presenceTimer = null;
+var _presenceStatusTimer = null;
+var _lastPresenceWrite = 0;
+var _presenceColumnMissing = false;
+
+function chatFormatDateLabel(date) {
+  if (!date || isNaN(date.getTime())) return 'Hoje';
+  var today = new Date();
+  var d0 = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  var t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  var diff = Math.round((t0 - d0) / 86400000);
+  if (diff === 0) return 'Hoje';
+  if (diff === 1) return 'Ontem';
+  return date.toLocaleDateString('pt-BR');
+}
+
+function chatFormatMessageTime(createdAt) {
+  if (!createdAt) return '';
+  var d = new Date(createdAt);
+  if (isNaN(d.getTime())) return createdAt;
+  return chatFormatDateLabel(d) + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+}
+
+function chatFormatConversationDate(createdAt) {
+  if (!createdAt) return '';
+  var d = new Date(createdAt);
+  if (isNaN(d.getTime())) return '';
+  var label = chatFormatDateLabel(d);
+  var time = d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  return label === 'Hoje' ? 'Hoje ' + time : label;
+}
+
+function chatPresenceText(lastSeenAt) {
+  if (!lastSeenAt) return 'visto recentemente';
+  var d = new Date(lastSeenAt);
+  if (isNaN(d.getTime())) return 'visto recentemente';
+  var diffMs = Date.now() - d.getTime();
+  if (diffMs < 2 * 60000) return 'online agora';
+  if (diffMs < 60 * 60000) return 'visto ha ' + Math.max(2, Math.round(diffMs / 60000)) + ' min';
+  return 'visto ' + chatFormatMessageTime(lastSeenAt).toLowerCase();
+}
+
+function chatSetStatus(text, online) {
+  var el = document.getElementById('chat-status');
+  if (!el) return;
+  el.textContent = (online ? '● ' : '') + (text || 'visto recentemente');
+  el.style.color = online ? 'rgba(255,255,255,.92)' : 'rgba(255,255,255,.72)';
+}
+
+async function sbTouchPresence(force) {
+  if (!isSupabaseReady() || !currentUserId || _presenceColumnMissing) return;
+  if (!force && Date.now() - _lastPresenceWrite < 30000) return;
+  _lastPresenceWrite = Date.now();
+  try {
+    var res = await _supabaseClient
+      .from('profiles')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', currentUserId);
+    if (res.error) throw res.error;
+  } catch (err) {
+    var msg = String(err.message || '').toLowerCase();
+    if (msg.indexOf('last_seen_at') >= 0 || msg.indexOf('column') >= 0) _presenceColumnMissing = true;
+    console.log('[Presence] heartbeat indisponivel:', err.message);
+  }
+}
+
+async function sbOtherChatProfileId() {
+  if (!CURRENT_CHAT) return null;
+  if (currentUserRole === 'laboratorio') return CURRENT_CHAT.clinicId || null;
+  if (!CURRENT_CHAT.labId || !isSupabaseReady()) return null;
+  try {
+    var res = await _supabaseClient.from('labs').select('owner_id').eq('id', CURRENT_CHAT.labId).maybeSingle();
+    if (res.error) throw res.error;
+    return res.data && res.data.owner_id ? res.data.owner_id : null;
+  } catch (err) {
+    console.log('[Presence] nao foi possivel encontrar dono do laboratorio:', err.message);
+    return null;
+  }
+}
+
+async function sbRefreshChatPresence() {
+  if (!isSupabaseReady() || !CURRENT_CHAT || (!CURRENT_CHAT.labId && !CURRENT_CHAT.clinicId)) {
+    chatSetStatus('visto recentemente', false);
+    return;
+  }
+  await sbTouchPresence(false);
+  var otherId = await sbOtherChatProfileId();
+  if (!otherId) {
+    chatSetStatus('visto recentemente', false);
+    return;
+  }
+  try {
+    var res = await _supabaseClient.from('profiles').select('last_seen_at').eq('id', otherId).maybeSingle();
+    if (res.error) throw res.error;
+    var lastSeen = res.data && res.data.last_seen_at ? res.data.last_seen_at : '';
+    var online = !!(lastSeen && (Date.now() - new Date(lastSeen).getTime() < 2 * 60000));
+    chatSetStatus(chatPresenceText(lastSeen), online);
+  } catch (err) {
+    console.log('[Presence] leitura indisponivel:', err.message);
+    chatSetStatus('visto recentemente', false);
+  }
+}
+
+function sbStartPresence() {
+  if (_presenceTimer) clearInterval(_presenceTimer);
+  if (_presenceStatusTimer) clearInterval(_presenceStatusTimer);
+  _presenceColumnMissing = false;
+  sbTouchPresence(true);
+  _presenceTimer = setInterval(function(){ sbTouchPresence(false); }, 45000);
+  _presenceStatusTimer = setInterval(function(){
+    var chat = document.getElementById('scr-chat');
+    if (chat && chat.classList.contains('active')) sbRefreshChatPresence();
+  }, 30000);
+}
+
+function sbStopPresence() {
+  if (_presenceTimer) clearInterval(_presenceTimer);
+  if (_presenceStatusTimer) clearInterval(_presenceStatusTimer);
+  _presenceTimer = null;
+  _presenceStatusTimer = null;
+}
+
+document.addEventListener('visibilitychange', function(){
+  if (!document.hidden) {
+    sbTouchPresence(true);
+    var chat = document.getElementById('scr-chat');
+    if (chat && chat.classList.contains('active')) sbRefreshChatPresence();
+  }
+});
+window.addEventListener('focus', function(){ sbTouchPresence(true); });
+
 
 
 // ── _sbEnterApp ───────────────────────────────────────────────────────
@@ -4353,6 +4485,7 @@ function _sbEnterApp() {
     else loadConnectedLabs();
     syncSupabaseCasesIntoCDM();
     sbStartBackgroundSync();
+    sbStartPresence();
   }
 }
 
@@ -4745,6 +4878,7 @@ async function openChat(av,name,color,labDbId,clinicId){
   document.getElementById('chat-av').style.background=color;
   document.getElementById('chat-av').textContent=av;
   document.getElementById('chat-name').textContent=name;
+  chatSetStatus('carregando status...', false);
   _currentChatLabAv = av; // keep state in sync with DOM
   CURRENT_CHAT = { labId: effectiveLabId, clinicId: effectiveClinicId, key: sbChatKey(effectiveLabId, effectiveClinicId) };
   document.getElementById('bottom-nav').style.display='none';
@@ -4761,6 +4895,7 @@ async function openChat(av,name,color,labDbId,clinicId){
     await sbLoadChatMessages();
     _renderChatMessages(av);
   }
+  sbRefreshChatPresence();
   _lcUpdateHeaderCount();
   setTimeout(()=>document.getElementById('msgs-area').scrollTop=9999,60);
   // update qbtn
@@ -4921,7 +5056,7 @@ function addBubble(html,isOut){
   }
   const w=document.createElement('div');
   w.className='bw '+(isOut?'out':'in');
-  w.innerHTML=html+`<div class="btime">${now()}${isOut?' \u2713':''}</div>`;
+  w.innerHTML=html+`<div class="btime">${chatNow()}${isOut?' \u2713':''}</div>`;
   area.insertBefore(w, anchor);
   area.scrollTop=9999;
 }
@@ -4953,17 +5088,18 @@ async function sbLoadChatMessages() {
       return !(row.message_type === 'case' && row.case_id && CDM[row.case_id] && isMyCaseRecord(CDM[row.case_id]));
     }).map(function(row) {
       var own = row.sender_id === currentUserId;
-      var time = row.created_at ? new Date(row.created_at).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '';
+      var time = chatFormatMessageTime(row.created_at);
+      var createdAt = row.created_at || '';
       if (row.message_type === 'case' && row.case_id) {
-        return { type:'case', caseId:row.case_id, out:own, time:time };
+        return { type:'case', caseId:row.case_id, out:own, time:time, createdAt:createdAt };
       }
       if (row.message_type === 'image') {
-        return { type:'image', out:own, url:row.attachment_url || '', name:row.attachment_name || 'Imagem', time:time };
+        return { type:'image', out:own, url:row.attachment_url || '', name:row.attachment_name || 'Imagem', time:time, createdAt:createdAt };
       }
       if (row.message_type === 'scanner') {
-        return { type:'scanner', out:own, url:row.attachment_url || '', name:row.attachment_name || 'Scanner', time:time };
+        return { type:'scanner', out:own, url:row.attachment_url || '', name:row.attachment_name || 'Scanner', time:time, createdAt:createdAt };
       }
-      return { type: own ? 'out' : 'in', text:row.message || '', plain:true, time:time };
+      return { type: own ? 'out' : 'in', text:row.message || '', plain:true, time:time, createdAt:createdAt };
     });
     chatEnsureCaseBubblesForConversation(_currentChatLabAv);
     _renderChatMessages(_currentChatLabAv);
@@ -5184,6 +5320,12 @@ function clearConvUnread() {
   setConvUnreadCount(0);
 }
 
+function refreshConversationList() {
+  if (!isSupabaseReady()) return;
+  if (currentUserRole === 'laboratorio') loadLabClinics();
+  else loadConnectedLabs();
+}
+
 // -- LOGOUT --
 async function doLogout(){
   if(!confirm('Sair da conta?')) return;
@@ -5372,6 +5514,7 @@ function comingSoon(){
 }
 
 function now(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')}
+function chatNow(){ return chatFormatMessageTime(new Date().toISOString()); }
 
 // -- INIT --
 var _msgsArea = document.getElementById('msgs-area');
@@ -5587,10 +5730,20 @@ function _renderChatMessages(av) {
     return;
   }
   var html = '';
+  var lastDateLabel = '';
   msgs.forEach(function(m) {
+    if (m.createdAt) {
+      var d = new Date(m.createdAt);
+      var label = chatFormatDateLabel(d);
+      if (label && label !== lastDateLabel) {
+        html += '<div class="day-label">' + label + '</div>';
+        lastDateLabel = label;
+      }
+    }
     switch(m.type) {
       case 'day':
         html += '<div class="day-label">' + m.text + '</div>';
+        lastDateLabel = m.text || lastDateLabel;
         break;
       case 'case':
         html += _chatCaseBubble(m.caseId, chatItemIsOut(m), m.time);
@@ -7025,6 +7178,7 @@ function sbStartRealtimeSync() {
         incrementConvUnread(1);
         sbNotify('chat', 'Nova mensagem', 'Você recebeu uma nova mensagem.');
       }
+      if (typeof refreshConversationList === 'function') refreshConversationList();
     })
     // ── Pendências / alertas ──
     .on('postgres_changes', { event: '*', schema: 'public', table: 'pending_issues' }, function(payload) {
@@ -12467,6 +12621,7 @@ function renderConnectedLabs() {
       card.innerHTML = '<div class="lab-card-av" style="background:' + color + '">' + ini + '</div>'
         + '<div class="lab-card-info"><div class="lab-card-name">' + lab.name + '</div>'
         + '<div class="lab-card-prev">Carregando conversa...</div>'
+        + '<div class="lab-card-time"></div>'
         + '<div class="lab-card-foot"><span class="lab-card-dot off"></span><span class="lab-card-cases lab-card-status off">' + activeCaseLabel(activeCount) + '</span></div></div>';
       homeLabs.appendChild(card);
       sbLoadConversationPreview(lab, currentUserId, card);
@@ -12551,13 +12706,14 @@ async function loadLabClinics() {
 
 async function sbLoadConversationPreview(labRef, clinicId, card) {
   var preview = card ? card.querySelector('.lab-card-prev') : null;
+  var timeEl = card ? card.querySelector('.lab-card-time') : null;
   if (!preview) return;
   var labId = labRef && labRef.id ? labRef.id : labRef;
   try {
     updateConversationCaseCount(card, labRef, clinicId);
     var res = await _supabaseClient
       .from('case_messages')
-      .select('case_id, message, message_type, attachment_name')
+      .select('case_id, message, message_type, attachment_name, created_at')
       .eq('lab_id', labId)
       .eq('clinic_id', clinicId)
       .order('created_at', { ascending:false })
@@ -12573,6 +12729,7 @@ async function sbLoadConversationPreview(labRef, clinicId, card) {
       } else {
         preview.textContent = row.message || 'Mensagem enviada';
       }
+      if (timeEl) timeEl.textContent = chatFormatConversationDate(row.created_at);
       updateConversationCaseCount(card, labRef, clinicId);
       return;
     }
@@ -12580,9 +12737,11 @@ async function sbLoadConversationPreview(labRef, clinicId, card) {
       return c && !isMyCaseRecord(c) && caseMatchesConversationLab(c, labRef) && (!clinicId || !c._clinicId || c._clinicId === clinicId);
     })[0];
     preview.textContent = latestCase ? 'Caso: ' + latestCase.paciente : 'Nenhuma mensagem ainda';
+    if (timeEl) timeEl.textContent = latestCase && latestCase.criado ? latestCase.criado : '';
     updateConversationCaseCount(card, labRef, clinicId);
   } catch (err) {
     preview.textContent = 'Nenhuma mensagem ainda';
+    if (timeEl) timeEl.textContent = '';
     updateConversationCaseCount(card, labRef, clinicId);
   }
 }
@@ -12615,6 +12774,7 @@ function renderLabClinics(clinics, lab) {
       + '<div class="lab-card-info"><div class="lab-card-name" style="font-size:16px">' + sbEscapeHtml(personName) + '</div>'
       + '<div class="lab-card-clinic" style="font-size:12px;color:var(--muted);margin-top:1px">' + sbEscapeHtml(clinicName) + '</div>'
       + '<div class="lab-card-prev">Carregando conversa...</div>'
+      + '<div class="lab-card-time"></div>'
       + '<div class="lab-card-foot"><span class="lab-card-dot off"></span><span class="lab-card-cases lab-card-status off">' + caseCount + ' caso' + (caseCount === 1 ? '' : 's') + ' ativo' + (caseCount === 1 ? '' : 's') + '</span></div></div>';
     homeLabs.appendChild(card);
     sbLoadConversationPreview(lab.id, clinic.id, card);
@@ -13414,7 +13574,8 @@ create table if not exists profiles (
   clinic_name  text,
   lab_name     text,
   email        text,
-  created_at   timestamptz default now()
+  created_at   timestamptz default now(),
+  last_seen_at timestamptz
 );
 
 -- 2. labs

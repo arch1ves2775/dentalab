@@ -1869,12 +1869,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
       <span class="chip" onclick="selChip(this,'shade')">A2</span>
       <span class="chip" onclick="selChip(this,'shade')">A3</span>
       <span class="chip" onclick="selChip(this,'shade')">A3.5</span>
+      <span class="chip" onclick="selChip(this,'shade')">A4</span>
       <span class="chip" onclick="selChip(this,'shade')">B1</span>
+      <span class="chip" onclick="selChip(this,'shade')">B2</span>
+      <span class="chip" onclick="selChip(this,'shade')">B3</span>
+      <span class="chip" onclick="selChip(this,'shade')">B4</span>
+      <span class="chip" onclick="selChip(this,'shade')">C1</span>
+      <span class="chip" onclick="selChip(this,'shade')">C2</span>
+      <span class="chip" onclick="selChip(this,'shade')">C3</span>
+      <span class="chip" onclick="selChip(this,'shade')">C4</span>
+      <span class="chip" onclick="selChip(this,'shade')">D2</span>
+      <span class="chip" onclick="selChip(this,'shade')">D3</span>
+      <span class="chip" onclick="selChip(this,'shade')">D4</span>
       <span class="chip" onclick="selChip(this,'shade')">BL1</span>
       <span class="chip" onclick="selChip(this,'shade')">BL2</span>
+      <span class="chip" onclick="selChip(this,'shade')">BL3</span>
+      <span class="chip" onclick="selChip(this,'shade')">BL4</span>
       <span class="chip" onclick="selChip(this,'shade')">Outra</span>
     </div>
-    <input class="nc-input" id="inp-shade-custom" placeholder="Especificar cor..." autocomplete="off" style="display:none;margin-top:-8px">
+    <div id="inp-shade-custom-wrap" style="display:none;margin-top:-6px;margin-bottom:14px;padding:10px 12px;background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.16);border-radius:var(--radius-sm)">
+      <div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Cor personalizada</div>
+      <input class="nc-input" id="inp-shade-custom" placeholder="Ex: A2 cervical / OM2 / 1M1 / cor enviada por foto" autocomplete="off" oninput="ncClearFieldError('inp-shade-custom')" style="margin-bottom:0">
+    </div>
 
     <!-- 6. DENTES * -->
     <div class="nc-label">Dentes envolvidos <span style="color:var(--red)">*</span></div>
@@ -3357,8 +3373,12 @@ function selChip(el, g){
   if (g === 'shade') {
     curShade = el.textContent;
     var custom = document.getElementById('inp-shade-custom');
-    if (custom) custom.style.display = (el.textContent === 'Outra') ? 'block' : 'none';
+    var customWrap = document.getElementById('inp-shade-custom-wrap');
+    if (customWrap) customWrap.style.display = (el.textContent === 'Outra') ? 'block' : 'none';
+    if (custom) custom.style.display = (el.textContent === 'Outra') ? 'block' : '';
     if (el.textContent !== 'Outra' && custom) custom.value = '';
+    if (el.textContent === 'Outra' && custom) setTimeout(function(){ custom.focus(); }, 80);
+    ncClearFieldError('inp-shade-custom');
   }
 }
 
@@ -3556,6 +3576,7 @@ function ncResetForm(){
   curShade = '';
   document.querySelectorAll('#chip-shade .chip').forEach(function(c){ c.classList.remove('sel'); });
   var shadeCustom = document.getElementById('inp-shade-custom'); if(shadeCustom){ shadeCustom.value=''; shadeCustom.style.display='none'; }
+  var shadeCustomWrap = document.getElementById('inp-shade-custom-wrap'); if(shadeCustomWrap){ shadeCustomWrap.style.display='none'; }
   // Dentes
   NC_TEETH = new Set();
   TEETH_UPPER.concat(TEETH_LOWER).forEach(function(n){
@@ -3594,7 +3615,7 @@ function ncResetForm(){
   // Errors
   ncShowErrors([]);
   // Clear all border highlights
-  ['inp-paciente','nc-service-btn','inp-material','inp-dente','inp-prazo'].forEach(ncClearFieldError);
+  ['inp-paciente','nc-service-btn','inp-material','inp-dente','inp-prazo','inp-shade-custom'].forEach(ncClearFieldError);
 }
 
 // -- SEND CASE --
@@ -3854,12 +3875,12 @@ function sendCase(){
 
   // Validation
   var errors = [];
-  ['inp-paciente','nc-service-btn','nc-mat-chips','nc-teeth-wrap','inp-prazo'].forEach(ncClearFieldError);
+  ['inp-paciente','nc-service-btn','nc-mat-chips','nc-teeth-wrap','inp-prazo','inp-shade-custom'].forEach(ncClearFieldError);
 
   if (!paciente){ errors.push('Nome do paciente'); ncMarkFieldError('inp-paciente'); }
   if (!servico) { errors.push('Servi\u00e7o / Tipo de trabalho'); ncMarkFieldError('nc-service-btn'); }
   if (!NC_MATERIAL){ errors.push('Material'); ncMarkFieldError('nc-mat-chips'); }
-  if (!shade)   { errors.push('Cor do dente / Shade'); }
+  if (!shade)   { errors.push('Cor do dente / Shade'); if (shadeChip === 'Outra') ncMarkFieldError('inp-shade-custom'); }
   if (!dente)   { errors.push('Dentes envolvidos'); ncMarkFieldError('nc-teeth-wrap'); }
   if (!prazo)   { errors.push('Data necess\u00e1ria / Prazo'); ncMarkFieldError('inp-prazo'); }
   if (!NC_DELIVERY){ errors.push('Forma de envio do caso'); }

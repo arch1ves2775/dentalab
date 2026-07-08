@@ -6950,6 +6950,13 @@ function sbNotify(kind, title, body) {
   }
 }
 
+function sbIssueNotificationText(row) {
+  var type = row && row.type ? row.type : '';
+  var info = ISSUE_TYPES[type] || null;
+  if (info && info.label) return info.label;
+  return row && row.label ? row.label : 'Novo aviso no caso';
+}
+
 function sbRememberRemoteItems(kind, ids) {
   if (!currentUserId || !ids || !ids.length) return [];
   var key = 'DENTALAB_SEEN_' + kind + '_' + currentUserId;
@@ -6973,7 +6980,7 @@ function sbStartBackgroundSync() {
     if (!isSupabaseReady() || !currentUserId) return;
     syncSupabaseCasesIntoCDM();
     if (CURRENT_CHAT.labId && CURRENT_CHAT.clinicId) sbLoadChatMessages();
-  }, 60000);
+  }, 15000);
   sbStartRealtimeSync();
 }
 
@@ -6981,7 +6988,7 @@ function sbStartBackgroundSync() {
 // Subscreve em tempo real às tabelas cases, case_messages e
 // pending_issues via Supabase Realtime. Assim que outro utilizador
 // insere ou actualiza uma linha, o evento chega instantaneamente —
-// sem esperar pelo polling de 60s. Reaproveita as mesmas funções de
+// sem esperar pelo polling de 15s. Reaproveita as mesmas funções de
 // refresh já existentes (syncSupabaseCasesIntoCDM, sbLoadChatMessages,
 // renderAlertas) para não duplicar lógica de renderização.
 var _dentalabRealtimeChannel = null;
@@ -7013,15 +7020,22 @@ function sbStartRealtimeSync() {
         && chatIsOpen;
       if (belongsToOpenChat) {
         sbLoadChatMessages();
+        if (fromOtherUser && document.hidden) sbNotify('chat', 'Nova mensagem', 'Você recebeu uma nova mensagem.');
       } else if (fromOtherUser) {
         incrementConvUnread(1);
+        sbNotify('chat', 'Nova mensagem', 'Você recebeu uma nova mensagem.');
       }
     })
     // ── Pendências / alertas ──
     .on('postgres_changes', { event: '*', schema: 'public', table: 'pending_issues' }, function(payload) {
       console.log('[Realtime] pending_issues:', payload.eventType);
+      var row = payload && payload.new ? payload.new : {};
+      var fromOtherUser = row.requested_by && String(row.requested_by) !== String(currentUserId || '');
       syncSupabaseCasesIntoCDM();
-      if (currentTab === 'alertas' && typeof renderAlertas === 'function') renderAlertas();
+      if (typeof renderAlertas === 'function') renderAlertas();
+      if (payload.eventType === 'INSERT' && fromOtherUser) {
+        sbNotify('cases', 'Novo aviso', sbIssueNotificationText(row));
+      }
     })
     .subscribe(function(status) {
       console.log('[Realtime] Estado da subscrição:', status);

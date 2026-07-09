@@ -6283,10 +6283,10 @@ function cdmPrintableGuideFallback(caseId, c) {
   var win = window.open('', '_blank');
   if (!win) { showToast('Permita pop-ups para abrir a guia.'); return; }
   win.document.write('<!doctype html><html><head><title>Guia do caso</title><style>'
-    + '*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;margin:0;background:#f3f6fb;color:#111827}.page{max-width:860px;margin:28px auto;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 18px 48px rgba(15,23,42,.14)}'
-    + '.hero{background:linear-gradient(135deg,#1d4ed8,#2563eb 55%,#38bdf8);color:#fff;padding:32px 38px 28px;display:flex;justify-content:space-between;gap:22px}.brand{font-size:13px;text-transform:uppercase;letter-spacing:.16em;font-weight:800;opacity:.86}.title{font-size:29px;font-weight:900;margin:8px 0 0}.code{padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.17);font-size:12px;font-weight:800;white-space:nowrap;height:max-content}'
-    + '.content{padding:30px 38px 34px}.patient{display:grid;grid-template-columns:1.4fr .8fr .8fr;gap:14px;margin-top:-50px;margin-bottom:26px}.tile{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(15,23,42,.09)}.label{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.11em;font-weight:900}.value{font-size:19px;font-weight:900;margin-top:7px;color:#0f172a}.small{font-size:14px}'
-    + 'h2{font-size:12px;margin:24px 0 12px;color:#2563eb;text-transform:uppercase;letter-spacing:.14em}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}.row{border:1px solid #e8edf5;background:#f8fafc;border-radius:14px;padding:11px 13px}.k{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-weight:900}.v{font-size:13px;font-weight:800;color:#111827;margin-top:5px;white-space:pre-wrap;line-height:1.35}.wide{grid-column:1/-1}.scans{display:flex;flex-wrap:wrap;gap:8px}.pill{border-radius:999px;background:#eef6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 11px;font-size:12px;font-weight:800}.note{font-size:11px;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:14px;padding:13px 15px;margin-top:22px;line-height:1.45}.foot{display:flex;justify-content:space-between;color:#94a3b8;font-size:10px;margin-top:24px}'
+    + '@page{size:A4;margin:8mm}*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;margin:0;background:#f3f6fb;color:#111827}.page{max-width:820px;margin:10px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,.10)}'
+    + '.hero{background:linear-gradient(135deg,#1d4ed8,#2563eb 55%,#38bdf8);color:#fff;padding:22px 30px 20px;display:flex;justify-content:space-between;gap:18px}.brand{font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:800;opacity:.86}.title{font-size:24px;font-weight:900;margin:6px 0 0}.code{padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.17);font-size:11px;font-weight:800;white-space:nowrap;height:max-content}'
+    + '.content{padding:22px 30px 24px}.patient{display:grid;grid-template-columns:1.4fr .8fr .8fr;gap:10px;margin-top:-38px;margin-bottom:18px}.tile{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:13px;box-shadow:0 7px 20px rgba(15,23,42,.07)}.label{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.1em;font-weight:900}.value{font-size:16px;font-weight:900;margin-top:5px;color:#0f172a}.small{font-size:12px}'
+    + 'h2{font-size:10px;margin:16px 0 8px;color:#2563eb;text-transform:uppercase;letter-spacing:.12em}.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px}.row{border:1px solid #e8edf5;background:#f8fafc;border-radius:11px;padding:8px 10px}.k{font-size:8px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;font-weight:900}.v{font-size:11px;font-weight:800;color:#111827;margin-top:3px;white-space:pre-wrap;line-height:1.25}.wide{grid-column:1/-1}.wide .v{max-height:52px;overflow:hidden}.scans{display:flex;flex-wrap:wrap;gap:6px}.pill{border-radius:999px;background:#eef6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:6px 9px;font-size:10px;font-weight:800}.note{font-size:9px;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:11px;padding:9px 11px;margin-top:14px;line-height:1.35}.foot{display:flex;justify-content:space-between;color:#94a3b8;font-size:8px;margin-top:14px}'
     + '</style></head><body>');
   win.document.write('<div class="page"><div class="hero"><div><div class="brand">DentaLab</div><div class="title">Guia de Laboratório</div></div><div class="code">' + sbEscapeHtml(c.num || caseId || 'Caso') + '</div></div><div class="content">');
   win.document.write('<div class="patient"><div class="tile"><div class="label">Paciente</div><div class="value">' + sbEscapeHtml(c.paciente || '-') + '</div></div><div class="tile"><div class="label">Prazo</div><div class="value small">' + sbEscapeHtml(c.prazo || 'A definir') + '</div></div><div class="tile"><div class="label">Prioridade</div><div class="value small">' + sbEscapeHtml(c.urg || 'Normal') + '</div></div></div>');
@@ -6322,8 +6322,8 @@ async function cdmDownloadCaseGuide(caseId) {
     var doc = new jsPDF({ unit:'pt', format:'a4' });
     var pageW = doc.internal.pageSize.getWidth();
     var pageH = doc.internal.pageSize.getHeight();
-    var margin = 42;
-    var y = 42;
+    var margin = 32;
+    var y = 30;
     function addText(txt, x, yy, opts) {
       opts = opts || {};
       doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
@@ -6335,31 +6335,27 @@ async function cdmDownloadCaseGuide(caseId) {
     function stroke(rgb) { doc.setDrawColor(rgb[0], rgb[1], rgb[2]); }
     function drawHeader() {
       fill([37, 99, 235]);
-      doc.rect(0, 0, pageW, 116, 'F');
+      doc.rect(0, 0, pageW, 92, 'F');
       fill([56, 189, 248]);
-      doc.rect(pageW - 152, 0, 152, 116, 'F');
+      doc.rect(pageW - 132, 0, 132, 92, 'F');
       fill([29, 78, 216]);
-      doc.triangle(pageW - 210, 0, pageW - 152, 0, pageW - 152, 116, 'F');
-      addText('DENTALAB', margin, 44, { bold:true, size:10, color:'#DBEAFE' });
-      addText('Guia de Laboratório', margin, 70, { bold:true, size:24, color:'#FFFFFF' });
-      addText('Gerado em ' + new Date().toLocaleString('pt-PT'), margin, 91, { size:9, color:'#DBEAFE' });
+      doc.triangle(pageW - 184, 0, pageW - 132, 0, pageW - 132, 92, 'F');
+      addText('DENTALAB', margin, 34, { bold:true, size:9, color:'#DBEAFE' });
+      addText('Guia de Laboratório', margin, 57, { bold:true, size:20, color:'#FFFFFF' });
+      addText('Gerado em ' + new Date().toLocaleString('pt-PT'), margin, 76, { size:8, color:'#DBEAFE' });
       fill([255, 255, 255]);
-      doc.roundedRect(pageW - 178, 38, 124, 30, 15, 15, 'F');
-      addText(String(c.num || caseId || 'Caso'), pageW - 116, 58, { bold:true, size:9, color:'#1D4ED8', align:'center' });
-      y = 144;
+      doc.roundedRect(pageW - 158, 32, 112, 26, 13, 13, 'F');
+      addText(String(c.num || caseId || 'Caso'), pageW - 102, 49, { bold:true, size:8, color:'#1D4ED8', align:'center' });
+      y = 112;
     }
     function drawFooter() {
       stroke([226, 232, 240]);
-      doc.line(margin, pageH - 38, pageW - margin, pageH - 38);
-      addText('DentaLab · Comunicação dentista-laboratório', margin, pageH - 22, { size:8, color:'#94A3B8' });
-      addText('Guia gerada automaticamente', pageW - margin, pageH - 22, { size:8, color:'#94A3B8', align:'right' });
+      doc.line(margin, pageH - 30, pageW - margin, pageH - 30);
+      addText('DentaLab · Comunicação dentista-laboratório', margin, pageH - 16, { size:7, color:'#94A3B8' });
+      addText('Guia gerada automaticamente', pageW - margin, pageH - 16, { size:7, color:'#94A3B8', align:'right' });
     }
     function ensureSpace(h) {
-      if (y + h > pageH - 58) {
-        drawFooter();
-        doc.addPage();
-        drawHeader();
-      }
+      return y + h <= pageH - 42;
     }
     function drawTile(x, yy, w, h, label, value, accent) {
       fill([248, 250, 252]);
@@ -6369,23 +6365,24 @@ async function cdmDownloadCaseGuide(caseId) {
         fill(accent);
         doc.roundedRect(x, yy, 5, h, 2, 2, 'F');
       }
-      addText(label, x + 16, yy + 22, { bold:true, size:8, color:'#64748B' });
-      var lines = doc.splitTextToSize(String(value || '-'), w - 32);
-      addText(lines, x + 16, yy + 43, { bold:true, size:12, color:'#0F172A' });
+      addText(label, x + 12, yy + 17, { bold:true, size:7, color:'#64748B' });
+      var lines = doc.splitTextToSize(String(value || '-'), w - 24).slice(0, 2);
+      addText(lines, x + 12, yy + 34, { bold:true, size:10, color:'#0F172A' });
     }
     function drawSectionTitle(title) {
-      ensureSpace(32);
-      addText(title.toUpperCase(), margin, y, { bold:true, size:10, color:'#2563EB' });
+      if (!ensureSpace(24)) return false;
+      addText(title.toUpperCase(), margin, y, { bold:true, size:9, color:'#2563EB' });
       stroke([191, 219, 254]);
       doc.line(margin + 100, y - 3, pageW - margin, y - 3);
-      y += 14;
+      y += 12;
+      return true;
     }
     drawHeader();
     var cardY = y;
-    drawTile(margin, cardY, 230, 76, 'PACIENTE', c.paciente || '-', [37, 99, 235]);
-    drawTile(margin + 244, cardY, 132, 76, 'PRAZO', c.prazo || 'A definir', [14, 165, 233]);
-    drawTile(margin + 390, cardY, pageW - margin - (margin + 390), 76, 'PRIORIDADE', c.urg || 'Normal', [16, 185, 129]);
-    y = cardY + 106;
+    drawTile(margin, cardY, 230, 58, 'PACIENTE', c.paciente || '-', [37, 99, 235]);
+    drawTile(margin + 242, cardY, 126, 58, 'PRAZO', c.prazo || 'A definir', [14, 165, 233]);
+    drawTile(margin + 380, cardY, pageW - margin - (margin + 380), 58, 'PRIORIDADE', c.urg || 'Normal', [16, 185, 129]);
+    y = cardY + 78;
 
     var hiddenInDetails = {'Paciente':true, 'Prazo':true, 'Prioridade':true, 'Caso':true};
     var detailRows = cdmGuideRows(caseId, c).filter(function(row){ return !hiddenInDetails[row[0]]; });
@@ -6396,49 +6393,51 @@ async function cdmDownloadCaseGuide(caseId) {
     var colW = (pageW - margin * 2 - colGap) / 2;
     detailRows.forEach(function(row, idx){
       var x = margin + (idx % 2) * (colW + colGap);
-      if (idx % 2 === 0 && idx > 0) y += 70;
-      ensureSpace(74);
-      drawTile(x, y, colW, 58, row[0].toUpperCase(), row[1], null);
+      if (idx % 2 === 0 && idx > 0) y += 52;
+      if (!ensureSpace(54)) return;
+      drawTile(x, y, colW, 44, row[0].toUpperCase(), row[1], null);
     });
-    if (detailRows.length) y += 82;
+    if (detailRows.length) y += 62;
 
-    if (obsRows.length) {
+    if (obsRows.length && ensureSpace(78)) {
       drawSectionTitle('Observações');
       obsRows.forEach(function(row){
-        var lines = doc.splitTextToSize(String(row[1] || ''), pageW - margin * 2 - 28);
-        var boxH = Math.max(58, lines.length * 13 + 34);
-        ensureSpace(boxH + 12);
+        var lines = doc.splitTextToSize(String(row[1] || ''), pageW - margin * 2 - 24).slice(0, 4);
+        var boxH = Math.max(46, lines.length * 11 + 22);
+        if (!ensureSpace(boxH + 8)) return;
         fill([255, 251, 235]);
         stroke([253, 230, 138]);
-        doc.roundedRect(margin, y, pageW - margin * 2, boxH, 12, 12, 'FD');
-        addText(lines, margin + 16, y + 24, { size:10, color:'#78350F' });
-        y += boxH + 14;
+        doc.roundedRect(margin, y, pageW - margin * 2, boxH, 10, 10, 'FD');
+        addText(lines, margin + 12, y + 17, { size:8, color:'#78350F' });
+        y += boxH + 10;
       });
     }
 
     var scans = cdmScannerGuideNames(c);
-    if (scans.length) {
+    if (scans.length && ensureSpace(52)) {
       drawSectionTitle('Arquivos 3D anexados');
-      scans.forEach(function(s){
-        var lines = doc.splitTextToSize(String(s || ''), pageW - margin * 2 - 44);
-        var pillH = Math.max(28, lines.length * 12 + 14);
-        ensureSpace(pillH + 8);
+      scans.slice(0, 5).forEach(function(s, idx){
+        var suffix = (idx === 4 && scans.length > 5) ? ' +' + (scans.length - 5) + ' ficheiro(s)' : '';
+        var lines = doc.splitTextToSize(String(s || '') + suffix, pageW - margin * 2 - 36).slice(0, 1);
+        var pillH = 22;
+        if (!ensureSpace(pillH + 6)) return;
         fill([239, 246, 255]);
         stroke([191, 219, 254]);
-        doc.roundedRect(margin, y, pageW - margin * 2, pillH, 11, 11, 'FD');
+        doc.roundedRect(margin, y, pageW - margin * 2, pillH, 9, 9, 'FD');
         fill([37, 99, 235]);
-        doc.circle(margin + 16, y + 14, 4, 'F');
-        addText(lines, margin + 30, y + 18, { bold:true, size:9, color:'#1E3A8A' });
-        y += pillH + 8;
+        doc.circle(margin + 14, y + 11, 3, 'F');
+        addText(lines, margin + 26, y + 14, { bold:true, size:8, color:'#1E3A8A' });
+        y += pillH + 6;
       });
     }
-    y += 8;
-    ensureSpace(50);
-    fill([248, 250, 252]);
-    stroke([203, 213, 225]);
-    doc.roundedRect(margin, y, pageW - margin * 2, 46, 12, 12, 'FD');
-    var noteLines = doc.splitTextToSize('Nota: esta guia não inclui os ficheiros STL/PLY/OBJ, apenas os nomes para conferência. Os arquivos 3D continuam disponíveis no caso dentro da app.', pageW - margin * 2 - 28);
-    addText(noteLines, margin + 14, y + 18, { size:8, color:'#64748B' });
+    y += 4;
+    if (ensureSpace(34)) {
+      fill([248, 250, 252]);
+      stroke([203, 213, 225]);
+      doc.roundedRect(margin, y, pageW - margin * 2, 30, 10, 10, 'FD');
+      var noteLines = doc.splitTextToSize('Nota: os ficheiros STL/PLY/OBJ permanecem disponíveis dentro da app.', pageW - margin * 2 - 24);
+      addText(noteLines, margin + 12, y + 18, { size:7, color:'#64748B' });
+    }
     drawFooter();
     doc.save(cdmGuideFilename(c));
   } catch (err) {

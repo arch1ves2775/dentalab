@@ -1530,7 +1530,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
         <div class="casos-stat-lbl">Prontos</div>
         <div class="casos-stat-sub" style="color:#10B981">✓ No prazo</div>
       </div>
-      <div class="casos-stat">
+      <div class="casos-stat" id="mylab-stat-attention-card" onclick="mylabOpenAttention()" title="Ver casos que precisam de atenção" style="cursor:pointer">
         <div class="casos-stat-val" id="mylab-stat-attention" style="color:#EF4444">0</div>
         <div class="casos-stat-lbl">Atenção</div>
         <div class="casos-stat-sub" style="color:#EF4444">Ação necessária</div>
@@ -7223,9 +7223,12 @@ function sbStopRealtimeSync() {
   }
 }
 // ── MyLab: Lab deadline-sorted view ─────────────────────────────────────
-// App's simulated "today" — matches the prazoISO dates in CDM seed data.
-// In production this would be: new Date()
-var LAB_TODAY = new Date('2026-06-23T00:00:00');
+// Today's date used for delivery countdowns in MyLab.
+var LAB_TODAY = (function(){
+  var d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+})();
 
 // Parse any CDM case's deadline into a plain Date (midnight).
 // Priority: prazoISO (YYYY-MM-DD) > text heuristics > null (no deadline)
@@ -7277,10 +7280,10 @@ function prazoBadgeHTML(c) {
   if (diff === Infinity) return '';
   var cls, txt;
   if (diff < 0)   { cls='atr'; txt='\u23F0 ' + Math.abs(diff) + 'd atrasado'; }
-  else if (diff === 0) { cls='hj';  txt='\u23F3 Hoje'; }
-  else if (diff === 1) { cls='am';  txt='\u23F0 Amanh\u00e3'; }
-  else if (diff <= 7)  { cls='ok';  txt='\uD83D\uDCC5 ' + diff + ' dias'; }
-  else                 { cls='far'; txt='\uD83D\uDCC5 ' + diff + ' dias'; }
+  else if (diff === 0) { cls='hj';  txt='\u23F3 Entrega hoje'; }
+  else if (diff === 1) { cls='am';  txt='\u23F0 Falta 1 dia'; }
+  else if (diff <= 7)  { cls='ok';  txt='\uD83D\uDCC5 Faltam ' + diff + ' dias'; }
+  else                 { cls='far'; txt='\uD83D\uDCC5 Faltam ' + diff + ' dias'; }
   return '<span class="pc2-deadline-badge ' + cls + '">' + txt + '</span>';
 }
 
@@ -12508,21 +12511,42 @@ function renderProfileStats() {
   if (open) open.textContent = active;
 }
 
+function mylabAttentionCaseIds() {
+  var ids = {};
+  allCurrentIssues().filter(function(issue){
+    if (!issue || issue.status !== 'open') return false;
+    if (currentUserRole === 'laboratorio' && isClinicOnlyNoticeIssue(issue)) return false;
+    return isCaseBlockingIssue(issue);
+  }).forEach(function(issue){
+    if (issue.caseId && CDM[issue.caseId] && !isMyCaseRecord(CDM[issue.caseId])) ids[String(issue.caseId)] = true;
+  });
+  Object.keys(CDM).forEach(function(caseId) {
+    var c = CDM[caseId];
+    if (!c || isMyCaseRecord(c)) return;
+    if (c.statusCls === 'st-wait' || c.status === 'Aguardando Clínica' || c.status === 'Aguardando Clinica') {
+      ids[String(caseId)] = true;
+    }
+  });
+  return Object.keys(ids);
+}
+
+function mylabOpenAttention() {
+  var ids = mylabAttentionCaseIds();
+  if (!ids.length) {
+    showToast('Nenhum caso precisa de atenção agora.');
+    return;
+  }
+  _alActiveTab = 'open';
+  showTab('alertas');
+  if (typeof alSetTab === 'function') alSetTab('open');
+  if (typeof renderAlertas === 'function') renderAlertas();
+}
+
 function renderHomeCaseStats() {
   var cases = Object.keys(CDM).map(function(id){ return CDM[id]; }).filter(function(c){ return c && !isMyCaseRecord(c); });
   var finished = cases.filter(function(c){ return c.statusCls === 'st-done' || c.status === 'Entregue' || c.status === 'Finalizado'; }).length;
   var active = cases.length - finished;
-  var pendingCaseIds = {};
-  allCurrentIssues().filter(function(issue){ return issue.status === 'open'; }).forEach(function(issue){
-    pendingCaseIds[String(issue.caseId)] = true;
-  });
-  cases.forEach(function(c) {
-    var caseId = Object.keys(CDM).find(function(id){ return CDM[id] === c; });
-    if (caseId && (c.statusCls === 'st-wait' || c.status === 'Aguardando Clínica' || c.status === 'Aguardando Clinica')) {
-      pendingCaseIds[String(caseId)] = true;
-    }
-  });
-  var pending = Object.keys(pendingCaseIds).length;
+  var pending = mylabAttentionCaseIds().length;
   var activeEl = document.getElementById('home-casos-ativos-val');
   var pendingEl = document.getElementById('home-pendencias-val');
   var finishedEl = document.getElementById('home-finalizados-val');

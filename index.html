@@ -4540,6 +4540,7 @@ function _sbEnterApp() {
     sbStartPresence();
   }
   setTimeout(function(){ dentalabHandleNotificationOpen(); }, 900);
+  setTimeout(function(){ dentalabSyncPushIfGranted(); }, 1400);
 }
 
 // ── Supabase Auth listener ─────────────────────────────────────────────
@@ -7223,6 +7224,7 @@ var _dentalabSyncTimer = null;
 var DENTALAB_VAPID_PUBLIC_KEY = 'BHHJkXxrkRQ9Ze2_HpAbyDstbxRGERb2epAT-Z7HpEtTpPERRrraf5v1aFuGcBueP_KTfsS2q1PDtXWZsWtNH-I';
 var DENTALAB_LAST_PUSH_ERROR = '';
 var DENTALAB_PUSH_DEDUPE = {};
+var _dentalabPushSyncInFlight = null;
 
 function sbNotificationSettings() {
   try { return Object.assign({}, DENTALAB_NOTIFICATION_DEFAULTS, JSON.parse(localStorage.getItem('DENTALAB_NOTIFICATION_SETTINGS') || '{}')); }
@@ -7256,12 +7258,45 @@ async function getPwaServiceWorkerRegistration() {
 
 function pushSubscriptionToRecord(subscription) {
   var json = subscription.toJSON ? subscription.toJSON() : {};
+  var client = dentalabPushClientInfo();
+  json._dentalab = {
+    browser: client.browser,
+    platform: client.platform,
+    standalone: pwaIsStandalone(),
+    savedAt: new Date().toISOString()
+  };
   return {
     endpoint: subscription.endpoint || json.endpoint || '',
     p256dh: json.keys && json.keys.p256dh ? json.keys.p256dh : '',
     auth: json.keys && json.keys.auth ? json.keys.auth : '',
     payload: json
   };
+}
+
+function dentalabPushClientInfo() {
+  var ua = navigator.userAgent || '';
+  var browser = /Edg(?:A|iOS)?\//.test(ua) ? 'Microsoft Edge'
+    : /Firefox\//.test(ua) ? 'Mozilla Firefox'
+    : /CriOS\//.test(ua) ? 'Google Chrome'
+    : /Chrome\//.test(ua) ? 'Google Chrome'
+    : /FxiOS\//.test(ua) ? 'Mozilla Firefox'
+    : /Safari\//.test(ua) ? 'Safari'
+    : 'Navegador';
+  var platform = isIOSDevice() ? 'iPhone/iPad'
+    : /Android/i.test(ua) ? 'Android'
+    : /Windows/i.test(ua) ? 'Windows'
+    : /Macintosh|Mac OS X/i.test(ua) ? 'macOS'
+    : /Linux/i.test(ua) ? 'Linux'
+    : 'dispositivo';
+  return { browser:browser, platform:platform, label:browser + ' · ' + platform };
+}
+
+function dentalabPushCapability() {
+  if (typeof Notification === 'undefined') return { ok:false, reason:'Notifications API indisponível' };
+  if (!('serviceWorker' in navigator)) return { ok:false, reason:'Service Worker indisponível' };
+  if (!('PushManager' in window)) return { ok:false, reason:'Push API indisponível' };
+  if (!window.isSecureContext) return { ok:false, reason:'É necessária uma ligação HTTPS segura' };
+  return { ok:true, reason:'' };
 }
 
 async function savePushSubscription(subscription) {
@@ -7337,6 +7372,26 @@ async function subscribeDevicePush() {
   }
 }
 
+async function getCurrentPushSubscription() {
+  if (!dentalabPushCapability().ok) return null;
+  try {
+    var reg = await navigator.serviceWorker.getRegistration('./');
+    return reg ? await reg.pushManager.getSubscription() : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+async function dentalabSyncPushIfGranted() {
+  if (_dentalabPushSyncInFlight) return _dentalabPushSyncInFlight;
+  if (!currentUserId || !isSupabaseReady() || !dentalabPushCapability().ok || Notification.permission !== 'granted') return false;
+  _dentalabPushSyncInFlight = subscribeDevicePush().catch(function(err){
+    console.log('[Push] sincronização automática indisponível:', err.message || err);
+    return false;
+  }).finally(function(){ _dentalabPushSyncInFlight = null; updateNotificationDeviceUI(); });
+  return _dentalabPushSyncInFlight;
+}
+
 function dentalabPushUrl(kind, opts) {
   opts = opts || {};
   var params = new URLSearchParams(location.search || '');
@@ -7394,11 +7449,13 @@ function isIOSDevice() {
 }
 
 function notificationSupportState() {
-  if (typeof Notification === 'undefined') {
+  var capability = dentalabPushCapability();
+  var client = dentalabPushClientInfo();
+  if (!capability.ok) {
     return {
       state: 'bad',
       title: 'Notificações indisponíveis',
-      sub: 'Este navegador ainda não permite notificações para esta app.',
+      sub: client.label + ': ' + capability.reason + '.',
       disabled: true
     };
   }
@@ -7414,7 +7471,7 @@ function notificationSupportState() {
     return {
       state: 'ok',
       title: 'Notificações ativadas',
-      sub: pwaIsStandalone() ? 'Toque no botão abaixo para sincronizar o push real neste dispositivo.' : 'Permissão ativa. Para melhor experiência, use pela Tela de Início.',
+      sub: client.label + ' · verificando inscrição deste dispositivo…',
       disabled: false
     };
   }
@@ -7442,7 +7499,7 @@ function notificationSupportState() {
   };
 }
 
-function updateNotificationDeviceUI() {
+async function updateNotificationDeviceUI() {
   var info = notificationSupportState();
   var dot = document.getElementById('notify-device-dot');
   var title = document.getElementById('notify-device-title');
@@ -7457,6 +7514,16 @@ function updateNotificationDeviceUI() {
   if (btn) {
     btn.disabled = info.disabled;
     btn.textContent = info.state === 'ok' ? 'Sincronizar notificações push' : 'Ativar notificações neste dispositivo';
+  }
+  if (info.state === 'ok') {
+    var currentSubscription = await getCurrentPushSubscription();
+    if (sub) sub.textContent = dentalabPushClientInfo().label + (currentSubscription
+      ? ' · dispositivo registrado para receber push.'
+      : ' · permissão ativa, mas falta registrar este dispositivo.');
+    if (dot) {
+      dot.classList.remove('ok','warn','bad');
+      dot.classList.add(currentSubscription ? 'ok' : 'warn');
+    }
   }
 }
 

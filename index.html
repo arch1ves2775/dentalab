@@ -4548,6 +4548,7 @@ function _sbEnterApp() {
   }
   setTimeout(function(){ dentalabHandleNotificationOpen(); }, 900);
   setTimeout(function(){ dentalabSyncPushIfGranted(); }, 1400);
+  setTimeout(function(){ sbRefreshUnreadMessages(); }, 1700);
 }
 
 // ── Supabase Auth listener ─────────────────────────────────────────────
@@ -4764,13 +4765,13 @@ function showTab(t){
   if(t==='alertas') renderAlertas();
   if(t==='mycases') setTimeout(mcRender,50);
   if(t==='perfil') updateNotificationDeviceUI();
-  if(t==='conv') clearConvUnread();
+  if(t==='conv') updateConvBadge();
 }
 
 function dentalabClearOpenParams() {
   try {
     var url = new URL(location.href);
-    ['open','labId','clinicId','caseId','issueId'].forEach(function(k){ url.searchParams.delete(k); });
+    ['open','labId','clinicId','caseId','issueId','messageId'].forEach(function(k){ url.searchParams.delete(k); });
     history.replaceState(null, '', url.pathname + (url.search ? url.search : '') + url.hash);
   } catch (err) {}
 }
@@ -4797,6 +4798,18 @@ if ('serviceWorker' in navigator) {
     }
     if (data.type === 'DENTALAB_PUSH_VISIBILITY_QUERY') {
       var payload = data.payload || {};
+      if (payload.kind === 'chat' && payload.url) {
+        try {
+          var pushChatUrl = new URL(payload.url, location.href);
+          var pushMessageId = pushChatUrl.searchParams.get('messageId') || '';
+          if (pushMessageId) trackUnreadChatMessage({
+            id: pushMessageId,
+            lab_id: pushChatUrl.searchParams.get('labId') || '',
+            clinic_id: pushChatUrl.searchParams.get('clinicId') || '',
+            sender_id: '_push_remote_'
+          }, true);
+        } catch (err) {}
+      }
       dentalabShowInAppNotice(payload.kind || 'general', payload.title || 'DentaLab', payload.body || 'Nova informação recebida.');
       var responsePort = event.ports && event.ports[0];
       if (responsePort) responsePort.postMessage({
@@ -5066,7 +5079,7 @@ async function openChat(av,name,color,labDbId,clinicId){
   _currentChatLabAv = av; // keep state in sync with DOM
   CURRENT_CHAT = { labId: effectiveLabId, clinicId: effectiveClinicId, key: sbChatKey(effectiveLabId, effectiveClinicId) };
   document.getElementById('bottom-nav').style.display='none';
-  clearConvUnread();
+  markConversationRead(CURRENT_CHAT.labId, CURRENT_CHAT.clinicId);
   // Only re-render the full message history when switching to a different
   // lab. If the lab is the same (e.g. sendCase() calls openChat() after
   // injecting a bubble), we keep the existing messages so the new bubble
@@ -5362,7 +5375,8 @@ async function sbSendChatMessage(textValue, file) {
       var pushBody = file ? (payload.message_type === 'scanner' ? 'Novo scanner enviado no chat.' : 'Nova imagem enviada no chat.') : (textValue || 'Nova mensagem recebida.');
       sendPushToUser(recipientId, 'Nova mensagem no DentaLab', pushBody, 'chat', {
         labId: CURRENT_CHAT.labId,
-        clinicId: CURRENT_CHAT.clinicId
+        clinicId: CURRENT_CHAT.clinicId,
+        messageId: res.data && res.data.id ? res.data.id : ''
       });
     }
     await sbLoadChatMessages();
@@ -5481,21 +5495,33 @@ function updateAlertBadge(){
 }
 
 function convUnreadKey() {
-  return 'DENTALAB_UNREAD_CHAT_' + (currentUserId || 'local');
+  return 'DENTALAB_UNREAD_CHAT_IDS_' + (currentUserId || 'local');
 }
 
-function getConvUnreadCount() {
+function convKnownKey() {
+  return 'DENTALAB_KNOWN_CHAT_IDS_' + (currentUserId || 'local');
+}
+
+function convKnownInitializedKey() {
+  return 'DENTALAB_KNOWN_CHAT_READY_' + (currentUserId || 'local');
+}
+
+function getConvUnreadLedger() {
   try {
-    return Math.max(0, parseInt(localStorage.getItem(convUnreadKey()) || '0', 10) || 0);
+    var value = JSON.parse(localStorage.getItem(convUnreadKey()) || '{}');
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   } catch (err) {
-    return 0;
+    return {};
   }
 }
 
-function setConvUnreadCount(count) {
-  var val = Math.max(0, parseInt(count || 0, 10) || 0);
-  try { localStorage.setItem(convUnreadKey(), String(val)); } catch (err) {}
-  updateConvBadge(val);
+function saveConvUnreadLedger(ledger) {
+  try { localStorage.setItem(convUnreadKey(), JSON.stringify(ledger || {})); } catch (err) {}
+  updateConvBadge(Object.keys(ledger || {}).length);
+}
+
+function getConvUnreadCount() {
+  return Object.keys(getConvUnreadLedger()).length;
 }
 
 function updateConvBadge(count) {
@@ -5511,13 +5537,72 @@ function updateConvBadge(count) {
   }
 }
 
-function incrementConvUnread(amount) {
-  var inc = Math.max(1, parseInt(amount || 1, 10) || 1);
-  setConvUnreadCount(getConvUnreadCount() + inc);
+function chatRowMatchesOpenConversation(row) {
+  var chatEl = document.getElementById('scr-chat');
+  return !!(row && CURRENT_CHAT && chatEl && chatEl.classList.contains('active')
+    && document.visibilityState === 'visible'
+    && String(row.lab_id || '') === String(CURRENT_CHAT.labId || '')
+    && String(row.clinic_id || '') === String(CURRENT_CHAT.clinicId || ''));
 }
 
-function clearConvUnread() {
-  setConvUnreadCount(0);
+function rememberKnownChatIds(ids) {
+  var known = [];
+  try { known = JSON.parse(localStorage.getItem(convKnownKey()) || '[]'); } catch (err) {}
+  if (!Array.isArray(known)) known = [];
+  var merged = Array.from(new Set(known.concat((ids || []).filter(Boolean).map(String)))).slice(-1500);
+  try { localStorage.setItem(convKnownKey(), JSON.stringify(merged)); } catch (err) {}
+  return known;
+}
+
+function trackUnreadChatMessage(row, animate) {
+  if (!row || !row.id || String(row.sender_id || '') === String(currentUserId || '')) return false;
+  try { localStorage.setItem(convKnownInitializedKey(), '1'); } catch (err) {}
+  rememberKnownChatIds([row.id]);
+  if (chatRowMatchesOpenConversation(row)) return false;
+  var ledger = getConvUnreadLedger();
+  if (ledger[String(row.id)]) return false;
+  ledger[String(row.id)] = { labId:String(row.lab_id || ''), clinicId:String(row.clinic_id || ''), createdAt:row.created_at || '' };
+  saveConvUnreadLedger(ledger);
+  if (animate !== false) dentalabPulseDestinationTab('chat');
+  return true;
+}
+
+function markConversationRead(labId, clinicId) {
+  if (!labId || !clinicId) return;
+  var ledger = getConvUnreadLedger();
+  Object.keys(ledger).forEach(function(id){
+    var item = ledger[id] || {};
+    if (String(item.labId || '') === String(labId) && String(item.clinicId || '') === String(clinicId)) delete ledger[id];
+  });
+  saveConvUnreadLedger(ledger);
+}
+
+async function sbRefreshUnreadMessages() {
+  if (!isSupabaseReady() || !currentUserId) return;
+  try {
+    var res = await _supabaseClient.from('case_messages')
+      .select('id, lab_id, clinic_id, sender_id, created_at')
+      .neq('sender_id', currentUserId)
+      .order('created_at', { ascending:false })
+      .limit(1500);
+    if (res.error) throw res.error;
+    var rows = res.data || [];
+    var initialized = false;
+    try { initialized = localStorage.getItem(convKnownInitializedKey()) === '1'; } catch (err) {}
+    var knownBefore = rememberKnownChatIds([]);
+    if (!initialized) {
+      rememberKnownChatIds(rows.map(function(row){ return row.id; }));
+      try { localStorage.setItem(convKnownInitializedKey(), '1'); } catch (err) {}
+      updateConvBadge();
+      return;
+    }
+    var knownMap = {};
+    knownBefore.forEach(function(id){ knownMap[String(id)] = true; });
+    rows.forEach(function(row){ if (!knownMap[String(row.id)]) trackUnreadChatMessage(row, false); });
+    updateConvBadge();
+  } catch (err) {
+    console.log('[Chat] não foi possível atualizar não lidas:', err.message || err);
+  }
 }
 
 function refreshConversationList() {
@@ -7462,6 +7547,7 @@ function dentalabPushUrl(kind, opts) {
     params.set('open', 'chat');
     if (opts.labId) params.set('labId', opts.labId);
     if (opts.clinicId) params.set('clinicId', opts.clinicId);
+    if (kind === 'chat' && opts.messageId) params.set('messageId', opts.messageId);
   } else if (kind === 'case_alert' || kind === 'case_receipt') {
     params.set('open', 'alertas');
     if (opts.caseId) params.set('caseId', opts.caseId);
@@ -7643,6 +7729,7 @@ function dentalabShowInAppNotice(kind, title, body) {
 function dentalabPulseDestinationTab(kind) {
   var targetTab = (kind === 'case_alert' || kind === 'case_receipt') ? 'alertas'
     : (kind === 'case' || kind === 'cases') ? 'casos'
+    : kind === 'chat' ? 'conv'
     : '';
   if (!targetTab || currentTab === targetTab) return;
   var button = document.getElementById('bn-' + targetTab);
@@ -7692,6 +7779,7 @@ function sbStartBackgroundSync() {
   _dentalabSyncTimer = setInterval(function(){
     if (!isSupabaseReady() || !currentUserId) return;
     syncSupabaseCasesIntoCDM();
+    sbRefreshUnreadMessages();
     if (CURRENT_CHAT.labId && CURRENT_CHAT.clinicId) sbLoadChatMessages();
   }, 15000);
   sbStartRealtimeSync();
@@ -7731,11 +7819,9 @@ function sbStartRealtimeSync() {
         && String(row.lab_id || '') === String(CURRENT_CHAT.labId)
         && String(row.clinic_id || '') === String(CURRENT_CHAT.clinicId)
         && chatIsOpen;
-      if (belongsToOpenChat) {
-        sbLoadChatMessages();
-        if (fromOtherUser) sbNotify('chat', 'Nova mensagem', 'Você recebeu uma nova mensagem.');
-      } else if (fromOtherUser) {
-        incrementConvUnread(1);
+      if (belongsToOpenChat) sbLoadChatMessages();
+      if (fromOtherUser) {
+        trackUnreadChatMessage(row, true);
         sbNotify('chat', 'Nova mensagem', 'Você recebeu uma nova mensagem.');
       }
       if (typeof refreshConversationList === 'function') refreshConversationList();

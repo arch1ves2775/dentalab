@@ -4513,6 +4513,7 @@ document.addEventListener('visibilitychange', function(){
     }
     var chat = document.getElementById('scr-chat');
     if (chat && chat.classList.contains('active')) sbRefreshChatPresence();
+    if (currentUserId) dentalabConsumePendingNotificationTarget();
   }
 });
 window.addEventListener('focus', function(){ sbTouchPresence(true); });
@@ -4555,7 +4556,7 @@ function _sbEnterApp() {
     sbStartBackgroundSync();
     sbStartPresence();
   }
-  setTimeout(function(){ dentalabHandleNotificationOpen(); }, 900);
+  setTimeout(function(){ dentalabConsumePendingNotificationTarget(); }, 900);
   setTimeout(function(){ dentalabSyncPushIfGranted(); }, 1400);
   setTimeout(function(){ sbRefreshUnreadMessages(); }, 1700);
 }
@@ -4783,6 +4784,44 @@ function dentalabClearOpenParams() {
     ['open','labId','clinicId','caseId','issueId','messageId'].forEach(function(k){ url.searchParams.delete(k); });
     history.replaceState(null, '', url.pathname + (url.search ? url.search : '') + url.hash);
   } catch (err) {}
+}
+
+var _dentalabPendingTargetInFlight = null;
+function dentalabReadPendingNotificationTarget() {
+  return new Promise(function(resolve){
+    if (!window.indexedDB) { resolve(''); return; }
+    var request = indexedDB.open('dentalab-notifications', 1);
+    request.onupgradeneeded = function(){
+      var db = request.result;
+      if (!db.objectStoreNames.contains('state')) db.createObjectStore('state');
+    };
+    request.onerror = function(){ resolve(''); };
+    request.onsuccess = function(){
+      var db = request.result;
+      var tx = db.transaction('state', 'readwrite');
+      var store = tx.objectStore('state');
+      var getRequest = store.get('pendingTarget');
+      getRequest.onsuccess = function(){
+        var pending = getRequest.result;
+        store.delete('pendingTarget');
+        var fresh = pending && pending.url && Date.now() - Number(pending.createdAt || 0) < 86400000;
+        resolve(fresh ? pending.url : '');
+      };
+      getRequest.onerror = function(){ resolve(''); };
+      tx.oncomplete = function(){ db.close(); };
+      tx.onerror = function(){ db.close(); };
+    };
+  });
+}
+
+async function dentalabConsumePendingNotificationTarget() {
+  if (_dentalabPendingTargetInFlight) return _dentalabPendingTargetInFlight;
+  _dentalabPendingTargetInFlight = (async function(){
+    var pendingUrl = await dentalabReadPendingNotificationTarget();
+    if (pendingUrl) await dentalabOpenNotificationUrl(pendingUrl);
+    else await dentalabHandleNotificationOpen();
+  })().finally(function(){ _dentalabPendingTargetInFlight = null; });
+  return _dentalabPendingTargetInFlight;
 }
 
 async function dentalabOpenNotificationUrl(rawUrl) {

@@ -1,4 +1,4 @@
-const DENTALAB_CACHE = 'dentalab-pwa-v6';
+const DENTALAB_CACHE = 'dentalab-pwa-v7';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -105,7 +105,7 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = new URL((event.notification.data && event.notification.data.url) || './', self.registration.scope).href;
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clientList) => {
+    savePendingNotificationTarget(targetUrl).then(() => clients.matchAll({ type: 'window', includeUncontrolled: true })).then(async (clientList) => {
       for (const client of clientList) {
         if (client.url.indexOf(self.location.origin) === 0 && 'focus' in client) {
           let destinationClient = client;
@@ -130,3 +130,25 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
+// iOS can reopen an installed PWA at its start URL and discard the query
+// string supplied to openWindow()/navigate(). Persist the intended target
+// before waking the app so the page can consume it after session restore.
+function savePendingNotificationTarget(url) {
+  return new Promise((resolve) => {
+    const request = indexedDB.open('dentalab-notifications', 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('state')) db.createObjectStore('state');
+    };
+    request.onerror = () => resolve(false);
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction('state', 'readwrite');
+      tx.objectStore('state').put({ url, createdAt: Date.now() }, 'pendingTarget');
+      tx.oncomplete = () => { db.close(); resolve(true); };
+      tx.onerror = () => { db.close(); resolve(false); };
+      tx.onabort = () => { db.close(); resolve(false); };
+    };
+  });
+}

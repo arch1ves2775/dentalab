@@ -1,4 +1,4 @@
-const DENTALAB_CACHE = 'dentalab-pwa-v2';
+const DENTALAB_CACHE = 'dentalab-pwa-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -86,11 +86,12 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = new URL((event.notification.data && event.notification.data.url) || './', self.registration.scope).href;
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clientList) => {
       for (const client of clientList) {
         if (client.url.indexOf(self.location.origin) === 0 && 'focus' in client) {
-          client.navigate(targetUrl);
-          return client.focus();
+          await client.focus();
+          client.postMessage({ type: 'DENTALAB_NOTIFICATION_OPEN', url: targetUrl });
+          return client;
         }
       }
       if (clients.openWindow) return clients.openWindow(targetUrl);

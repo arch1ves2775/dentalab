@@ -4768,6 +4768,29 @@ function dentalabClearOpenParams() {
   } catch (err) {}
 }
 
+async function dentalabOpenNotificationUrl(rawUrl) {
+  try {
+    var targetUrl = new URL(rawUrl || './', location.href);
+    if (targetUrl.origin !== location.origin) return;
+    history.replaceState(null, '', targetUrl.pathname + targetUrl.search + targetUrl.hash);
+    // If the click wakes an already-open app before session restoration,
+    // keep the URL intact; _sbEnterApp will process it after login is ready.
+    if (!currentUserId) return;
+    await dentalabHandleNotificationOpen();
+  } catch (err) {
+    console.log('[Push] não foi possível abrir o destino da notificação:', err.message || err);
+  }
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', function(event){
+    var data = event && event.data ? event.data : {};
+    if (data.type === 'DENTALAB_NOTIFICATION_OPEN' && data.url) {
+      dentalabOpenNotificationUrl(data.url);
+    }
+  });
+}
+
 async function dentalabHandleNotificationOpen() {
   var params;
   try { params = new URLSearchParams(location.search || ''); }

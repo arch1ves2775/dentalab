@@ -4435,8 +4435,13 @@ async function sbOtherChatProfileId() {
   if (!CURRENT_CHAT) return null;
   if (currentUserRole === 'laboratorio') return CURRENT_CHAT.clinicId || null;
   if (!CURRENT_CHAT.labId || !isSupabaseReady()) return null;
+  return await sbLabOwnerId(CURRENT_CHAT.labId);
+}
+
+async function sbLabOwnerId(labId) {
+  if (!labId || !isSupabaseReady()) return null;
   try {
-    var res = await _supabaseClient.from('labs').select('owner_id').eq('id', CURRENT_CHAT.labId).maybeSingle();
+    var res = await _supabaseClient.from('labs').select('owner_id').eq('id', labId).maybeSingle();
     if (res.error) throw res.error;
     return res.data && res.data.owner_id ? res.data.owner_id : null;
   } catch (err) {
@@ -5221,6 +5226,11 @@ async function sbSendChatMessage(textValue, file) {
     }
     var res = await _supabaseClient.from('case_messages').insert(payload).select().single();
     if (res.error) throw res.error;
+    var recipientId = currentUserRole === 'laboratorio' ? CURRENT_CHAT.clinicId : await sbOtherChatProfileId();
+    if (recipientId && String(recipientId) !== String(currentUserId || '')) {
+      var pushBody = file ? (payload.message_type === 'scanner' ? 'Novo scanner enviado no chat.' : 'Nova imagem enviada no chat.') : (textValue || 'Nova mensagem recebida.');
+      sendPushToUser(recipientId, 'Nova mensagem no DentaLab', pushBody, 'chat');
+    }
     await sbLoadChatMessages();
     return true;
   } catch (err) {
@@ -5242,6 +5252,10 @@ async function sbSendCaseChatEvent(caseId, labId, clinicId) {
       message_type: 'case'
     });
     if (res.error) throw res.error;
+    var recipientId = currentUserRole === 'laboratorio' ? clinicId : await sbLabOwnerId(labId);
+    if (recipientId && String(recipientId) !== String(currentUserId || '')) {
+      sendPushToUser(recipientId, 'Novo caso no DentaLab', 'Um caso clínico foi enviado para você.', 'case');
+    }
     return true;
   } catch (err) {
     console.log('[Supabase] sbSendCaseChatEvent erro:', err.message);
@@ -7125,10 +7139,119 @@ function cdmChat(){
 
 var DENTALAB_NOTIFICATION_DEFAULTS = { cases:true, chat:true };
 var _dentalabSyncTimer = null;
+var DENTALAB_VAPID_PUBLIC_KEY = '';
 
 function sbNotificationSettings() {
   try { return Object.assign({}, DENTALAB_NOTIFICATION_DEFAULTS, JSON.parse(localStorage.getItem('DENTALAB_NOTIFICATION_SETTINGS') || '{}')); }
   catch (err) { return Object.assign({}, DENTALAB_NOTIFICATION_DEFAULTS); }
+}
+
+function pushPublicKeyConfigured() {
+  return !!(DENTALAB_VAPID_PUBLIC_KEY && DENTALAB_VAPID_PUBLIC_KEY.length > 40);
+}
+
+function pushUrlBase64ToUint8Array(base64String) {
+  var padding = '='.repeat((4 - base64String.length % 4) % 4);
+  var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var rawData = window.atob(base64);
+  var outputArray = new Uint8Array(rawData.length);
+  for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function getPwaServiceWorkerRegistration() {
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return null;
+  try {
+    var reg = await navigator.serviceWorker.getRegistration('./');
+    if (reg) return reg;
+    return await navigator.serviceWorker.register('./sw.js');
+  } catch (err) {
+    console.log('[Push] service worker indisponivel:', err.message || err);
+    return null;
+  }
+}
+
+function pushSubscriptionToRecord(subscription) {
+  var json = subscription.toJSON ? subscription.toJSON() : {};
+  return {
+    endpoint: subscription.endpoint || json.endpoint || '',
+    p256dh: json.keys && json.keys.p256dh ? json.keys.p256dh : '',
+    auth: json.keys && json.keys.auth ? json.keys.auth : '',
+    payload: json
+  };
+}
+
+async function savePushSubscription(subscription) {
+  if (!isSupabaseReady() || !currentUserId || !subscription) return false;
+  var record = pushSubscriptionToRecord(subscription);
+  if (!record.endpoint || !record.p256dh || !record.auth) return false;
+  try {
+    var res = await _supabaseClient.from('push_subscriptions').upsert({
+      user_id: currentUserId,
+      endpoint: record.endpoint,
+      p256dh: record.p256dh,
+      auth: record.auth,
+      user_agent: navigator.userAgent || '',
+      subscription: record.payload,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'endpoint' });
+    if (res.error) throw res.error;
+    return true;
+  } catch (err) {
+    console.log('[Push] erro ao salvar subscription:', err.message || err);
+    showToast('Permissão ativa, mas ainda não salvou o dispositivo no Supabase.');
+    return false;
+  }
+}
+
+async function subscribeDevicePush() {
+  if (!pushPublicKeyConfigured()) {
+    showToast('Web Push ainda precisa da chave VAPID pública.');
+    return false;
+  }
+  if (!('PushManager' in window)) {
+    showToast('Este dispositivo não suporta Web Push.');
+    return false;
+  }
+  var reg = await getPwaServiceWorkerRegistration();
+  if (!reg) {
+    showToast('Service worker não está ativo neste dispositivo.');
+    return false;
+  }
+  try {
+    var sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: pushUrlBase64ToUint8Array(DENTALAB_VAPID_PUBLIC_KEY)
+      });
+    }
+    return await savePushSubscription(sub);
+  } catch (err) {
+    console.log('[Push] erro ao inscrever dispositivo:', err.message || err);
+    showToast('Não foi possível registar este dispositivo para push.');
+    return false;
+  }
+}
+
+async function sendPushToUser(userId, title, body, kind) {
+  if (!isSupabaseReady() || !userId) return false;
+  try {
+    var res = await _supabaseClient.functions.invoke('send-push', {
+      body: {
+        user_id: userId,
+        title: title || 'DentaLab',
+        body: body || 'Novo aviso recebido.',
+        kind: kind || 'general',
+        url: './index.html'
+      }
+    });
+    if (res.error) throw res.error;
+    return true;
+  } catch (err) {
+    console.log('[Push] envio indisponivel:', err.message || err);
+    return false;
+  }
 }
 
 function pwaIsStandalone() {
@@ -7145,6 +7268,14 @@ function notificationSupportState() {
     };
   }
   if (Notification.permission === 'granted') {
+    if (!pushPublicKeyConfigured()) {
+      return {
+        state: 'warn',
+        title: 'Permissão ativa',
+        sub: 'Este dispositivo aceitou notificações. Falta configurar Web Push no Supabase para receber com a app fechada.',
+        disabled: true
+      };
+    }
     return {
       state: 'ok',
       title: 'Notificações ativadas',
@@ -7205,10 +7336,12 @@ async function enableDeviceNotifications() {
     if (permission === 'default') permission = await Notification.requestPermission();
     updateNotificationDeviceUI();
     if (permission === 'granted') {
-      showToast('Notificações ativadas neste dispositivo.');
+      var savedPush = await subscribeDevicePush();
+      showToast(savedPush ? 'Notificações push ativadas neste dispositivo.' : 'Notificações ativadas neste dispositivo.');
       if (document.hidden === false) {
         try { new Notification('DentaLab', { body:'Notificações ativadas com sucesso.', icon:'icon-192.png' }); } catch(e) {}
       }
+      updateNotificationDeviceUI();
     } else if (permission === 'denied') {
       showToast('Notificações bloqueadas neste dispositivo.');
     }

@@ -157,7 +157,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
   20%,60%{color:var(--red);transform:scale(1.12);filter:drop-shadow(0 0 7px rgba(220,38,38,.55))}
   40%,80%{color:var(--accent);transform:scale(1.03);filter:drop-shadow(0 0 4px rgba(37,99,235,.35))}
 }
-.bn-tab.dentalab-attention{animation:dentalabTabAttention 1.6s ease-in-out 1}
+@-webkit-keyframes dentalabTabAttention{
+  0%,100%{color:var(--hint);-webkit-transform:scale(1);background:transparent}
+  20%,60%{color:var(--red);-webkit-transform:scale(1.12);background:rgba(220,38,38,.13)}
+  40%,80%{color:var(--accent);-webkit-transform:scale(1.03);background:rgba(37,99,235,.1)}
+}
+.bn-tab.dentalab-attention{animation:dentalabTabAttention 1.6s ease-in-out 1;-webkit-animation:dentalabTabAttention 1.6s ease-in-out 1}
 
 /* ── CHAT LIST ── */
 .search-bar{padding:10px 14px;background:#FFFFFF;border-bottom:1px solid var(--border)}
@@ -4502,6 +4507,10 @@ document.addEventListener('visibilitychange', function(){
   if (!document.hidden) {
     sbTouchPresence(true);
     if (Date.now() - DENTALAB_LAST_PUSH_SYNC_AT > 300000) dentalabSyncPushIfGranted();
+    if (isSupabaseReady() && currentUserId) {
+      sbStartRealtimeSync();
+      sbRefreshUnreadMessages();
+    }
     var chat = document.getElementById('scr-chat');
     if (chat && chat.classList.contains('active')) sbRefreshChatPresence();
   }
@@ -4807,7 +4816,7 @@ if ('serviceWorker' in navigator) {
             lab_id: pushChatUrl.searchParams.get('labId') || '',
             clinic_id: pushChatUrl.searchParams.get('clinicId') || '',
             sender_id: '_push_remote_'
-          }, true);
+          }, document.visibilityState === 'visible');
         } catch (err) {}
       }
       dentalabShowInAppNotice(payload.kind || 'general', payload.title || 'DentaLab', payload.body || 'Nova informação recebida.');
@@ -7737,6 +7746,18 @@ function dentalabPulseDestinationTab(kind) {
   button.classList.remove('dentalab-attention');
   void button.offsetWidth;
   button.classList.add('dentalab-attention');
+  if (typeof button.animate === 'function') {
+    try {
+      if (button._dentalabAttentionAnimation) button._dentalabAttentionAnimation.cancel();
+      button._dentalabAttentionAnimation = button.animate([
+        { transform:'scale(1)', backgroundColor:'transparent', color:'#9CA3AF' },
+        { transform:'scale(1.13)', backgroundColor:'rgba(220,38,38,.18)', color:'#DC2626', offset:.25 },
+        { transform:'scale(1.03)', backgroundColor:'rgba(37,99,235,.12)', color:'#2563EB', offset:.5 },
+        { transform:'scale(1.13)', backgroundColor:'rgba(220,38,38,.18)', color:'#DC2626', offset:.75 },
+        { transform:'scale(1)', backgroundColor:'transparent', color:'#9CA3AF' }
+      ], { duration:1800, easing:'ease-in-out' });
+    } catch (err) {}
+  }
   setTimeout(function(){ button.classList.remove('dentalab-attention'); }, 1800);
 }
 

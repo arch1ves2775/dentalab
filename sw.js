@@ -1,4 +1,4 @@
-const DENTALAB_CACHE = 'dentalab-pwa-v4';
+const DENTALAB_CACHE = 'dentalab-pwa-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -81,8 +81,9 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil((async () => {
     const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const visibleClients = clientList.filter((client) => client.visibilityState === 'visible');
-    const answers = await Promise.all(visibleClients.map((client) => new Promise((resolve) => {
+    // Safari/iOS may omit WindowClient.visibilityState. Ask every client and
+    // let the page decide using document.visibilityState/document.hasFocus().
+    const answers = await Promise.all(clientList.map((client) => new Promise((resolve) => {
       const channel = new MessageChannel();
       const timer = setTimeout(() => resolve(false), 500);
       channel.port1.onmessage = (messageEvent) => {

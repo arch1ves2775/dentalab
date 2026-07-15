@@ -72,7 +72,7 @@ self.addEventListener('push', (event) => {
     icon: './icon-192.png',
     badge: './icon-192.png',
     data: {
-      url: payload.url || './index.html',
+      url: payload.url || './',
       kind: payload.kind || 'general'
     }
   };
@@ -82,7 +82,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = new URL((event.notification.data && event.notification.data.url) || './index.html', self.location.origin).href;
+  const targetUrl = new URL((event.notification.data && event.notification.data.url) || './', self.registration.scope).href;
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {

@@ -7265,7 +7265,7 @@ async function sendPushToUser(userId, title, body, kind) {
         title: title || 'DentaLab',
         body: body || 'Novo aviso recebido.',
         kind: kind || 'general',
-        url: './index.html'
+        url: location.pathname + location.search
       }
     });
     if (res.error) throw res.error;

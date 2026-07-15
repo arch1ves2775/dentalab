@@ -4495,6 +4495,7 @@ function sbStopPresence() {
 document.addEventListener('visibilitychange', function(){
   if (!document.hidden) {
     sbTouchPresence(true);
+    if (Date.now() - DENTALAB_LAST_PUSH_SYNC_AT > 300000) dentalabSyncPushIfGranted();
     var chat = document.getElementById('scr-chat');
     if (chat && chat.classList.contains('active')) sbRefreshChatPresence();
   }
@@ -4788,7 +4789,34 @@ if ('serviceWorker' in navigator) {
     if (data.type === 'DENTALAB_NOTIFICATION_OPEN' && data.url) {
       dentalabOpenNotificationUrl(data.url);
     }
+    if (data.type === 'DENTALAB_PUSH_VISIBILITY_QUERY') {
+      var payload = data.payload || {};
+      dentalabShowInAppNotice(payload.kind || 'general', payload.title || 'DentaLab', payload.body || 'Nova informação recebida.');
+      var responsePort = event.ports && event.ports[0];
+      if (responsePort) responsePort.postMessage({
+        suppressSystemNotification: dentalabIsExactPushDestination(payload)
+      });
+    }
   });
+}
+
+function dentalabIsExactPushDestination(payload) {
+  if (document.visibilityState !== 'visible' || !document.hasFocus()) return false;
+  var kind = payload && payload.kind ? payload.kind : 'general';
+  var targetUrl;
+  try { targetUrl = new URL((payload && payload.url) || './', location.href); }
+  catch (err) { targetUrl = new URL(location.href); }
+  if (kind === 'chat' || kind === 'case') {
+    var chatScreen = document.getElementById('scr-chat');
+    if (!chatScreen || !chatScreen.classList.contains('active')) return false;
+    var labId = targetUrl.searchParams.get('labId') || '';
+    var clinicId = targetUrl.searchParams.get('clinicId') || '';
+    return !!(CURRENT_CHAT && CURRENT_CHAT.labId && CURRENT_CHAT.clinicId
+      && String(CURRENT_CHAT.labId) === String(labId)
+      && String(CURRENT_CHAT.clinicId) === String(clinicId));
+  }
+  if (kind === 'case_alert' || kind === 'case_receipt') return currentTab === 'alertas';
+  return currentTab === 'conv';
 }
 
 async function dentalabHandleNotificationOpen() {
@@ -7248,6 +7276,8 @@ var DENTALAB_VAPID_PUBLIC_KEY = 'BHHJkXxrkRQ9Ze2_HpAbyDstbxRGERb2epAT-Z7HpEtTpPE
 var DENTALAB_LAST_PUSH_ERROR = '';
 var DENTALAB_PUSH_DEDUPE = {};
 var _dentalabPushSyncInFlight = null;
+var DENTALAB_LAST_PUSH_SYNC_AT = 0;
+var DENTALAB_IN_APP_PUSH_SEEN = {};
 
 function sbNotificationSettings() {
   try { return Object.assign({}, DENTALAB_NOTIFICATION_DEFAULTS, JSON.parse(localStorage.getItem('DENTALAB_NOTIFICATION_SETTINGS') || '{}')); }
@@ -7408,7 +7438,10 @@ async function getCurrentPushSubscription() {
 async function dentalabSyncPushIfGranted() {
   if (_dentalabPushSyncInFlight) return _dentalabPushSyncInFlight;
   if (!currentUserId || !isSupabaseReady() || !dentalabPushCapability().ok || Notification.permission !== 'granted') return false;
-  _dentalabPushSyncInFlight = subscribeDevicePush().catch(function(err){
+  _dentalabPushSyncInFlight = subscribeDevicePush().then(function(saved){
+    if (saved) DENTALAB_LAST_PUSH_SYNC_AT = Date.now();
+    return saved;
+  }).catch(function(err){
     console.log('[Push] sincronização automática indisponível:', err.message || err);
     return false;
   }).finally(function(){ _dentalabPushSyncInFlight = null; updateNotificationDeviceUI(); });
@@ -7588,11 +7621,18 @@ function toggleAppNotifications(kind, button) {
   updateNotificationDeviceUI();
 }
 
+function dentalabShowInAppNotice(kind, title, body) {
+  var nowMs = Date.now();
+  var lastMs = DENTALAB_IN_APP_PUSH_SEEN[kind || 'general'] || 0;
+  if (nowMs - lastMs < 2500) return;
+  DENTALAB_IN_APP_PUSH_SEEN[kind || 'general'] = nowMs;
+  showToast(title + (body ? ': ' + body : ''));
+}
+
 function sbNotify(kind, title, body) {
-  if (!document.hidden) return;
+  dentalabShowInAppNotice(kind, title, body);
   var settings = sbNotificationSettings();
   if (!settings[kind]) return;
-  showToast(title + (body ? ': ' + body : ''));
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) {
     try { new Notification(title, { body: body || '', icon:'icon-192.png' }); } catch (err) {}
   }
@@ -7668,7 +7708,7 @@ function sbStartRealtimeSync() {
         && chatIsOpen;
       if (belongsToOpenChat) {
         sbLoadChatMessages();
-        if (fromOtherUser && document.hidden) sbNotify('chat', 'Nova mensagem', 'Você recebeu uma nova mensagem.');
+        if (fromOtherUser) sbNotify('chat', 'Nova mensagem', 'Você recebeu uma nova mensagem.');
       } else if (fromOtherUser) {
         incrementConvUnread(1);
         sbNotify('chat', 'Nova mensagem', 'Você recebeu uma nova mensagem.');

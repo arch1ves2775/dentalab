@@ -1,4 +1,4 @@
-const DENTALAB_CACHE = 'dentalab-pwa-v3';
+const DENTALAB_CACHE = 'dentalab-pwa-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -79,7 +79,25 @@ self.addEventListener('push', (event) => {
     }
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil((async () => {
+    const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const visibleClients = clientList.filter((client) => client.visibilityState === 'visible');
+    const answers = await Promise.all(visibleClients.map((client) => new Promise((resolve) => {
+      const channel = new MessageChannel();
+      const timer = setTimeout(() => resolve(false), 500);
+      channel.port1.onmessage = (messageEvent) => {
+        clearTimeout(timer);
+        resolve(!!(messageEvent.data && messageEvent.data.suppressSystemNotification));
+      };
+      try {
+        client.postMessage({ type: 'DENTALAB_PUSH_VISIBILITY_QUERY', payload }, [channel.port2]);
+      } catch (err) {
+        clearTimeout(timer);
+        resolve(false);
+      }
+    })));
+    if (!answers.some(Boolean)) await self.registration.showNotification(title, options);
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {

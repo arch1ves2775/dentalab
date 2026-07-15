@@ -137,6 +137,12 @@ Clique na notificacao:
 - mensagens/casos abrem a conversa
 - avisos abrem a aba Alertas
 
+Politica de exibicao:
+- toda informacao nova deve gerar aviso dentro da app quando ela estiver visivel
+- a notificacao do sistema so pode ser suprimida quando a app estiver visivel, focada e exatamente na conversa/aba de destino
+- estar em MyCases, MyLab, Perfil ou noutra conversa nao suprime notificacao do sistema
+- a inscricao push deve ser sincronizada ao entrar na app e periodicamente ao voltar ao primeiro plano
+
 Funcoes importantes:
 - `sendPushToUser()`
 - `dentalabPushUrl()`

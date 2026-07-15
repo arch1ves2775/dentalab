@@ -311,6 +311,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .toggle::after{content:'';position:absolute;top:3px;right:3px;width:21px;height:21px;background:#fff;border-radius:50%;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .toggle.off{background:var(--border2)}
 .toggle.off::after{right:auto;left:3px}
+.notify-status-card{padding:14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#f8fbff)}
+.notify-status-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.notify-dot{width:10px;height:10px;border-radius:50%;background:var(--hint);box-shadow:0 0 0 4px rgba(156,163,175,.12);flex-shrink:0}
+.notify-dot.ok{background:var(--green);box-shadow:0 0 0 4px rgba(22,163,74,.12)}
+.notify-dot.warn{background:var(--amber);box-shadow:0 0 0 4px rgba(217,119,6,.12)}
+.notify-dot.bad{background:var(--red);box-shadow:0 0 0 4px rgba(220,38,38,.12)}
+.notify-main{font-size:13px;font-weight:800;color:var(--text)}
+.notify-sub{font-size:12px;color:var(--muted);line-height:1.35;margin-top:2px}
+.notify-action-btn{width:100%;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;font-weight:800;font-family:inherit;padding:11px 12px;box-shadow:0 5px 16px rgba(37,99,235,.22);cursor:pointer}
+.notify-action-btn:disabled{background:var(--surface3);color:var(--hint);box-shadow:none;cursor:not-allowed}
 
 /* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .22s;backdrop-filter:blur(4px)}
@@ -1705,6 +1715,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
     <div class="perfil-section">
       <div class="perfil-section-title">Notificações</div>
       <div class="perfil-card">
+        <div class="notify-status-card">
+          <div class="notify-status-top">
+            <span class="notify-dot" id="notify-device-dot"></span>
+            <div>
+              <div class="notify-main" id="notify-device-title">Verificando notificações</div>
+              <div class="notify-sub" id="notify-device-sub">Este dispositivo ainda não foi preparado.</div>
+            </div>
+          </div>
+          <button class="notify-action-btn" id="notify-device-btn" onclick="enableDeviceNotifications()">Ativar notificações neste dispositivo</button>
+        </div>
         <div class="perfil-row">
           <div class="pr-icon" style="background:var(--red-bg)"><svg class="-bell" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;color:var(--red)"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
           <div class="pr-info"><div class="pr-label">Alertas de casos</div><div class="pr-val">Scanner, shade, prazos</div></div>
@@ -3054,6 +3074,7 @@ window.addEventListener('load', function(){
   var notifyChat = document.getElementById('notify-chat-toggle');
   if (notifyCases) notifyCases.classList.toggle('off', !notifySettings.cases);
   if (notifyChat) notifyChat.classList.toggle('off', !notifySettings.chat);
+  updateNotificationDeviceUI();
   _renderChatMessages(DENTALAB_DEMO_DATA ? 'LP' : '');
   _lcUpdateHeaderCount(_currentChatLabAv);
   // Render role-aware card action buttons
@@ -4728,6 +4749,7 @@ function showTab(t){
   if((t==='casos' || t==='mycases' || t==='alertas') && isSupabaseReady()) syncSupabaseCasesIntoCDM();
   if(t==='alertas') renderAlertas();
   if(t==='mycases') setTimeout(mcRender,50);
+  if(t==='perfil') updateNotificationDeviceUI();
   if(t==='conv') clearConvUnread();
 }
 
@@ -7109,14 +7131,103 @@ function sbNotificationSettings() {
   catch (err) { return Object.assign({}, DENTALAB_NOTIFICATION_DEFAULTS); }
 }
 
+function pwaIsStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function notificationSupportState() {
+  if (typeof Notification === 'undefined') {
+    return {
+      state: 'bad',
+      title: 'Notificações indisponíveis',
+      sub: 'Este navegador ainda não permite notificações para esta app.',
+      disabled: true
+    };
+  }
+  if (Notification.permission === 'granted') {
+    return {
+      state: 'ok',
+      title: 'Notificações ativadas',
+      sub: pwaIsStandalone() ? 'Este dispositivo está pronto para receber avisos da app.' : 'Permissão ativa. Para melhor experiência, use pela Tela de Início.',
+      disabled: false
+    };
+  }
+  if (Notification.permission === 'denied') {
+    return {
+      state: 'bad',
+      title: 'Notificações bloqueadas',
+      sub: 'Ative novamente nas definições do navegador ou do iPhone para este site.',
+      disabled: true
+    };
+  }
+  if (!pwaIsStandalone()) {
+    return {
+      state: 'warn',
+      title: 'Instale a app na Tela de Início',
+      sub: 'No iPhone, abra pelo ícone instalado para permitir notificações web.',
+      disabled: true
+    };
+  }
+  return {
+    state: 'warn',
+    title: 'Notificações ainda não ativadas',
+    sub: 'Toque para permitir avisos de mensagens, casos e alertas.',
+    disabled: false
+  };
+}
+
+function updateNotificationDeviceUI() {
+  var info = notificationSupportState();
+  var dot = document.getElementById('notify-device-dot');
+  var title = document.getElementById('notify-device-title');
+  var sub = document.getElementById('notify-device-sub');
+  var btn = document.getElementById('notify-device-btn');
+  if (dot) {
+    dot.classList.remove('ok','warn','bad');
+    dot.classList.add(info.state);
+  }
+  if (title) title.textContent = info.title;
+  if (sub) sub.textContent = info.sub;
+  if (btn) {
+    btn.disabled = info.disabled || info.state === 'ok';
+    btn.textContent = info.state === 'ok' ? 'Notificações ativas' : 'Ativar notificações neste dispositivo';
+  }
+}
+
+async function enableDeviceNotifications() {
+  if (typeof Notification === 'undefined') {
+    showToast('Este navegador não suporta notificações.');
+    updateNotificationDeviceUI();
+    return;
+  }
+  try {
+    var permission = Notification.permission;
+    if (permission === 'default') permission = await Notification.requestPermission();
+    updateNotificationDeviceUI();
+    if (permission === 'granted') {
+      showToast('Notificações ativadas neste dispositivo.');
+      if (document.hidden === false) {
+        try { new Notification('DentaLab', { body:'Notificações ativadas com sucesso.', icon:'icon-192.png' }); } catch(e) {}
+      }
+    } else if (permission === 'denied') {
+      showToast('Notificações bloqueadas neste dispositivo.');
+    }
+  } catch (err) {
+    console.log('[Notify] erro ao pedir permissão:', err.message || err);
+    showToast('Não foi possível ativar notificações neste dispositivo.');
+    updateNotificationDeviceUI();
+  }
+}
+
 function toggleAppNotifications(kind, button) {
   var settings = sbNotificationSettings();
   settings[kind] = !settings[kind];
   localStorage.setItem('DENTALAB_NOTIFICATION_SETTINGS', JSON.stringify(settings));
   if (button) button.classList.toggle('off', !settings[kind]);
   if (settings[kind] && typeof Notification !== 'undefined' && Notification.permission === 'default') {
-    Notification.requestPermission();
+    enableDeviceNotifications();
   }
+  updateNotificationDeviceUI();
 }
 
 function sbNotify(kind, title, body) {
@@ -7124,7 +7235,7 @@ function sbNotify(kind, title, body) {
   if (!settings[kind]) return;
   showToast(title + (body ? ': ' + body : ''));
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) {
-    try { new Notification(title, { body: body || '', icon:'https://majestic-liger-e19410.netlify.app/favicon.ico' }); } catch (err) {}
+    try { new Notification(title, { body: body || '', icon:'icon-192.png' }); } catch (err) {}
   }
 }
 

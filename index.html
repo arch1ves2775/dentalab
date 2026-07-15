@@ -152,6 +152,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .bn-tab>div{position:relative;display:flex;align-items:center;justify-content:center}
 .bn-tab.active{color:var(--accent)}
 .bn-tab span{display:block;margin-top:0}
+@keyframes dentalabTabAttention{
+  0%,100%{color:var(--hint);transform:scale(1);filter:none}
+  20%,60%{color:var(--red);transform:scale(1.12);filter:drop-shadow(0 0 7px rgba(220,38,38,.55))}
+  40%,80%{color:var(--accent);transform:scale(1.03);filter:drop-shadow(0 0 4px rgba(37,99,235,.35))}
+}
+.bn-tab.dentalab-attention{animation:dentalabTabAttention 1.6s ease-in-out 1}
 
 /* ── CHAT LIST ── */
 .search-bar{padding:10px 14px;background:#FFFFFF;border-bottom:1px solid var(--border)}
@@ -7630,13 +7636,28 @@ function dentalabShowInAppNotice(kind, title, body) {
   var lastMs = DENTALAB_IN_APP_PUSH_SEEN[kind || 'general'] || 0;
   if (nowMs - lastMs < 2500) return;
   DENTALAB_IN_APP_PUSH_SEEN[kind || 'general'] = nowMs;
+  dentalabPulseDestinationTab(kind);
   showToast(title + (body ? ': ' + body : ''));
+}
+
+function dentalabPulseDestinationTab(kind) {
+  var targetTab = (kind === 'case_alert' || kind === 'case_receipt') ? 'alertas'
+    : (kind === 'case' || kind === 'cases') ? 'casos'
+    : '';
+  if (!targetTab || currentTab === targetTab) return;
+  var button = document.getElementById('bn-' + targetTab);
+  if (!button) return;
+  button.classList.remove('dentalab-attention');
+  void button.offsetWidth;
+  button.classList.add('dentalab-attention');
+  setTimeout(function(){ button.classList.remove('dentalab-attention'); }, 1800);
 }
 
 function sbNotify(kind, title, body) {
   dentalabShowInAppNotice(kind, title, body);
   var settings = sbNotificationSettings();
-  if (!settings[kind]) return;
+  var settingKind = kind === 'chat' ? 'chat' : 'cases';
+  if (!settings[settingKind]) return;
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) {
     try { new Notification(title, { body: body || '', icon:'icon-192.png' }); } catch (err) {}
   }
@@ -7727,7 +7748,7 @@ function sbStartRealtimeSync() {
       syncSupabaseCasesIntoCDM();
       if (typeof renderAlertas === 'function') renderAlertas();
       if (payload.eventType === 'INSERT' && fromOtherUser) {
-        sbNotify('cases', 'Novo aviso', sbIssueNotificationText(row));
+        sbNotify('case_alert', 'Novo aviso', sbIssueNotificationText(row));
       }
     })
     .subscribe(function(status) {

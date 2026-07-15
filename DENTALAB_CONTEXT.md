@@ -103,6 +103,7 @@ MyCases:
 ## Notificacoes Push
 
 - No iPhone/iPad, o service worker salva o destino do clique em IndexedDB antes de despertar a PWA. A app consome esse destino depois de restaurar a sessao e tambem ao voltar ao primeiro plano, evitando que o iOS abra somente a tela inicial quando descarta a query string da notificacao.
+- Uma nova mudanca de estado sempre dispara notificacao, inclusive ao voltar para `Em Producao`. Se ja existir um aviso aberto igual, ele e reutilizado para nao duplicar a lista, mas isso nao bloqueia o novo push.
 
 PWA basico ja implementado:
 - `manifest.json`

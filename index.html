@@ -8881,6 +8881,13 @@ function addPendingIssue(caseId, type, desc, target) {
     exists = CDM[caseId]._pendingIssues.find(function(p){ return sameOpenIssue(p, caseId, type, target); });
   }
   if (exists) {
+    // Reusing an existing open notice must not silence a new real event.
+    // This happens most often when a case returns to "Em Produção": the
+    // status_producao row is intentionally deduplicated, but the dentist
+    // still needs a fresh push for the latest status transition.
+    if (currentUserRole === 'laboratorio' && isStatusNoticeIssue(exists)) {
+      cdmPushIssueToClinic(caseId, exists, 'status-event:' + canonicalIssueCaseId(caseId) + ':' + exists.type + ':' + Math.floor(Date.now() / 15000));
+    }
     renderAlertas();
     pc2RenderAllActs();
     renderHomeCaseStats();
@@ -9424,14 +9431,15 @@ function cdmIssuePushBody(issue, c) {
   return patient + ': ' + (issue.desc || issueDisplayTitle(issue) || 'novo aviso recebido.');
 }
 
-async function cdmPushIssueToClinic(caseId, issue) {
+async function cdmPushIssueToClinic(caseId, issue, eventDedupeKey) {
   var c = CDM[caseId];
   if (!c || !issue || !c._clinicId) return false;
   if (String(c._clinicId) === String(currentUserId || '')) return false;
   return await sendPushToUser(c._clinicId, 'Aviso do caso no DentaLab', cdmIssuePushBody(issue, c), 'case_alert', {
     caseId: caseId,
     issueId: issue.id || '',
-    dedupeKey: 'issue:' + caseId + ':' + (issue.type || '') + ':' + (issue.target || '')
+    dedupeKey: eventDedupeKey || ('issue:' + caseId + ':' + (issue.type || '') + ':' + (issue.target || '')),
+    dedupeMs: eventDedupeKey ? 15000 : 120000
   });
 }
 

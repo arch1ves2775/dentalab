@@ -216,6 +216,12 @@ Tipos principais:
 - `status_producao`
 - `status_pronto`
 
+Deduplicacao e lembretes:
+- existe apenas um aviso aberto por caso + tipo + target
+- repetir a mesma solicitacao reutiliza o aviso aberto
+- o botao Enviar lembrete dispara um novo Push para o dentista sem criar outro aviso
+- SQL de garantia no banco: `dentalab_pending_issues_dedupe.sql`
+
 Coluna importante:
 - `target`
 

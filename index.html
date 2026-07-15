@@ -8217,15 +8217,25 @@ function issueContextDescription(issue) {
 
 function issueDedupeKey(issue) {
   if (!issue) return '';
-  return [String(issue.caseId || ''), issue.type || '', issue.target || '', issue.status || 'open'].join('|');
+  return [canonicalIssueCaseId(issue.caseId), issue.type || '', normalizeIssueTarget(issue.target), issue.status || 'open'].join('|');
+}
+
+function canonicalIssueCaseId(caseId) {
+  var id = String(caseId || '');
+  var c = CDM && CDM[id] ? CDM[id] : null;
+  return String((c && (c._supabaseId || c.supabaseId || c.id)) || id);
+}
+
+function normalizeIssueTarget(target) {
+  return String(target || '').trim().toLowerCase();
 }
 
 function sameOpenIssue(issue, caseId, type, target) {
   return !!issue
-    && String(issue.caseId || '') === String(caseId || '')
+    && canonicalIssueCaseId(issue.caseId) === canonicalIssueCaseId(caseId)
     && issue.type === type
     && issue.status === 'open'
-    && ((issue.target || '') === (target || ''));
+    && normalizeIssueTarget(issue.target) === normalizeIssueTarget(target);
 }
 
 function allCurrentIssues() {
@@ -8378,7 +8388,7 @@ function _alCardHTML(p, isLab) {
   } else if (isLab) {
     // Lab: monitor only — Abrir caso + Enviar lembrete
     actions += '<button class="al-resolve-btn acc" onclick="openCaseDetail(\'' + p.caseId + '\')">\uD83D\uDD0D Abrir caso</button>';
-    actions += '<button class="al-ghost-btn" onclick="alSendReminder(\'' + p.id + '\')">\uD83D\uDD14 Enviar lembrete</button>';
+    actions += '<button class="al-ghost-btn" onclick="alSendReminder(\'' + p.id + '\',this)">\uD83D\uDD14 Enviar lembrete</button>';
   } else {
     // Clinica: resolve actions based on type
     actions += _alResolveBtn(p);
@@ -8784,17 +8794,24 @@ async function persistResolvedIssue(issue) {
   }
 }
 
-// Lab sends a reminder to clinic
-function alSendReminder(issueId) {
-  var p = PENDING_ISSUES.find(function(i){ return i.id === issueId; });
-  if (!p) return;
+// Lab sends a real push reminder to the clinic without creating a new issue.
+async function alSendReminder(issueId, button) {
+  var p = findIssueById(issueId);
+  if (!p || p.status !== 'open') { showToast('Este aviso já foi resolvido.'); return; }
   var c = CDM[p.caseId];
-  if (!c) return;
-  var it = ISSUE_TYPES[p.type] || {};
-  var msg = '\uD83D\uDD14 Lembrete: ' + (it.label || 'pend\u00eancia') + ' para o caso <strong>' + c.paciente + '</strong> (' + c.num + ') ainda est\u00e1 em aberto.';
-  if (CHAT_MESSAGES[c.labAv]) CHAT_MESSAGES[c.labAv].push({ type:'in', text: msg, time: now() });
-  if (_currentChatLabAv === c.labAv) addBubble('<div class="bubble in">' + msg + '</div>', false);
-  showToast('Lembrete enviado \uD83D\uDD14');
+  if (!c) { showToast('Caso do aviso não encontrado.'); return; }
+  if (button) { button.disabled = true; button.textContent = 'Enviando…'; }
+  var sent = await cdmPushIssueReminderToClinic(p.caseId, p);
+  if (sent) {
+    p.reminderCount = (parseInt(p.reminderCount || 0, 10) || 0) + 1;
+    p.lastReminderAt = new Date().toISOString();
+    attachPendingIssueToCase(p.caseId, p);
+    persistCasePayloadIssue(p.caseId);
+    showToast('Lembrete enviado ao dentista \uD83D\uDD14');
+  } else {
+    showToast('Não foi possível enviar o lembrete. Verifique o Push do dentista.');
+  }
+  if (button) { button.disabled = false; button.textContent = '\uD83D\uDD14 Enviar lembrete'; }
 }
 
 // Mark all open issues as resolved at once
@@ -8894,6 +8911,20 @@ async function persistPendingIssue(caseId, issue) {
       requested_by: currentUserId || null,
       requested_to: 'clinica'
     };
+    var existingRemote = null;
+    var existingQuery = _supabaseClient.from('pending_issues')
+      .select('*')
+      .eq('case_id', remoteCaseId)
+      .eq('type', issue.type)
+      .eq('status', 'open');
+    existingQuery = issue.target ? existingQuery.eq('target', issue.target) : existingQuery.is('target', null);
+    var existingResult = await existingQuery.limit(1);
+    if (!existingResult.error && existingResult.data && existingResult.data.length) existingRemote = existingResult.data[0];
+    if (existingRemote) {
+      adoptPersistedIssueId(caseId, issue, c, existingRemote.id);
+      await persistCasePayloadIssue(caseId);
+      return;
+    }
     var inserted = await _supabaseClient.from('pending_issues').insert(row).select().single();
     if (inserted.error) {
       // If the live table predates the 'target' column migration, the
@@ -8911,16 +8942,28 @@ async function persistPendingIssue(caseId, issue) {
       if (inserted.error) throw inserted.error;
     }
     if (inserted.data && inserted.data.id && issue.id !== inserted.data.id) {
-      var oldId = issue.id;
-      issue.id = inserted.data.id;
-      if (c && Array.isArray(c._pendingIssues)) {
-        var localIssue = c._pendingIssues.find(function(p){ return p && p.id === oldId; });
-        if (localIssue) localIssue.id = issue.id;
-      }
+      adoptPersistedIssueId(caseId, issue, c, inserted.data.id);
       await persistCasePayloadIssue(caseId);
     }
   } catch (err) {
+    // A unique-index race means another device created the same open issue
+    // first. The next sync adopts that record; no duplicate is displayed.
+    if (String(err.code || '') === '23505') {
+      console.log('[Supabase] aviso aberto já existente; mantendo um único registro.');
+      syncSupabaseCasesIntoCDM();
+      return;
+    }
     console.log('[Supabase] pending issue local apenas:', err.message);
+  }
+}
+
+function adoptPersistedIssueId(caseId, issue, c, persistedId) {
+  if (!persistedId || !issue || issue.id === persistedId) return;
+  var oldId = issue.id;
+  issue.id = persistedId;
+  PENDING_ISSUES.forEach(function(p){ if (p && p.id === oldId) p.id = persistedId; });
+  if (c && Array.isArray(c._pendingIssues)) {
+    c._pendingIssues.forEach(function(p){ if (p && p.id === oldId) p.id = persistedId; });
   }
 }
 
@@ -9350,6 +9393,20 @@ async function cdmPushIssueToClinic(caseId, issue) {
     caseId: caseId,
     issueId: issue.id || '',
     dedupeKey: 'issue:' + caseId + ':' + (issue.type || '') + ':' + (issue.target || '')
+  });
+}
+
+async function cdmPushIssueReminderToClinic(caseId, issue) {
+  var c = CDM[caseId];
+  if (!c || !issue || !c._clinicId) return false;
+  if (String(c._clinicId) === String(currentUserId || '')) return false;
+  var reminderBody = 'Lembrete: ' + cdmIssuePushBody(issue, c);
+  return await sendPushToUser(c._clinicId, 'Lembrete de pendência no DentaLab', reminderBody, 'case_alert', {
+    caseId: caseId,
+    issueId: issue.id || '',
+    // Prevent accidental double-clicks, but allow a later intentional reminder.
+    dedupeKey: 'reminder:' + String(issue.id || caseId) + ':' + Math.floor(Date.now() / 15000),
+    dedupeMs: 15000
   });
 }
 

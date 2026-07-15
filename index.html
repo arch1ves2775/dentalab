@@ -6603,6 +6603,7 @@ async function cdmConfirmarRecebimento(caseId) {
     var msg = 'Recebimento do caso ' + c.num + ' confirmado pela cl\u00ednica. \u2705';
     if (CHAT_MESSAGES[c.labAv]) CHAT_MESSAGES[c.labAv].push({ type:'in', text: msg, time: now_ });
     if (_currentChatLabAv === c.labAv) addBubble('<div class="bubble in">' + msg + '</div>', false);
+    cdmPushReceiptConfirmedToLab(caseId, c);
 
     // Re-render the footer to show the "✓ Recebido" blocked button
     _cdmRenderFooter(caseId, c);
@@ -8478,6 +8479,9 @@ function addPendingIssue(caseId, type, desc, target) {
   PENDING_ISSUES.push(issue);
   attachPendingIssueToCase(caseId, issue);
   persistPendingIssue(caseId, issue);
+  if (currentUserRole === 'laboratorio') {
+    cdmPushIssueToClinic(caseId, issue);
+  }
   renderAlertas();
   pc2RenderAllActs();
   renderHomeCaseStats();
@@ -8948,6 +8952,37 @@ function cdmStatusNoticeType(cls) {
   if (cls === 'st-ok') return 'status_pronto';
   if (cls === 'st-done') return 'confirmar_recebimento';
   return '';
+}
+
+function cdmIssuePushBody(issue, c) {
+  var patient = c && c.paciente ? c.paciente : 'Caso clínico';
+  if (!issue) return 'Novo aviso recebido no DentaLab.';
+  if (issue.type === 'status_recebido') return patient + ': caso recebido pelo laboratório.';
+  if (issue.type === 'status_producao') return patient + ': caso entrou em produção.';
+  if (issue.type === 'status_pronto') return patient + ': caso está pronto.';
+  if (issue.type === 'confirmar_recebimento') return patient + ': confirme o recebimento do caso entregue.';
+  if (issue.type === 'scanner_corrompido' || issue.type === 'scanner_incompleto') return patient + ': laboratório solicitou retificação do scanner.';
+  if (issue.type === 'falta_fotos') return patient + ': laboratório solicitou fotos clínicas.';
+  if (issue.type === 'falta_cor') return patient + ': laboratório solicitou correção da cor.';
+  if (issue.type === 'falta_material') return patient + ': laboratório solicitou correção do material.';
+  if (issue.type === 'retificar_prazo') return patient + ': laboratório solicitou correção do prazo.';
+  if (issue.type === 'prazo_proximo') return patient + ': aviso de prazo do caso.';
+  return patient + ': ' + (issue.desc || issueDisplayTitle(issue) || 'novo aviso recebido.');
+}
+
+async function cdmPushIssueToClinic(caseId, issue) {
+  var c = CDM[caseId];
+  if (!c || !issue || !c._clinicId) return false;
+  if (String(c._clinicId) === String(currentUserId || '')) return false;
+  return await sendPushToUser(c._clinicId, 'Aviso do caso no DentaLab', cdmIssuePushBody(issue, c), 'case_alert');
+}
+
+async function cdmPushReceiptConfirmedToLab(caseId, c) {
+  if (!c || !c._labDbId) return false;
+  var labOwner = await sbLabOwnerId(c._labDbId);
+  if (!labOwner || String(labOwner) === String(currentUserId || '')) return false;
+  var patient = c.paciente || 'Caso clínico';
+  return await sendPushToUser(labOwner, 'Recebimento confirmado', patient + ': a clínica confirmou o recebimento.', 'case_receipt');
 }
 
 function cdmNotifyDentistStatusChange(caseId, cls, label) {

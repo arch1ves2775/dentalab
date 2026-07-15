@@ -138,7 +138,8 @@ Clique na notificacao:
 - avisos abrem a aba Alertas
 
 Politica de exibicao:
-- toda informacao nova deve gerar aviso dentro da app quando ela estiver visivel
+- alertas e casos novos geram aviso dentro da app quando ela estiver visivel
+- mensagens de conversa nao geram toast/aviso branco dentro da app; a propria conversa mostra a mensagem recebida
 - a notificacao do sistema so pode ser suprimida quando a app estiver visivel, focada e exatamente na conversa/aba de destino
 - estar em MyCases, MyLab, Perfil ou noutra conversa nao suprime notificacao do sistema
 - a inscricao push deve ser sincronizada ao entrar na app e periodicamente ao voltar ao primeiro plano

@@ -7622,6 +7622,9 @@ function toggleAppNotifications(kind, button) {
 }
 
 function dentalabShowInAppNotice(kind, title, body) {
+  // Chat already renders the incoming message in its conversation. Avoid
+  // duplicating it with the white in-app toast ("Nova mensagem...").
+  if (kind === 'chat') return;
   var nowMs = Date.now();
   var lastMs = DENTALAB_IN_APP_PUSH_SEEN[kind || 'general'] || 0;
   if (nowMs - lastMs < 2500) return;

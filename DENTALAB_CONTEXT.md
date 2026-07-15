@@ -144,6 +144,7 @@ Politica de exibicao:
 - abrir uma conversa marca como lidas apenas as mensagens daquela conversa; entrar apenas na lista Conversas nao zera o total
 - fora da aba Conversas, uma nova mensagem faz o botao Conversas piscar e atualiza o badge
 - no iPhone, o Service Worker consulta a propria pagina para saber a visibilidade e a animacao possui fallback WebKit/Web Animations
+- no clique de Push, o Service Worker navega primeiro para a URL exata e so depois foca a PWA; isso evita perder o destino quando o iPhone estava suspenso
 - alertas sempre mostram um aviso pequeno dentro da app; fora da aba Alertas, o botao Alertas tambem pisca sem mudar de aba automaticamente
 - casos novos seguem o mesmo padrao na aba MyLab/Casos
 - a notificacao do sistema so pode ser suprimida quando a app estiver visivel, focada e exatamente na conversa/aba de destino

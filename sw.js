@@ -1,4 +1,4 @@
-const DENTALAB_CACHE = 'dentalab-pwa-v5';
+const DENTALAB_CACHE = 'dentalab-pwa-v6';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -108,9 +108,21 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clientList) => {
       for (const client of clientList) {
         if (client.url.indexOf(self.location.origin) === 0 && 'focus' in client) {
-          await client.focus();
-          client.postMessage({ type: 'DENTALAB_NOTIFICATION_OPEN', url: targetUrl });
-          return client;
+          let destinationClient = client;
+          if ('navigate' in client) {
+            try {
+              const navigatedClient = await client.navigate(targetUrl);
+              if (navigatedClient) destinationClient = navigatedClient;
+              else if (clients.openWindow) return clients.openWindow(targetUrl);
+            } catch (err) {
+              if (clients.openWindow) return clients.openWindow(targetUrl);
+            }
+          }
+          await destinationClient.focus();
+          // URL navigation is the durable iOS path. postMessage keeps an
+          // already-awake Edge/Chrome window responsive without waiting.
+          destinationClient.postMessage({ type: 'DENTALAB_NOTIFICATION_OPEN', url: targetUrl });
+          return destinationClient;
         }
       }
       if (clients.openWindow) return clients.openWindow(targetUrl);

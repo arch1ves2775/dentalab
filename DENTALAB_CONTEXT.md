@@ -1,0 +1,259 @@
+# DentaLab - contexto para continuar no Codex
+
+## Visao geral
+
+App single-file em `index.html`, feito com HTML + CSS + JavaScript vanilla.
+Nao tem build step, framework ou bundler.
+
+Backend:
+- Supabase Auth
+- Supabase Postgres
+- Supabase Storage
+- Supabase Realtime
+- Supabase Edge Functions para Web Push
+
+Deploy atual:
+- GitHub Pages
+- Arquivos principais no root do repo:
+  - `index.html`
+  - `manifest.json`
+  - `sw.js`
+  - `icon-180.png`
+  - `icon-192.png`
+  - `icon-512.png`
+  - `icon-maskable-512.png`
+
+## Tabelas Supabase
+
+Tabelas usadas:
+- `profiles`
+- `labs`
+- `clinic_labs`
+- `cases`
+- `case_files`
+- `case_messages`
+- `pending_issues`
+- `push_subscriptions`
+
+Storage:
+- bucket `case-files`
+
+Edge Function:
+- `send-push`
+
+## Roles
+
+Roles principais:
+- `dentista`
+- `assistente`
+- `laboratorio`
+
+A UI e permissoes sao controladas por:
+- `currentUserRole`
+- `applyRoleUI()`
+
+Conta admin de testes:
+- `lucasp299@gmail.com`
+
+Essa conta pode apagar/gerir casos em modo de teste.
+
+## Autenticacao
+
+Fluxo real com Supabase Auth:
+- `sbLogin`
+- `sbLogout`
+- `sbRestoreSession`
+- `sbLoadOrCreateProfile`
+- `_sbEnterApp`
+
+`_sbEnterApp()` e o ponto central apos login/restauro de sessao.
+
+## Sincronizacao
+
+Realtime:
+- `sbStartRealtimeSync()`
+- escuta `cases`
+- escuta `case_messages`
+- escuta `pending_issues`
+
+Polling de seguranca:
+- `sbStartBackgroundSync()`
+- roda a cada 15s
+
+Funcao central de merge:
+- `syncSupabaseCasesIntoCDM()`
+
+## Casos
+
+Objeto local central:
+- `CDM`
+
+Casos do laboratorio / fluxo clinico:
+- ficam em `cases`
+- arquivos ficam no Storage `case-files`
+- metadados dos arquivos ficam em `case_files`
+- mensagens ficam em `case_messages`
+- avisos/status ficam em `pending_issues`
+
+MyCases:
+- casos manuais sao separados do MyLab/conversas
+- casos vindos do MyLab so entram no MyCases depois que o dentista confirma recebimento
+- apos confirmar recebimento, o caso deve sair do MyLab e ficar no MyCases
+
+## Notificacoes Push
+
+PWA basico ja implementado:
+- `manifest.json`
+- `sw.js`
+- icones
+
+Web Push implementado:
+- tabela `push_subscriptions`
+- Edge Function `send-push`
+- Service Worker recebe push e abre a app
+
+Chave publica VAPID esta em:
+- `DENTALAB_VAPID_PUBLIC_KEY`
+
+Chave privada VAPID fica somente nos Secrets do Supabase.
+Nunca colocar private key no `index.html`.
+
+Secrets esperados na Edge Function:
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT`
+
+O Supabase fornece automaticamente:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Push ja funciona para:
+- mensagens
+- novo caso
+- status/avisos
+- confirmacao de recebimento
+
+Clique na notificacao:
+- mensagens/casos abrem a conversa
+- avisos abrem a aba Alertas
+
+Funcoes importantes:
+- `sendPushToUser()`
+- `dentalabPushUrl()`
+- `dentalabHandleNotificationOpen()`
+- `cdmPushIssueToClinic()`
+- `cdmPushReceiptConfirmedToLab()`
+
+## STL Viewer
+
+Viewer 3D e parte critica da app.
+Muito cuidado para nao quebrar.
+
+Funcoes importantes:
+- `U3D_buildMeshFromBuffer()`
+- `U3D_updateFileStatusLabels()`
+- `openUniversal3DViewer` / funcoes U3D relacionadas
+
+Regras atuais:
+- suporta STL, PLY, OBJ
+- PLY pode ter cor
+- controles de movimento foram ajustados para PC e iPhone
+- Maxila, Mandibula e Extra devem ter toggles independentes
+- extra scanner nao pode esconder upper/lower
+- todos os viewers devem manter a mesma logica de movimento
+
+## Fluxo de status
+
+Status:
+- `st-p` = Recebido, azul
+- `st-a` = Em Producao, amarelo
+- `st-ok` = Pronto, verde
+- `st-done` = Entregue, cinza
+- `st-wait` = Aguardando Clinica / pendencia
+
+Funcoes importantes:
+- `cdmSetStatus()`
+- `cdmNotifyDentistStatusChange()`
+- `addPendingIssue()`
+- `resolvePending()`
+- `cdmConfirmarRecebimento()`
+
+Fluxo esperado:
+1. Dentista cria caso.
+2. Laboratorio recebe no MyLab.
+3. Laboratorio muda status.
+4. Dentista recebe aviso.
+5. Se status for Entregue, dentista precisa confirmar recebimento.
+6. So depois da confirmacao o caso sai do MyLab e vai para MyCases.
+
+## Alertas / pending issues
+
+Tabela:
+- `pending_issues`
+
+Tipos principais:
+- `scanner_corrompido`
+- `scanner_incompleto`
+- `falta_fotos`
+- `falta_cor`
+- `falta_material`
+- `retificar_prazo`
+- `confirmar_recebimento`
+- `status_recebido`
+- `status_producao`
+- `status_pronto`
+
+Coluna importante:
+- `target`
+
+Se faltar no Supabase, rodar:
+
+```sql
+alter table pending_issues add column if not exists target text;
+```
+
+## Cuidados importantes
+
+- Nao reintroduzir dados fake/demo para contas reais.
+- Contas novas devem iniciar zeradas.
+- MyCases manuais nao devem aparecer em conversas/MyLab.
+- MyLab e conversas devem mostrar apenas casos compartilhados entre dentista/clinica e laboratorio.
+- Arquivos importantes devem persistir no Supabase Storage, nao so localStorage.
+- Nao quebrar STL Viewer ao mexer em casos, fotos ou storage.
+- Toda mudanca em PWA/push precisa subir `index.html` e, quando mexer em Service Worker, tambem `sw.js`.
+
+## Arquivos auxiliares criados localmente
+
+SQL:
+- `dentalab_push_subscriptions.sql`
+
+Edge Function:
+- `supabase/functions/send-push/index.ts`
+
+Guia:
+- `dentalab_push_setup_README.txt`
+
+## Estado atual
+
+Funciona:
+- login real
+- perfis por role
+- criacao de casos
+- sincronizacao dentista/laboratorio
+- upload de arquivos
+- STL Viewer
+- MyLab
+- MyCases
+- conversas
+- status
+- avisos
+- confirmacao de recebimento
+- PWA instalado
+- notificacoes push em PC
+- clique em notificacao abrindo app correta
+
+Ainda recomendado testar/polir:
+- push no iPhone quando o aparelho estiver carregado
+- deduplicacao de notificacoes em todos os cenarios
+- abrir detalhe exato do caso a partir de notificacao de alerta
+- seguranca final da Edge Function antes de vender/apresentar formalmente

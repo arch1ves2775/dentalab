@@ -7279,6 +7279,10 @@ function pwaIsStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
 
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 function notificationSupportState() {
   if (typeof Notification === 'undefined') {
     return {
@@ -7312,7 +7316,7 @@ function notificationSupportState() {
       disabled: true
     };
   }
-  if (!pwaIsStandalone()) {
+  if (isIOSDevice() && !pwaIsStandalone()) {
     return {
       state: 'warn',
       title: 'Instale a app na Tela de Início',

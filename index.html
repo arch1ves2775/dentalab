@@ -7140,6 +7140,7 @@ function cdmChat(){
 var DENTALAB_NOTIFICATION_DEFAULTS = { cases:true, chat:true };
 var _dentalabSyncTimer = null;
 var DENTALAB_VAPID_PUBLIC_KEY = 'BHHJkXxrkRQ9Ze2_HpAbyDstbxRGERb2epAT-Z7HpEtTpPERRrraf5v1aFuGcBueP_KTfsS2q1PDtXWZsWtNH-I';
+var DENTALAB_LAST_PUSH_ERROR = '';
 
 function sbNotificationSettings() {
   try { return Object.assign({}, DENTALAB_NOTIFICATION_DEFAULTS, JSON.parse(localStorage.getItem('DENTALAB_NOTIFICATION_SETTINGS') || '{}')); }
@@ -7182,9 +7183,23 @@ function pushSubscriptionToRecord(subscription) {
 }
 
 async function savePushSubscription(subscription) {
-  if (!isSupabaseReady() || !currentUserId || !subscription) return false;
+  if (!isSupabaseReady()) {
+    DENTALAB_LAST_PUSH_ERROR = 'Supabase não está conectado nesta sessão.';
+    return false;
+  }
+  if (!currentUserId) {
+    DENTALAB_LAST_PUSH_ERROR = 'Faça login antes de ativar push.';
+    return false;
+  }
+  if (!subscription) {
+    DENTALAB_LAST_PUSH_ERROR = 'O navegador não gerou uma inscrição push.';
+    return false;
+  }
   var record = pushSubscriptionToRecord(subscription);
-  if (!record.endpoint || !record.p256dh || !record.auth) return false;
+  if (!record.endpoint || !record.p256dh || !record.auth) {
+    DENTALAB_LAST_PUSH_ERROR = 'A inscrição push veio incompleta deste dispositivo.';
+    return false;
+  }
   try {
     var res = await _supabaseClient.from('push_subscriptions').upsert({
       user_id: currentUserId,
@@ -7196,25 +7211,30 @@ async function savePushSubscription(subscription) {
       updated_at: new Date().toISOString()
     }, { onConflict: 'endpoint' });
     if (res.error) throw res.error;
+    DENTALAB_LAST_PUSH_ERROR = '';
     return true;
   } catch (err) {
     console.log('[Push] erro ao salvar subscription:', err.message || err);
-    showToast('Permissão ativa, mas ainda não salvou o dispositivo no Supabase.');
+    DENTALAB_LAST_PUSH_ERROR = err.message || 'Erro ao salvar o dispositivo no Supabase.';
+    showToast('Permissão ativa, mas o push não foi salvo: ' + DENTALAB_LAST_PUSH_ERROR);
     return false;
   }
 }
 
 async function subscribeDevicePush() {
   if (!pushPublicKeyConfigured()) {
+    DENTALAB_LAST_PUSH_ERROR = 'Chave VAPID pública ausente.';
     showToast('Web Push ainda precisa da chave VAPID pública.');
     return false;
   }
   if (!('PushManager' in window)) {
+    DENTALAB_LAST_PUSH_ERROR = 'PushManager não existe neste navegador.';
     showToast('Este dispositivo não suporta Web Push.');
     return false;
   }
   var reg = await getPwaServiceWorkerRegistration();
   if (!reg) {
+    DENTALAB_LAST_PUSH_ERROR = 'Service worker não está ativo.';
     showToast('Service worker não está ativo neste dispositivo.');
     return false;
   }
@@ -7229,7 +7249,8 @@ async function subscribeDevicePush() {
     return await savePushSubscription(sub);
   } catch (err) {
     console.log('[Push] erro ao inscrever dispositivo:', err.message || err);
-    showToast('Não foi possível registar este dispositivo para push.');
+    DENTALAB_LAST_PUSH_ERROR = err.message || 'Erro ao inscrever dispositivo.';
+    showToast('Não foi possível registar push: ' + DENTALAB_LAST_PUSH_ERROR);
     return false;
   }
 }
@@ -7337,8 +7358,8 @@ async function enableDeviceNotifications() {
     updateNotificationDeviceUI();
     if (permission === 'granted') {
       var savedPush = await subscribeDevicePush();
-      showToast(savedPush ? 'Notificações push ativadas neste dispositivo.' : 'Notificações ativadas neste dispositivo.');
-      if (document.hidden === false) {
+      showToast(savedPush ? 'Notificações push ativadas neste dispositivo.' : ('Permissão ativa, mas push real não salvou' + (DENTALAB_LAST_PUSH_ERROR ? ': ' + DENTALAB_LAST_PUSH_ERROR : '.')));
+      if (savedPush && document.hidden === false) {
         try { new Notification('DentaLab', { body:'Notificações ativadas com sucesso.', icon:'icon-192.png' }); } catch(e) {}
       }
       updateNotificationDeviceUI();

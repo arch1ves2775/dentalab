@@ -7279,7 +7279,7 @@ function notificationSupportState() {
     return {
       state: 'ok',
       title: 'Notificações ativadas',
-      sub: pwaIsStandalone() ? 'Este dispositivo está pronto para receber avisos da app.' : 'Permissão ativa. Para melhor experiência, use pela Tela de Início.',
+      sub: pwaIsStandalone() ? 'Toque no botão abaixo para sincronizar o push real neste dispositivo.' : 'Permissão ativa. Para melhor experiência, use pela Tela de Início.',
       disabled: false
     };
   }
@@ -7320,8 +7320,8 @@ function updateNotificationDeviceUI() {
   if (title) title.textContent = info.title;
   if (sub) sub.textContent = info.sub;
   if (btn) {
-    btn.disabled = info.disabled || info.state === 'ok';
-    btn.textContent = info.state === 'ok' ? 'Notificações ativas' : 'Ativar notificações neste dispositivo';
+    btn.disabled = info.disabled;
+    btn.textContent = info.state === 'ok' ? 'Sincronizar notificações push' : 'Ativar notificações neste dispositivo';
   }
 }
 

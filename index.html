@@ -7206,6 +7206,7 @@ var DENTALAB_NOTIFICATION_DEFAULTS = { cases:true, chat:true };
 var _dentalabSyncTimer = null;
 var DENTALAB_VAPID_PUBLIC_KEY = 'BHHJkXxrkRQ9Ze2_HpAbyDstbxRGERb2epAT-Z7HpEtTpPERRrraf5v1aFuGcBueP_KTfsS2q1PDtXWZsWtNH-I';
 var DENTALAB_LAST_PUSH_ERROR = '';
+var DENTALAB_PUSH_DEDUPE = {};
 
 function sbNotificationSettings() {
   try { return Object.assign({}, DENTALAB_NOTIFICATION_DEFAULTS, JSON.parse(localStorage.getItem('DENTALAB_NOTIFICATION_SETTINGS') || '{}')); }
@@ -7336,8 +7337,19 @@ function dentalabPushUrl(kind, opts) {
   return location.pathname + '?' + params.toString();
 }
 
+function dentalabShouldSendPush(key, ttlMs) {
+  if (!key) return true;
+  var nowMs = Date.now();
+  ttlMs = ttlMs || 120000;
+  if (DENTALAB_PUSH_DEDUPE[key] && nowMs - DENTALAB_PUSH_DEDUPE[key] < ttlMs) return false;
+  DENTALAB_PUSH_DEDUPE[key] = nowMs;
+  return true;
+}
+
 async function sendPushToUser(userId, title, body, kind, opts) {
   if (!isSupabaseReady() || !userId) return false;
+  opts = opts || {};
+  if (opts.dedupeKey && !dentalabShouldSendPush(opts.dedupeKey, opts.dedupeMs || 120000)) return false;
   try {
     var res = await _supabaseClient.functions.invoke('send-push', {
       body: {
@@ -7470,6 +7482,7 @@ function toggleAppNotifications(kind, button) {
 }
 
 function sbNotify(kind, title, body) {
+  if (!document.hidden) return;
   var settings = sbNotificationSettings();
   if (!settings[kind]) return;
   showToast(title + (body ? ': ' + body : ''));
@@ -9054,7 +9067,10 @@ async function cdmPushIssueToClinic(caseId, issue) {
   var c = CDM[caseId];
   if (!c || !issue || !c._clinicId) return false;
   if (String(c._clinicId) === String(currentUserId || '')) return false;
-  return await sendPushToUser(c._clinicId, 'Aviso do caso no DentaLab', cdmIssuePushBody(issue, c), 'case_alert', { caseId: caseId });
+  return await sendPushToUser(c._clinicId, 'Aviso do caso no DentaLab', cdmIssuePushBody(issue, c), 'case_alert', {
+    caseId: caseId,
+    dedupeKey: 'issue:' + caseId + ':' + (issue.type || '') + ':' + (issue.target || '')
+  });
 }
 
 async function cdmPushReceiptConfirmedToLab(caseId, c) {
@@ -9062,7 +9078,10 @@ async function cdmPushReceiptConfirmedToLab(caseId, c) {
   var labOwner = await sbLabOwnerId(c._labDbId);
   if (!labOwner || String(labOwner) === String(currentUserId || '')) return false;
   var patient = c.paciente || 'Caso clínico';
-  return await sendPushToUser(labOwner, 'Recebimento confirmado', patient + ': a clínica confirmou o recebimento.', 'case_receipt', { caseId: caseId });
+  return await sendPushToUser(labOwner, 'Recebimento confirmado', patient + ': a clínica confirmou o recebimento.', 'case_receipt', {
+    caseId: caseId,
+    dedupeKey: 'receipt:' + caseId
+  });
 }
 
 function cdmNotifyDentistStatusChange(caseId, cls, label) {

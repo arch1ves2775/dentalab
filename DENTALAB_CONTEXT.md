@@ -233,6 +233,8 @@ alter table pending_issues add column if not exists target text;
 
 SQL:
 - `dentalab_push_subscriptions.sql`
+- cria as politicas RLS por utilizador e a RPC segura `register_push_subscription`
+- a RPC permite reassociar ao utilizador atual um endpoint que ficou ligado a uma sessao anterior no mesmo navegador
 
 Edge Function:
 - `supabase/functions/send-push/index.ts`

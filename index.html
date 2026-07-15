@@ -7371,21 +7371,22 @@ async function savePushSubscription(subscription) {
     return false;
   }
   try {
-    var res = await _supabaseClient.from('push_subscriptions').upsert({
-      user_id: currentUserId,
-      endpoint: record.endpoint,
-      p256dh: record.p256dh,
-      auth: record.auth,
-      user_agent: navigator.userAgent || '',
-      subscription: record.payload,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'endpoint' });
+    var res = await _supabaseClient.rpc('register_push_subscription', {
+      p_endpoint: record.endpoint,
+      p_p256dh: record.p256dh,
+      p_auth: record.auth,
+      p_user_agent: navigator.userAgent || '',
+      p_subscription: record.payload
+    });
     if (res.error) throw res.error;
     DENTALAB_LAST_PUSH_ERROR = '';
     return true;
   } catch (err) {
     console.log('[Push] erro ao salvar subscription:', err.message || err);
-    DENTALAB_LAST_PUSH_ERROR = err.message || 'Erro ao salvar o dispositivo no Supabase.';
+    var rawPushError = err.message || '';
+    DENTALAB_LAST_PUSH_ERROR = /row-level security|register_push_subscription|schema cache/i.test(rawPushError)
+      ? 'A configuração de notificações do Supabase precisa ser atualizada.'
+      : (rawPushError || 'Erro ao salvar o dispositivo no Supabase.');
     showToast('Permissão ativa, mas o push não foi salvo: ' + DENTALAB_LAST_PUSH_ERROR);
     return false;
   }

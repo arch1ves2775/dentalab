@@ -4539,6 +4539,7 @@ function _sbEnterApp() {
     sbStartBackgroundSync();
     sbStartPresence();
   }
+  setTimeout(function(){ dentalabHandleNotificationOpen(); }, 900);
 }
 
 // ── Supabase Auth listener ─────────────────────────────────────────────
@@ -4756,6 +4757,62 @@ function showTab(t){
   if(t==='mycases') setTimeout(mcRender,50);
   if(t==='perfil') updateNotificationDeviceUI();
   if(t==='conv') clearConvUnread();
+}
+
+function dentalabClearOpenParams() {
+  try {
+    var url = new URL(location.href);
+    ['open','labId','clinicId','caseId'].forEach(function(k){ url.searchParams.delete(k); });
+    history.replaceState(null, '', url.pathname + (url.search ? url.search : '') + url.hash);
+  } catch (err) {}
+}
+
+async function dentalabHandleNotificationOpen() {
+  var params;
+  try { params = new URLSearchParams(location.search || ''); }
+  catch (err) { return; }
+  var target = params.get('open') || '';
+  if (!target) return;
+  if (target === 'alertas') {
+    showTab('alertas');
+    var caseId = params.get('caseId') || '';
+    if (caseId && CDM[caseId]) {
+      setTimeout(function(){ openCaseDetail(caseId); }, 500);
+    }
+    dentalabClearOpenParams();
+    return;
+  }
+  if (target === 'chat') {
+    var labId = params.get('labId') || '';
+    var clinicId = params.get('clinicId') || '';
+    if (!labId || !clinicId) { showTab('conv'); dentalabClearOpenParams(); return; }
+    var labName = 'Laboratório';
+    var clinicName = 'Clínica';
+    var labColor = '#3B82F6';
+    var av = 'DL';
+    try {
+      if (isSupabaseReady()) {
+        var labRes = await _supabaseClient.from('labs').select('name, lab_payload').eq('id', labId).maybeSingle();
+        if (labRes.data) {
+          labName = labRes.data.name || labName;
+          av = sbLabInitials(labName);
+        }
+        var profRes = await _supabaseClient.from('profiles').select('name, clinic_name').eq('id', clinicId).maybeSingle();
+        if (profRes.data) clinicName = profRes.data.name || profRes.data.clinic_name || clinicName;
+      }
+    } catch (err) {
+      console.log('[Push] navegacao de notificacao sem metadados:', err.message || err);
+    }
+    if (currentUserRole === 'laboratorio') {
+      openChat((clinicName || 'CL').split(' ').filter(Boolean).slice(0,2).map(function(w){return w[0].toUpperCase();}).join('').substring(0,2) || 'CL', clinicName, labColor, labId, clinicId);
+    } else {
+      openChat(av, labName, labColor, labId, clinicId);
+    }
+    dentalabClearOpenParams();
+    return;
+  }
+  if (target === 'conv') showTab('conv');
+  dentalabClearOpenParams();
 }
 
 // ── SWIPE TO CHANGE TAB ──────────────────────────────────────────────
@@ -5229,7 +5286,10 @@ async function sbSendChatMessage(textValue, file) {
     var recipientId = currentUserRole === 'laboratorio' ? CURRENT_CHAT.clinicId : await sbOtherChatProfileId();
     if (recipientId && String(recipientId) !== String(currentUserId || '')) {
       var pushBody = file ? (payload.message_type === 'scanner' ? 'Novo scanner enviado no chat.' : 'Nova imagem enviada no chat.') : (textValue || 'Nova mensagem recebida.');
-      sendPushToUser(recipientId, 'Nova mensagem no DentaLab', pushBody, 'chat');
+      sendPushToUser(recipientId, 'Nova mensagem no DentaLab', pushBody, 'chat', {
+        labId: CURRENT_CHAT.labId,
+        clinicId: CURRENT_CHAT.clinicId
+      });
     }
     await sbLoadChatMessages();
     return true;
@@ -5254,7 +5314,11 @@ async function sbSendCaseChatEvent(caseId, labId, clinicId) {
     if (res.error) throw res.error;
     var recipientId = currentUserRole === 'laboratorio' ? clinicId : await sbLabOwnerId(labId);
     if (recipientId && String(recipientId) !== String(currentUserId || '')) {
-      sendPushToUser(recipientId, 'Novo caso no DentaLab', 'Um caso clínico foi enviado para você.', 'case');
+      sendPushToUser(recipientId, 'Novo caso no DentaLab', 'Um caso clínico foi enviado para você.', 'case', {
+        labId: labId,
+        clinicId: clinicId,
+        caseId: caseId
+      });
     }
     return true;
   } catch (err) {
@@ -7256,7 +7320,23 @@ async function subscribeDevicePush() {
   }
 }
 
-async function sendPushToUser(userId, title, body, kind) {
+function dentalabPushUrl(kind, opts) {
+  opts = opts || {};
+  var params = new URLSearchParams(location.search || '');
+  if (kind === 'chat' || kind === 'case') {
+    params.set('open', 'chat');
+    if (opts.labId) params.set('labId', opts.labId);
+    if (opts.clinicId) params.set('clinicId', opts.clinicId);
+  } else if (kind === 'case_alert' || kind === 'case_receipt') {
+    params.set('open', 'alertas');
+    if (opts.caseId) params.set('caseId', opts.caseId);
+  } else {
+    params.set('open', 'conv');
+  }
+  return location.pathname + '?' + params.toString();
+}
+
+async function sendPushToUser(userId, title, body, kind, opts) {
   if (!isSupabaseReady() || !userId) return false;
   try {
     var res = await _supabaseClient.functions.invoke('send-push', {
@@ -7265,7 +7345,7 @@ async function sendPushToUser(userId, title, body, kind) {
         title: title || 'DentaLab',
         body: body || 'Novo aviso recebido.',
         kind: kind || 'general',
-        url: location.pathname + location.search
+        url: dentalabPushUrl(kind || 'general', opts)
       }
     });
     if (res.error) throw res.error;
@@ -8974,7 +9054,7 @@ async function cdmPushIssueToClinic(caseId, issue) {
   var c = CDM[caseId];
   if (!c || !issue || !c._clinicId) return false;
   if (String(c._clinicId) === String(currentUserId || '')) return false;
-  return await sendPushToUser(c._clinicId, 'Aviso do caso no DentaLab', cdmIssuePushBody(issue, c), 'case_alert');
+  return await sendPushToUser(c._clinicId, 'Aviso do caso no DentaLab', cdmIssuePushBody(issue, c), 'case_alert', { caseId: caseId });
 }
 
 async function cdmPushReceiptConfirmedToLab(caseId, c) {
@@ -8982,7 +9062,7 @@ async function cdmPushReceiptConfirmedToLab(caseId, c) {
   var labOwner = await sbLabOwnerId(c._labDbId);
   if (!labOwner || String(labOwner) === String(currentUserId || '')) return false;
   var patient = c.paciente || 'Caso clínico';
-  return await sendPushToUser(labOwner, 'Recebimento confirmado', patient + ': a clínica confirmou o recebimento.', 'case_receipt');
+  return await sendPushToUser(labOwner, 'Recebimento confirmado', patient + ': a clínica confirmou o recebimento.', 'case_receipt', { caseId: caseId });
 }
 
 function cdmNotifyDentistStatusChange(caseId, cls, label) {

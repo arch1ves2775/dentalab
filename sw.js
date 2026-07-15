@@ -1,4 +1,4 @@
-const DENTALAB_CACHE = 'dentalab-pwa-v1';
+const DENTALAB_CACHE = 'dentalab-pwa-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -71,6 +71,8 @@ self.addEventListener('push', (event) => {
     body: payload.body || 'Novo aviso recebido.',
     icon: './icon-192.png',
     badge: './icon-192.png',
+    tag: payload.tag || [payload.kind || 'general', payload.url || './'].join(':'),
+    renotify: false,
     data: {
       url: payload.url || './',
       kind: payload.kind || 'general'

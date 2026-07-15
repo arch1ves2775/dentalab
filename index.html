@@ -4762,7 +4762,7 @@ function showTab(t){
 function dentalabClearOpenParams() {
   try {
     var url = new URL(location.href);
-    ['open','labId','clinicId','caseId'].forEach(function(k){ url.searchParams.delete(k); });
+    ['open','labId','clinicId','caseId','issueId'].forEach(function(k){ url.searchParams.delete(k); });
     history.replaceState(null, '', url.pathname + (url.search ? url.search : '') + url.hash);
   } catch (err) {}
 }
@@ -4776,8 +4776,24 @@ async function dentalabHandleNotificationOpen() {
   if (target === 'alertas') {
     showTab('alertas');
     var caseId = params.get('caseId') || '';
-    if (caseId && CDM[caseId]) {
-      setTimeout(function(){ openCaseDetail(caseId); }, 500);
+    var issueId = params.get('issueId') || '';
+    if (isSupabaseReady()) {
+      try { await syncSupabaseCasesIntoCDM(); }
+      catch (err) { console.log('[Push] falha ao atualizar casos antes de abrir alerta:', err.message || err); }
+    }
+    var localCaseId = caseId;
+    if (caseId && !CDM[localCaseId]) {
+      localCaseId = Object.keys(CDM || {}).find(function(id){
+        var c = CDM[id];
+        return c && String(c._supabaseId || c.id || '') === String(caseId);
+      }) || '';
+    }
+    if (issueId && findIssueById(issueId)) {
+      setTimeout(function(){ openCaseAndFocusIssue(issueId); }, 250);
+    } else if (localCaseId && CDM[localCaseId]) {
+      setTimeout(function(){ openCaseDetail(localCaseId); }, 250);
+    } else if (caseId) {
+      showToast('O caso do alerta ainda não está disponível. Atualize e tente novamente.');
     }
     dentalabClearOpenParams();
     return;
@@ -7331,6 +7347,7 @@ function dentalabPushUrl(kind, opts) {
   } else if (kind === 'case_alert' || kind === 'case_receipt') {
     params.set('open', 'alertas');
     if (opts.caseId) params.set('caseId', opts.caseId);
+    if (opts.issueId) params.set('issueId', opts.issueId);
   } else {
     params.set('open', 'conv');
   }
@@ -9069,6 +9086,7 @@ async function cdmPushIssueToClinic(caseId, issue) {
   if (String(c._clinicId) === String(currentUserId || '')) return false;
   return await sendPushToUser(c._clinicId, 'Aviso do caso no DentaLab', cdmIssuePushBody(issue, c), 'case_alert', {
     caseId: caseId,
+    issueId: issue.id || '',
     dedupeKey: 'issue:' + caseId + ':' + (issue.type || '') + ':' + (issue.target || '')
   });
 }

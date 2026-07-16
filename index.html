@@ -293,7 +293,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 /* ── PERFIL ── */
 .perfil-scroll{flex:1;overflow-y:auto;background:var(--bg);padding-bottom:env(safe-area-inset-bottom,16px)}
 .perfil-hero{display:flex;flex-direction:column;align-items:center;padding:28px 20px 22px;background:var(--accent-light);border-bottom:1px solid var(--border)}
-.perfil-av{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin-bottom:14px;position:relative;box-shadow:0 4px 20px rgba(0,0,0,.2),0 0 0 3px rgba(255,255,255,.25)}
+.perfil-av{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin-bottom:14px;position:relative;box-shadow:0 4px 20px rgba(0,0,0,.2),0 0 0 3px rgba(255,255,255,.25);cursor:pointer;overflow:visible}
+.perfil-av-photo{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;display:none}
 .perfil-av-edit{position:absolute;bottom:0;right:0;width:26px;height:26px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent);border:2px solid rgba(255,255,255,.3)}
 .perfil-name{font-size:22px;font-weight:300;margin-bottom:3px;letter-spacing:.8px;color:var(--text);font-family:'Raleway',sans-serif}
 .perfil-role{font-size:13px;color:var(--muted);margin-bottom:10px}
@@ -1713,10 +1714,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
   </div>
   <div class="perfil-scroll">
     <div class="perfil-hero">
-      <div class="perfil-av" id="perfil-av" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8)">
+      <div class="perfil-av" id="perfil-av" onclick="profileChoosePhoto()" role="button" aria-label="Alterar imagem de perfil" title="Alterar imagem de perfil" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8)">
+        <img class="perfil-av-photo" id="perfil-av-photo" alt="Imagem de perfil">
         <span id="perfil-initials">JA</span>
         <div class="perfil-av-edit"><svg class="-camera" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.125em;font-size:11px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 13a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg></div>
       </div>
+      <input type="file" id="perfil-photo-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="profilePhotoSelected(this)">
       <div class="perfil-name" id="perfil-nome">Dr. João Almeida</div>
       <div class="perfil-role" id="perfil-role">Dentista · CRO-SP 12345</div>
       <div class="perfil-badge" id="perfil-badge" style="background:var(--green-bg);color:var(--green)">
@@ -4156,6 +4159,9 @@ function sbApplyLocalProfile(profile) {
   setText('pr-clinica', userClinica);
   setText('pr-tel', tel);
   setText('pr-clinica-label', currentUserRole === 'laboratorio' ? 'Laboratorio' : 'Clinica / Consultorio');
+  var localAvatar = '';
+  try { localAvatar = localStorage.getItem('DENTALAB_PROFILE_AVATAR_' + (currentUserId || profile.email || 'local')) || ''; } catch (err) {}
+  profileApplyAvatar(profile.avatar_url || localAvatar || '');
   var badge = document.getElementById('perfil-badge');
   if (badge) { badge.textContent = r.badge; badge.style.background = r.bg; badge.style.color = r.color; }
 }
@@ -4605,6 +4611,79 @@ function _sbEnterApp() {
   setTimeout(function(){ dentalabConsumePendingNotificationTarget(); }, 900);
   setTimeout(function(){ dentalabSyncPushIfGranted(); }, 1400);
   setTimeout(function(){ sbRefreshUnreadMessages(); }, 1700);
+}
+
+function profileApplyAvatar(url) {
+  var img = document.getElementById('perfil-av-photo');
+  var initials = document.getElementById('perfil-initials');
+  if (!img || !initials) return;
+  if (!url) {
+    img.removeAttribute('src'); img.style.display = 'none'; initials.style.display = '';
+    return;
+  }
+  img.onload = function(){ img.style.display = 'block'; initials.style.display = 'none'; };
+  img.onerror = function(){ img.style.display = 'none'; initials.style.display = ''; };
+  img.src = url;
+}
+
+function profileChoosePhoto() {
+  if (!currentUserId) { showToast('Entre na sua conta para alterar a imagem.'); return; }
+  var input = document.getElementById('perfil-photo-input');
+  if (input) input.click();
+}
+
+function profileResizePhoto(file) {
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onerror = function(){ reject(new Error('N\u00e3o foi poss\u00edvel ler a imagem.')); };
+    reader.onload = function(){
+      var source = new Image();
+      source.onerror = function(){ reject(new Error('Formato de imagem inv\u00e1lido.')); };
+      source.onload = function(){
+        var size = Math.min(source.naturalWidth, source.naturalHeight);
+        var sx = Math.max(0, (source.naturalWidth - size) / 2);
+        var sy = Math.max(0, (source.naturalHeight - size) / 2);
+        var canvas = document.createElement('canvas');
+        canvas.width = 360; canvas.height = 360;
+        canvas.getContext('2d').drawImage(source, sx, sy, size, size, 0, 0, 360, 360);
+        canvas.toBlob(function(blob){
+          if (!blob) { reject(new Error('N\u00e3o foi poss\u00edvel preparar a imagem.')); return; }
+          resolve({ blob:blob, preview:canvas.toDataURL('image/jpeg', .84) });
+        }, 'image/jpeg', .84);
+      };
+      source.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function profilePhotoSelected(input) {
+  var file = input && input.files ? input.files[0] : null;
+  if (!file) return;
+  input.value = '';
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type || '')) { showToast('Escolha uma imagem JPG, PNG ou WebP.'); return; }
+  if (file.size > 12 * 1024 * 1024) { showToast('A imagem deve ter no m\u00e1ximo 12 MB.'); return; }
+  try {
+    showToast('A preparar imagem...');
+    var prepared = await profileResizePhoto(file);
+    profileApplyAvatar(prepared.preview);
+    try { localStorage.setItem('DENTALAB_PROFILE_AVATAR_' + currentUserId, prepared.preview); } catch (err) {}
+    if (!isSupabaseReady()) { showToast('Imagem de perfil alterada neste dispositivo.'); return; }
+    var path = currentUserId + '/avatar.jpg';
+    var uploaded = await _supabaseClient.storage.from('profile-avatars').upload(path, prepared.blob, { upsert:true, contentType:'image/jpeg', cacheControl:'3600' });
+    if (uploaded.error) throw uploaded.error;
+    var publicData = _supabaseClient.storage.from('profile-avatars').getPublicUrl(path);
+    var publicUrl = publicData && publicData.data ? publicData.data.publicUrl : '';
+    if (!publicUrl) throw new Error('URL da imagem indispon\u00edvel.');
+    publicUrl += (publicUrl.indexOf('?') >= 0 ? '&' : '?') + 'v=' + Date.now();
+    var saved = await _supabaseClient.from('profiles').update({ avatar_url:publicUrl }).eq('id', currentUserId);
+    if (saved.error) throw saved.error;
+    profileApplyAvatar(publicUrl);
+    showToast('Imagem de perfil atualizada. \u2713');
+  } catch (err) {
+    console.log('[Perfil] foto local apenas:', err.message || err);
+    showToast('Imagem alterada neste dispositivo. Falta ativar o armazenamento de fotos no Supabase.');
+  }
 }
 
 // ── Supabase Auth listener ─────────────────────────────────────────────

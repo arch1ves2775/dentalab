@@ -68,6 +68,12 @@ Fluxo real com Supabase Auth:
 
 `_sbEnterApp()` e o ponto central apos login/restauro de sessao.
 
+Imagem de perfil:
+- o proprio usuario pode tocar no avatar da aba Perfil e escolher JPG, PNG ou WebP
+- a imagem e cortada em quadrado, reduzida para 360x360 e convertida para JPEG antes do upload
+- `dentalab_profile_avatar.sql` cria a coluna `profiles.avatar_url`, o bucket publico `profile-avatars` e politicas que permitem escrita apenas na pasta do proprio usuario
+- enquanto a migracao nao for executada, a imagem ainda funciona como fallback local no dispositivo
+
 ## Sincronizacao
 
 Realtime:

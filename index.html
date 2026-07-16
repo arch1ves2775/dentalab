@@ -7852,13 +7852,10 @@ function dentalabPulseDestinationTab(kind) {
 }
 
 function sbNotify(kind, title, body) {
+  // Realtime only updates the in-app UI. The sender already dispatches the
+  // authoritative Web Push through send-push; creating a Notification here
+  // produced a second generic Chrome notification for the same message.
   dentalabShowInAppNotice(kind, title, body);
-  var settings = sbNotificationSettings();
-  var settingKind = kind === 'chat' ? 'chat' : 'cases';
-  if (!settings[settingKind]) return;
-  if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) {
-    try { new Notification(title, { body: body || '', icon:'icon-192.png' }); } catch (err) {}
-  }
 }
 
 function sbIssueNotificationText(row) {

@@ -291,3 +291,4 @@ Ainda recomendado testar/polir:
 - abrir detalhe exato do caso a partir de notificacao de alerta
 - seguranca final da Edge Function antes de vender/apresentar formalmente
 - O titulo do push identifica o remetente real: nome do laboratorio para envios do laboratorio e nome do dentista/clinica para envios da clinica. O iOS ainda mostra `from DentaLab` como identificacao fixa da PWA.
+- O Realtime atualiza apenas a interface interna. Ele nao cria `new Notification`; o unico aviso externo vem da Edge Function `send-push`, evitando notificacao duplicada no Chrome.

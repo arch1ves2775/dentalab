@@ -102,6 +102,7 @@ MyCases:
 
 MyLab no perfil de laboratorio:
 - usa um portfolio visual limpo com cartoes compactos, estado em pill e progresso por etapas
+- o progresso aparece como uma unica barra continua e mais grossa, sem pontos, usando a cor do estado atual
 - mostra a clinica responsavel logo abaixo do nome do paciente
 - mostra tipo de trabalho, dentes e numero do caso na linha seguinte
 - os cartoes continuam clicaveis; as acoes completas ficam no detalhe do caso

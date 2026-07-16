@@ -102,7 +102,8 @@ MyCases:
 
 MyLab em todos os perfis:
 - usa um portfolio visual limpo com cartoes compactos, estado em pill e progresso por etapas
-- o progresso aparece como uma barra grossa de quatro segmentos, sem pontos; ela enche por etapa e usa a cor do estado atual
+- o progresso aparece como uma barra grossa de quatro segmentos, sem pontos; os segmentos enchem por etapa nas cores azul (Recebido), amarelo (Em Producao), verde (Pronto) e roxo (Entregue)
+- o cabecalho original do MyLab foi preservado; no laboratorio continua `Painel de Producao` / `Casos recebidos do laboratorio`
 - no perfil de laboratorio mostra a clinica responsavel logo abaixo do paciente; no perfil de dentista/assistente mostra o laboratorio
 - mostra tipo de trabalho, dentes e numero do caso na linha seguinte
 - os cartoes continuam clicaveis; as acoes completas ficam no detalhe e respeitam as permissoes do perfil

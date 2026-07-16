@@ -802,10 +802,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 
 /* MyLab laboratory dashboard - clean production portfolio */
 #scr-casos.mylab-modern{background:#f4f7fc;color:#101828}
-#scr-casos.mylab-modern .header{background:#0b1533;border-bottom:0;color:#fff;padding-bottom:14px}
-#scr-casos.mylab-modern .header-logo{color:#86d1ff;background:rgba(92,200,255,.12)}
-#scr-casos.mylab-modern .header-title{color:#fff;font-size:20px;font-weight:800}
-#scr-casos.mylab-modern .header-sub{color:#aebbd3}
 #scr-casos.mylab-modern .pc2-filter-bar{background:#fff;border:0;padding:12px 16px 8px;gap:8px}
 #scr-casos.mylab-modern .pc2-filter-chip{background:#fff;border:1.5px solid #dce4f1;color:#667085;padding:7px 13px}
 #scr-casos.mylab-modern .pc2-filter-chip.active{background:#eaf1ff;border-color:#2563eb;color:#2563eb}
@@ -834,7 +830,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 #scr-casos.mylab-modern .pc2-tags{display:none}
 #scr-casos.mylab-modern .pc2-mini-steps{padding:4px 16px 15px;margin-left:0;gap:0}
 #scr-casos.mylab-modern .pc2-mini-steps .pc2-prog-line{height:10px;background:#e8edf5;margin-left:0;overflow:hidden;border-radius:999px;gap:3px!important}
-#scr-casos.mylab-modern .pc2-mini-steps .pc2-prog-line-fill{background:var(--case-status-color,#2563eb)!important;border-radius:0}
+#scr-casos.mylab-modern .pc2-mini-steps .pc2-prog-line-fill{border-radius:0}
 #scr-casos.mylab-modern .pc2-step{display:none!important}
 #scr-casos.mylab-modern .pc2-footer,#scr-casos.mylab-modern .pc2-acts,#scr-casos.mylab-modern .pc2-alert-banner{display:none!important}
 @media(min-width:760px){
@@ -2909,8 +2905,8 @@ function applyRoleUI(role) {
   var headerSub   = document.getElementById('casos-header-sub');
   if (filterBar) filterBar.style.display = 'flex';
   if (role === 'laboratorio') {
-    if (headerTitle) headerTitle.textContent = 'Casos do laborat\u00f3rio';
-    if (headerSub)   headerSub.textContent   = 'Acompanhe cada etapa da produ\u00e7\u00e3o em tempo real';
+    if (headerTitle) headerTitle.textContent = 'Painel de Produ\u00e7\u00e3o';
+    if (headerSub)   headerSub.textContent   = 'Casos recebidos do laborat\u00f3rio';
   } else {
     if (headerTitle) headerTitle.textContent = 'MyLab';
     if (headerSub)   headerSub.textContent   = 'Acompanhamento em tempo real';
@@ -9520,9 +9516,7 @@ function cdmNotifyDentistStatusChange(caseId, cls, label) {
 function cdmBuildPc2MiniStepsHTML(c) {
   var cls = (c && c.statusCls) || 'st-p';
   var curIdx = {'st-p':0,'st-a':1,'st-ok':2,'st-done':3,'st-wait':0}[cls] || 0;
-  var colors = cls === 'st-done'
-    ? ['#9CA3AF','#9CA3AF','#9CA3AF','#9CA3AF']
-    : ['#3B82F6','#F59E0B','#22C55E','#9CA3AF'];
+  var colors = ['#3B82F6','#F59E0B','#22C55E','#7757D6'];
   var html = '<div class="pc2-mini-steps">';
   for (var i = 0; i < 4; i++) {
     var active = i <= curIdx;

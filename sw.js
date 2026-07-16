@@ -1,4 +1,4 @@
-const DENTALAB_CACHE = 'dentalab-pwa-v7';
+const DENTALAB_CACHE = 'dentalab-pwa-v8';
 const STATIC_ASSETS = [
   './',
   './index.html',

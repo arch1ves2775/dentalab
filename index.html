@@ -800,6 +800,56 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 .pc2-btn.grn { background: rgba(34,197,94,.12); color: var(--green); border-color: rgba(34,197,94,.25); }
 .pc2-btn.red { background: rgba(239,68,68,.1);   color: var(--red-light); border-color: rgba(239,68,68,.22); }
 
+/* MyLab laboratory dashboard - clean production portfolio */
+#scr-casos.mylab-modern{background:#f4f7fc;color:#101828}
+#scr-casos.mylab-modern .header{background:#0b1533;border-bottom:0;color:#fff;padding-bottom:14px}
+#scr-casos.mylab-modern .header-logo{color:#86d1ff;background:rgba(92,200,255,.12)}
+#scr-casos.mylab-modern .header-title{color:#fff;font-size:20px;font-weight:800}
+#scr-casos.mylab-modern .header-sub{color:#aebbd3}
+#scr-casos.mylab-modern .pc2-filter-bar{background:#fff;border:0;padding:12px 16px 8px;gap:8px}
+#scr-casos.mylab-modern .pc2-filter-chip{background:#fff;border:1.5px solid #dce4f1;color:#667085;padding:7px 13px}
+#scr-casos.mylab-modern .pc2-filter-chip.active{background:#eaf1ff;border-color:#2563eb;color:#2563eb}
+#scr-casos.mylab-modern .scroll-wrap{padding:12px 16px 96px}
+#scr-casos.mylab-modern .casos-stats{display:flex;gap:8px;margin:0 0 14px;overflow-x:auto;scrollbar-width:none}
+#scr-casos.mylab-modern .casos-stats::-webkit-scrollbar{display:none}
+#scr-casos.mylab-modern .casos-stat{flex:0 0 auto;display:flex;align-items:center;gap:6px;border:1.5px solid #dce4f1;border-radius:999px;padding:7px 13px;background:#fff;box-shadow:none}
+#scr-casos.mylab-modern .casos-stat-val{font-size:13px;color:#2563eb;line-height:1}
+#scr-casos.mylab-modern .casos-stat-lbl{font-size:11px;color:#2563eb;margin:0;text-transform:none;letter-spacing:0}
+#scr-casos.mylab-modern .casos-stat-sub{display:none}
+#scr-casos.mylab-modern #mylab-stat-attention-card{border-color:#f0b9bf}
+#scr-casos.mylab-modern #mylab-stat-attention-card .casos-stat-lbl{color:#e44d5e}
+#scr-casos.mylab-modern #lab-casos-wrap{display:flex!important;flex-direction:column;gap:10px}
+#scr-casos.mylab-modern .lab-date-group{display:contents}
+#scr-casos.mylab-modern .lab-date-header{display:none}
+#scr-casos.mylab-modern .pc2-card{position:relative;margin:0;background:#fff;border:1.5px solid #dce4f1!important;border-radius:18px;box-shadow:0 4px 14px rgba(20,40,80,.05);overflow:hidden;opacity:1!important}
+#scr-casos.mylab-modern .pc2-card:active{transform:scale(.992)}
+#scr-casos.mylab-modern .pc2-top{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 16px 10px}
+#scr-casos.mylab-modern .pc2-av{width:50px;height:50px;font-size:14px}
+#scr-casos.mylab-modern .pc2-name{font-size:16px;font-weight:800;color:#101828;margin:0 0 3px}
+#scr-casos.mylab-modern .pc2-clinic{font-size:12px;font-weight:600;color:#475467;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+#scr-casos.mylab-modern .pc2-ref{font-size:11px;color:#7b879c;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#scr-casos.mylab-modern .pc2-status-col{display:flex;flex-direction:column;align-items:flex-start;min-width:118px;gap:6px}
+#scr-casos.mylab-modern .pc2-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.2px;padding:5px 10px;border-radius:999px;white-space:nowrap}
+#scr-casos.mylab-modern .pc2-update{font-size:10px;color:#7b879c;white-space:nowrap}
+#scr-casos.mylab-modern .pc2-tags{display:none}
+#scr-casos.mylab-modern .pc2-mini-steps{padding:2px 16px 14px;margin-left:66px;gap:7px}
+#scr-casos.mylab-modern .pc2-mini-steps .pc2-prog-line{height:7px;background:#e8edf5;margin-left:4px;overflow:hidden}
+#scr-casos.mylab-modern .pc2-mini-steps .pc2-prog-line-fill{background:var(--case-status-color,#2563eb)!important}
+#scr-casos.mylab-modern .pc2-step{width:8px!important;height:8px;border-radius:50%!important}
+#scr-casos.mylab-modern .pc2-footer,#scr-casos.mylab-modern .pc2-acts,#scr-casos.mylab-modern .pc2-alert-banner{display:none!important}
+@media(min-width:760px){
+  #scr-casos.mylab-modern .scroll-wrap{padding-left:max(28px,calc((100vw - 1120px)/2));padding-right:max(28px,calc((100vw - 1120px)/2))}
+  #scr-casos.mylab-modern .pc2-top{grid-template-columns:58px minmax(240px,1fr) 190px;padding:18px 24px 10px}
+  #scr-casos.mylab-modern .pc2-mini-steps{margin-left:82px;padding:2px 24px 16px}
+}
+@media(max-width:520px){
+  #scr-casos.mylab-modern .pc2-top{grid-template-columns:44px minmax(0,1fr);gap:11px;padding:14px 13px 8px}
+  #scr-casos.mylab-modern .pc2-av{width:44px;height:44px}
+  #scr-casos.mylab-modern .pc2-status-col{grid-column:2;flex-direction:row;align-items:center;min-width:0;gap:8px}
+  #scr-casos.mylab-modern .pc2-mini-steps{margin-left:53px;padding:2px 13px 13px}
+  #scr-casos.mylab-modern .pc2-name{font-size:15px}
+}
+
 /* ── CDM: Fotos clínicas ── */
 .cdm-photos-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .cdm-photos-scroll::-webkit-scrollbar{display:none}
@@ -2838,11 +2888,15 @@ function applyRoleUI(role) {
   var staticSecs  = document.getElementById('casos-static-sections');
   var dynList     = document.getElementById('casos-dynamic-list');
   if (role === 'laboratorio') {
+    var casosScreen = document.getElementById('scr-casos');
+    if (casosScreen) casosScreen.classList.add('mylab-modern');
     if (labWrap)    labWrap.style.display    = 'block';
     if (staticSecs) staticSecs.style.display = 'none';
     if (dynList)    dynList.style.display    = 'none';
     labRenderCasos();
   } else {
+    var casosScreenClinic = document.getElementById('scr-casos');
+    if (casosScreenClinic) casosScreenClinic.classList.remove('mylab-modern');
     if (labWrap)    labWrap.style.display    = 'none';
     if (staticSecs) staticSecs.style.display = '';
     if (dynList)    dynList.style.display    = '';
@@ -2862,8 +2916,8 @@ function applyRoleUI(role) {
   var headerSub   = document.getElementById('casos-header-sub');
   if (filterBar) filterBar.style.display = (role === 'laboratorio') ? 'flex' : 'none';
   if (role === 'laboratorio') {
-    if (headerTitle) headerTitle.textContent = 'Painel de Produ\u00e7\u00e3o';
-    if (headerSub)   headerSub.textContent   = 'Casos recebidos do laborat\u00f3rio';
+    if (headerTitle) headerTitle.textContent = 'Casos do laborat\u00f3rio';
+    if (headerSub)   headerSub.textContent   = 'Acompanhe cada etapa da produ\u00e7\u00e3o em tempo real';
   } else {
     if (headerTitle) headerTitle.textContent = 'MyLab';
     if (headerSub)   headerSub.textContent   = 'Acompanhamento em tempo real';
@@ -8029,27 +8083,7 @@ function labRenderCasos() {
     return sa - sb;
   });
 
-  // Group by deadline bucket
-  var groups = {};  // key → {label, cls, ids:[]}
-  var groupOrder = [];
-  ids.forEach(function(id) {
-    var g = prazoGroup(CDM[id]);
-    if (!groups[g.key]) { groups[g.key] = { label: g.label, cls: g.cls, ids: [] }; groupOrder.push(g.key); }
-    groups[g.key].ids.push(id);
-  });
-
-  var html = '';
-  groupOrder.forEach(function(key) {
-    var grp = groups[key];
-    if (!grp.ids.length) return;
-    html += '<div class="lab-date-group">'
-      + '<div class="lab-date-header ' + grp.cls + '">'
-      + '<span class="lab-date-label">' + grp.label + '</span>'
-      + '<span class="lab-date-count">' + grp.ids.length + '</span>'
-      + '</div>';
-    grp.ids.forEach(function(id) { html += _labCardHTML(id); });
-    html += '</div>';
-  });
+  var html = ids.map(function(id){ return _labCardHTML(id); }).join('');
 
   if (!html) {
     html = '<div style="text-align:center;padding:48px 20px;color:var(--hint);font-size:14px">Nenhum caso registado.</div>';
@@ -8067,25 +8101,23 @@ function _labCardHTML(caseId) {
   var statusColor = cdmStatusColor(c.statusCls);
   var statusBg = cdmStatusBg(c.statusCls);
   var borderColor = cdmStatusBorderColor(c.statusCls, isUrgent);
-  var deadlineBadge = prazoBadgeHTML(c);
-  var urgBadge = isUrgent ? '<span class="pc2-urg-badge">\u26A1 Urgente</span>' : '';
-  var refLine = cdmCaseSecondaryLine(c);
+  var clinicName = c.clinicName || c.clinic_name || c.clinica || 'Cl\u00ednica n\u00e3o informada';
+  var caseRef = c.num || c.npac || ('#' + caseId);
+  var workRef = [c.tipo, c.dente ? 'dente(s) ' + c.dente : '', caseRef].filter(Boolean).join(' \u00b7 ');
+  var updateText = c.statusCls === 'st-done' ? 'Entregue' : c.statusCls === 'st-ok' ? 'Pronto para retirada' : c.statusCls === 'st-a' ? 'Produ\u00e7\u00e3o atualizada' : c.statusCls === 'st-wait' ? 'A\u00e7\u00e3o necess\u00e1ria' : 'Caso recebido';
   var acts = '<div class="pc2-acts" data-cid="' + caseId + '" data-av="' + (c.labAv||'') + '" data-lab="' + (c.lab||'').replace(/"/g,'&quot;') + '" data-labcolor="' + (c.labColor||'#3B82F6') + '">'
     + _pc2ActsHTML(caseId, c.labAv||'', c.lab||'', c.labColor||'#3B82F6')
     + '</div>';
 
-  return '<div class="pc2-card ' + borderCls + '" onclick="openCaseDetail(\'' + caseId + '\')" style="border-left:3px solid ' + borderColor + ';' + (isDone?'opacity:.65;':'') + '">'
+  return '<div class="pc2-card ' + borderCls + '" onclick="openCaseDetail(\'' + caseId + '\')" style="--case-status-color:' + statusColor + ';">'
     + '<div class="pc2-top">'
     + '<div class="pc2-av" style="background:' + statusBg + ';color:' + statusColor + '">' + ini + '</div>'
     + '<div class="pc2-info">'
     + '<div class="pc2-name">' + c.paciente + '</div>'
-    + '<div class="pc2-ref">' + sbEscapeHtml(refLine) + '</div>'
-    + '<div class="pc2-tags">'
-    + '<span class="pc2-status" style="background:' + statusBg + ';color:' + statusColor + '">' + c.status + '</span>'
-    + urgBadge
+    + '<div class="pc2-clinic">' + sbEscapeHtml(clinicName) + '</div>'
+    + '<div class="pc2-ref">' + sbEscapeHtml(workRef) + '</div>'
     + '</div>'
-    + '</div>'
-    + (deadlineBadge ? '<div style="flex-shrink:0">' + deadlineBadge + '</div>' : '')
+    + '<div class="pc2-status-col"><span class="pc2-status" style="background:' + statusBg + ';color:' + statusColor + '">' + sbEscapeHtml(c.status || STATUS_LABELS[c.statusCls] || 'Recebido') + '</span><span class="pc2-update">' + updateText + '</span></div>'
     + '</div>'
     + cdmBuildPc2MiniStepsHTML(c)
     + '<div class="pc2-footer">'
@@ -9111,6 +9143,10 @@ function pc2RenderAllActs() {
           statusPill.textContent = issueDisplayTitle(issue);
           statusPill.style.background = 'var(--red-bg)';
           statusPill.style.color = 'var(--red)';
+        } else if (currentUserRole === 'laboratorio') {
+          statusPill.textContent = c.status || STATUS_LABELS[c.statusCls] || 'Recebido';
+          statusPill.style.background = cdmStatusBg(c.statusCls || 'st-p');
+          statusPill.style.color = cdmStatusColor(c.statusCls || 'st-p');
         } else {
           statusPill.textContent = c.status || STATUS_LABELS[c.statusCls] || 'Em Produ\u00e7\u00e3o';
           statusPill.style.background = 'rgba(79,140,255,.14)';

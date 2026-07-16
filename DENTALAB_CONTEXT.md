@@ -100,6 +100,12 @@ MyCases:
 - casos vindos do MyLab so entram no MyCases depois que o dentista confirma recebimento
 - apos confirmar recebimento, o caso deve sair do MyLab e ficar no MyCases
 
+MyLab no perfil de laboratorio:
+- usa um portfolio visual limpo com cartoes compactos, estado em pill e progresso por etapas
+- mostra a clinica responsavel logo abaixo do nome do paciente
+- mostra tipo de trabalho, dentes e numero do caso na linha seguinte
+- os cartoes continuam clicaveis; as acoes completas ficam no detalhe do caso
+
 ## Notificacoes Push
 
 - No iPhone/iPad, o service worker salva o destino do clique em IndexedDB antes de despertar a PWA. A app consome esse destino depois de restaurar a sessao e tambem ao voltar ao primeiro plano, evitando que o iOS abra somente a tela inicial quando descarta a query string da notificacao.

@@ -833,7 +833,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 #scr-casos.mylab-modern .pc2-update{font-size:10px;color:#7b879c;white-space:nowrap}
 #scr-casos.mylab-modern .pc2-tags{display:none}
 #scr-casos.mylab-modern .pc2-mini-steps{padding:4px 16px 15px;margin-left:0;gap:0}
-#scr-casos.mylab-modern .pc2-mini-steps .pc2-prog-line{height:10px;background:#e8edf5;margin-left:0;overflow:hidden;border-radius:999px;gap:0!important}
+#scr-casos.mylab-modern .pc2-mini-steps .pc2-prog-line{height:10px;background:#e8edf5;margin-left:0;overflow:hidden;border-radius:999px;gap:3px!important}
 #scr-casos.mylab-modern .pc2-mini-steps .pc2-prog-line-fill{background:var(--case-status-color,#2563eb)!important;border-radius:0}
 #scr-casos.mylab-modern .pc2-step{display:none!important}
 #scr-casos.mylab-modern .pc2-footer,#scr-casos.mylab-modern .pc2-acts,#scr-casos.mylab-modern .pc2-alert-banner{display:none!important}
@@ -2883,24 +2883,17 @@ function applyRoleUI(role) {
     } catch(e) { /* ignore */ }
   });
 
-  // ── MyLab view: lab sees deadline-sorted view; clinic sees static sections ──
+  // ── MyLab view: every role shares the modern portfolio; permissions
+  // remain enforced in the case detail and action generators. ──
   var labWrap     = document.getElementById('lab-casos-wrap');
   var staticSecs  = document.getElementById('casos-static-sections');
   var dynList     = document.getElementById('casos-dynamic-list');
-  if (role === 'laboratorio') {
-    var casosScreen = document.getElementById('scr-casos');
-    if (casosScreen) casosScreen.classList.add('mylab-modern');
-    if (labWrap)    labWrap.style.display    = 'block';
-    if (staticSecs) staticSecs.style.display = 'none';
-    if (dynList)    dynList.style.display    = 'none';
-    labRenderCasos();
-  } else {
-    var casosScreenClinic = document.getElementById('scr-casos');
-    if (casosScreenClinic) casosScreenClinic.classList.remove('mylab-modern');
-    if (labWrap)    labWrap.style.display    = 'none';
-    if (staticSecs) staticSecs.style.display = '';
-    if (dynList)    dynList.style.display    = '';
-  }
+  var casosScreen = document.getElementById('scr-casos');
+  if (casosScreen) casosScreen.classList.add('mylab-modern');
+  if (labWrap)    labWrap.style.display    = 'block';
+  if (staticSecs) staticSecs.style.display = 'none';
+  if (dynList)    dynList.style.display    = 'none';
+  labRenderCasos();
 
   // ── Home header — refresh salutation and name for the active role ──
   var _hdrSalut = document.getElementById('hdr-salut');
@@ -2914,7 +2907,7 @@ function applyRoleUI(role) {
   var filterBar = document.getElementById('casos-filter-bar');
   var headerTitle = document.getElementById('casos-header-title');
   var headerSub   = document.getElementById('casos-header-sub');
-  if (filterBar) filterBar.style.display = (role === 'laboratorio') ? 'flex' : 'none';
+  if (filterBar) filterBar.style.display = 'flex';
   if (role === 'laboratorio') {
     if (headerTitle) headerTitle.textContent = 'Casos do laborat\u00f3rio';
     if (headerSub)   headerSub.textContent   = 'Acompanhe cada etapa da produ\u00e7\u00e3o em tempo real';
@@ -3147,7 +3140,7 @@ window.addEventListener('load', function(){
   // Render alertas for the initial role
   renderAlertas();
   // If lab role, also render the deadline view
-  if (currentUserRole === 'laboratorio') labRenderCasos();
+  labRenderCasos();
 });
 
 // ── MATERIAL CATALOGUE ──────────────────────────────────────────────────
@@ -5107,7 +5100,7 @@ async function dentalabHandleNotificationOpen() {
       }
       if (currentTab === 'alertas') renderAlertas();
       if (currentTab === 'mycases') { mcInit(); mcRender(); }
-      if (currentTab === 'casos' && currentUserRole === 'laboratorio') labRenderCasos();
+      if (currentTab === 'casos') labRenderCasos();
       renderProfileStats();
       renderHomeCaseStats();
       refreshConversationCaseCounts();
@@ -8098,10 +8091,12 @@ function _labCardHTML(caseId) {
   var isDone   = c.statusCls === 'st-done';
   var borderCls = '';
   var ini = c.paciente.split(' ').slice(0,2).map(function(w){ return w[0]; }).join('').toUpperCase();
-  var statusColor = cdmStatusColor(c.statusCls);
-  var statusBg = cdmStatusBg(c.statusCls);
+  var statusColor = c.statusCls === 'st-done' ? '#7757D6' : cdmStatusColor(c.statusCls);
+  var statusBg = c.statusCls === 'st-done' ? '#F0EAFF' : cdmStatusBg(c.statusCls);
   var borderColor = cdmStatusBorderColor(c.statusCls, isUrgent);
-  var clinicName = c.clinicName || c.clinic_name || c.clinica || 'Cl\u00ednica n\u00e3o informada';
+  var relationshipName = currentUserRole === 'laboratorio'
+    ? (c.clinicName || c.clinic_name || c.clinica || 'Cl\u00ednica n\u00e3o informada')
+    : (c.lab || 'Laborat\u00f3rio n\u00e3o informado');
   var caseRef = c.num || c.npac || ('#' + caseId);
   var workRef = [c.tipo, c.dente ? 'dente(s) ' + c.dente : '', caseRef].filter(Boolean).join(' \u00b7 ');
   var updateText = c.statusCls === 'st-done' ? 'Entregue' : c.statusCls === 'st-ok' ? 'Pronto para retirada' : c.statusCls === 'st-a' ? 'Produ\u00e7\u00e3o atualizada' : c.statusCls === 'st-wait' ? 'A\u00e7\u00e3o necess\u00e1ria' : 'Caso recebido';
@@ -8114,7 +8109,7 @@ function _labCardHTML(caseId) {
     + '<div class="pc2-av" style="background:' + statusBg + ';color:' + statusColor + '">' + ini + '</div>'
     + '<div class="pc2-info">'
     + '<div class="pc2-name">' + c.paciente + '</div>'
-    + '<div class="pc2-clinic">' + sbEscapeHtml(clinicName) + '</div>'
+    + '<div class="pc2-clinic">' + sbEscapeHtml(relationshipName) + '</div>'
     + '<div class="pc2-ref">' + sbEscapeHtml(workRef) + '</div>'
     + '</div>'
     + '<div class="pc2-status-col"><span class="pc2-status" style="background:' + statusBg + ';color:' + statusColor + '">' + sbEscapeHtml(c.status || STATUS_LABELS[c.statusCls] || 'Recebido') + '</span><span class="pc2-update">' + updateText + '</span></div>'
@@ -9139,7 +9134,13 @@ function pc2RenderAllActs() {
       var statusPill = card.querySelector('.pc2-status');
       if (statusPill) {
         var c = CDM[cid] || {};
-        if (issue && currentUserRole !== 'laboratorio') {
+        var isModernMyLabCard = !!card.closest('#scr-casos.mylab-modern');
+        if (isModernMyLabCard) {
+          var modernColor = c.statusCls === 'st-done' ? '#7757D6' : cdmStatusColor(c.statusCls || 'st-p');
+          statusPill.textContent = c.status || STATUS_LABELS[c.statusCls] || 'Recebido';
+          statusPill.style.background = c.statusCls === 'st-done' ? '#F0EAFF' : cdmStatusBg(c.statusCls || 'st-p');
+          statusPill.style.color = modernColor;
+        } else if (issue && currentUserRole !== 'laboratorio') {
           statusPill.textContent = issueDisplayTitle(issue);
           statusPill.style.background = 'var(--red-bg)';
           statusPill.style.color = 'var(--red)';
@@ -9610,7 +9611,7 @@ function cdmSetStatus(caseId, cls, label, obs) {
     // Re-render MyLab card actions for the new state
     pc2RenderAllActs();
     // Refresh lab deadline view if active
-    if (currentUserRole === 'laboratorio') labRenderCasos();
+    labRenderCasos();
     // Re-open detail to reflect updated etapas
     // Re-render footer in place without closing the detail
     if (document.getElementById('modal-case-detail') && document.getElementById('modal-case-detail').classList.contains('open')) {
@@ -14291,7 +14292,8 @@ async function syncSupabaseCasesIntoCDM() {
   });
   reconcileMyLabCaseCards();
   if (changed || pruned) {
-    if (currentUserRole === 'laboratorio') { labRenderCasos(); loadLabClinics(); }
+    labRenderCasos();
+    if (currentUserRole === 'laboratorio') loadLabClinics();
     pc2RenderAllActs();
     mcInit();
     renderProfileStats();

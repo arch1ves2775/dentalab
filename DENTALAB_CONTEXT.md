@@ -107,6 +107,8 @@ MyLab em todos os perfis:
 - no perfil de laboratorio mostra a clinica responsavel logo abaixo do paciente; no perfil de dentista/assistente mostra o laboratorio
 - mostra tipo de trabalho, dentes e numero do caso na linha seguinte
 - os cartoes continuam clicaveis; as acoes completas ficam no detalhe e respeitam as permissoes do perfil
+- os casos sao ordenados pela data de entrega mais proxima; casos sem data ficam no fim
+- cada cartao mostra `Entrega: DD/MM/AAAA`; em casos ainda abertos, a data fica vermelha quando faltam 2 dias ou menos ou quando esta atrasada
 
 ## Notificacoes Push
 

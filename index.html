@@ -827,6 +827,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 #scr-casos.mylab-modern .pc2-status-col{display:flex;flex-direction:column;align-items:flex-start;min-width:118px;gap:6px}
 #scr-casos.mylab-modern .pc2-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.2px;padding:5px 10px;border-radius:999px;white-space:nowrap}
 #scr-casos.mylab-modern .pc2-update{font-size:10px;color:#7b879c;white-space:nowrap}
+#scr-casos.mylab-modern .pc2-deadline{font-size:11px;font-weight:700;color:#667085;white-space:nowrap}
+#scr-casos.mylab-modern .pc2-deadline.attention{color:#dc2626}
 #scr-casos.mylab-modern .pc2-tags{display:none}
 #scr-casos.mylab-modern .pc2-mini-steps{padding:4px 16px 15px;margin-left:0;gap:0}
 #scr-casos.mylab-modern .pc2-mini-steps .pc2-prog-line{height:10px;background:#e8edf5;margin-left:0;overflow:hidden;border-radius:999px;gap:3px!important}
@@ -841,7 +843,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',sans-ser
 @media(max-width:520px){
   #scr-casos.mylab-modern .pc2-top{grid-template-columns:44px minmax(0,1fr);gap:11px;padding:14px 13px 8px}
   #scr-casos.mylab-modern .pc2-av{width:44px;height:44px}
-  #scr-casos.mylab-modern .pc2-status-col{grid-column:2;flex-direction:row;align-items:center;min-width:0;gap:8px}
+  #scr-casos.mylab-modern .pc2-status-col{grid-column:2;flex-direction:row;align-items:center;flex-wrap:wrap;min-width:0;gap:6px 8px}
+  #scr-casos.mylab-modern .pc2-deadline{flex-basis:100%}
   #scr-casos.mylab-modern .pc2-mini-steps{margin-left:0;padding:4px 13px 14px}
   #scr-casos.mylab-modern .pc2-name{font-size:15px}
 }
@@ -7996,6 +7999,14 @@ function prazoDiffDays(c) {
   return Math.round(ms / 86400000);
 }
 
+function prazoDisplayDate(c) {
+  var d = prazoToDate(c);
+  if (!d || isNaN(d.getTime())) return (c && c.prazo) ? String(c.prazo) : 'Sem data';
+  var day = String(d.getDate()).padStart(2, '0');
+  var month = String(d.getMonth() + 1).padStart(2, '0');
+  return day + '/' + month + '/' + d.getFullYear();
+}
+
 // Returns group key + display label for a case
 function prazoGroup(c) {
   var diff = prazoDiffDays(c);
@@ -8061,6 +8072,11 @@ function labRenderCasos() {
   var wrap = document.getElementById('lab-casos-wrap');
   if (!wrap) return;
 
+  // Installed PWAs may stay alive across midnight. Refresh the comparison
+  // date every render so ordering and urgency remain accurate.
+  LAB_TODAY = new Date();
+  LAB_TODAY.setHours(0, 0, 0, 0);
+
   var ids = _labAllCaseIds();
   // Sort: atrasados first, then by diff, then urg, then status
   ids.sort(function(a, b) {
@@ -8101,6 +8117,9 @@ function _labCardHTML(caseId) {
   var caseRef = c.num || c.npac || ('#' + caseId);
   var workRef = [c.tipo, c.dente ? 'dente(s) ' + c.dente : '', caseRef].filter(Boolean).join(' \u00b7 ');
   var updateText = c.statusCls === 'st-done' ? 'Entregue' : c.statusCls === 'st-ok' ? 'Pronto para retirada' : c.statusCls === 'st-a' ? 'Produ\u00e7\u00e3o atualizada' : c.statusCls === 'st-wait' ? 'A\u00e7\u00e3o necess\u00e1ria' : 'Caso recebido';
+  var deadlineDiff = prazoDiffDays(c);
+  var deadlineAttention = !isDone && deadlineDiff !== Infinity && deadlineDiff <= 2;
+  var deadlineHTML = '<span class="pc2-deadline' + (deadlineAttention ? ' attention' : '') + '">Entrega: ' + sbEscapeHtml(prazoDisplayDate(c)) + '</span>';
   var acts = '<div class="pc2-acts" data-cid="' + caseId + '" data-av="' + (c.labAv||'') + '" data-lab="' + (c.lab||'').replace(/"/g,'&quot;') + '" data-labcolor="' + (c.labColor||'#3B82F6') + '">'
     + _pc2ActsHTML(caseId, c.labAv||'', c.lab||'', c.labColor||'#3B82F6')
     + '</div>';
@@ -8113,7 +8132,7 @@ function _labCardHTML(caseId) {
     + '<div class="pc2-clinic">' + sbEscapeHtml(relationshipName) + '</div>'
     + '<div class="pc2-ref">' + sbEscapeHtml(workRef) + '</div>'
     + '</div>'
-    + '<div class="pc2-status-col"><span class="pc2-status" style="background:' + statusBg + ';color:' + statusColor + '">' + sbEscapeHtml(c.status || STATUS_LABELS[c.statusCls] || 'Recebido') + '</span><span class="pc2-update">' + updateText + '</span></div>'
+    + '<div class="pc2-status-col"><span class="pc2-status" style="background:' + statusBg + ';color:' + statusColor + '">' + sbEscapeHtml(c.status || STATUS_LABELS[c.statusCls] || 'Recebido') + '</span><span class="pc2-update">' + updateText + '</span>' + deadlineHTML + '</div>'
     + '</div>'
     + cdmBuildPc2MiniStepsHTML(c)
     + '<div class="pc2-footer">'

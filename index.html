@@ -5464,7 +5464,7 @@ async function sbSendChatMessage(textValue, file) {
     var recipientId = currentUserRole === 'laboratorio' ? CURRENT_CHAT.clinicId : await sbOtherChatProfileId();
     if (recipientId && String(recipientId) !== String(currentUserId || '')) {
       var pushBody = file ? (payload.message_type === 'scanner' ? 'Novo scanner enviado no chat.' : 'Nova imagem enviada no chat.') : (textValue || 'Nova mensagem recebida.');
-      sendPushToUser(recipientId, 'Nova mensagem no DentaLab', pushBody, 'chat', {
+      sendPushToUser(recipientId, dentalabCurrentSenderName(), pushBody, 'chat', {
         labId: CURRENT_CHAT.labId,
         clinicId: CURRENT_CHAT.clinicId,
         messageId: res.data && res.data.id ? res.data.id : ''
@@ -5493,7 +5493,7 @@ async function sbSendCaseChatEvent(caseId, labId, clinicId) {
     if (res.error) throw res.error;
     var recipientId = currentUserRole === 'laboratorio' ? clinicId : await sbLabOwnerId(labId);
     if (recipientId && String(recipientId) !== String(currentUserId || '')) {
-      sendPushToUser(recipientId, 'Novo caso no DentaLab', 'Um caso clínico foi enviado para você.', 'case', {
+      sendPushToUser(recipientId, dentalabCurrentSenderName(), 'Enviou um novo caso clínico para você.', 'case', {
         labId: labId,
         clinicId: clinicId,
         caseId: caseId
@@ -7767,6 +7767,14 @@ async function updateNotificationDeviceUI() {
   }
 }
 
+function dentalabCurrentSenderName() {
+  if (currentUserRole === 'laboratorio') {
+    var currentLab = window.CURRENT_LAB || {};
+    return currentLab.name || currentLab.lab_name || userClinica || userName || 'Laboratório';
+  }
+  return userName || userClinica || (currentUserRole === 'assistente' ? 'Assistente da clínica' : 'Dentista');
+}
+
 async function enableDeviceNotifications() {
   if (typeof Notification === 'undefined') {
     showToast('Este navegador não suporta notificações.');
@@ -9468,7 +9476,7 @@ async function cdmPushIssueToClinic(caseId, issue, eventDedupeKey) {
   var c = CDM[caseId];
   if (!c || !issue || !c._clinicId) return false;
   if (String(c._clinicId) === String(currentUserId || '')) return false;
-  return await sendPushToUser(c._clinicId, 'Aviso do caso no DentaLab', cdmIssuePushBody(issue, c), 'case_alert', {
+  return await sendPushToUser(c._clinicId, c.lab || dentalabCurrentSenderName(), cdmIssuePushBody(issue, c), 'case_alert', {
     caseId: caseId,
     issueId: issue.id || '',
     dedupeKey: eventDedupeKey || ('issue:' + caseId + ':' + (issue.type || '') + ':' + (issue.target || '')),
@@ -9481,7 +9489,7 @@ async function cdmPushIssueReminderToClinic(caseId, issue) {
   if (!c || !issue || !c._clinicId) return false;
   if (String(c._clinicId) === String(currentUserId || '')) return false;
   var reminderBody = 'Lembrete: ' + cdmIssuePushBody(issue, c);
-  return await sendPushToUser(c._clinicId, 'Lembrete de pendência no DentaLab', reminderBody, 'case_alert', {
+  return await sendPushToUser(c._clinicId, c.lab || dentalabCurrentSenderName(), reminderBody, 'case_alert', {
     caseId: caseId,
     issueId: issue.id || '',
     // Prevent accidental double-clicks, but allow a later intentional reminder.
@@ -9495,7 +9503,7 @@ async function cdmPushReceiptConfirmedToLab(caseId, c) {
   var labOwner = await sbLabOwnerId(c._labDbId);
   if (!labOwner || String(labOwner) === String(currentUserId || '')) return false;
   var patient = c.paciente || 'Caso clínico';
-  return await sendPushToUser(labOwner, 'Recebimento confirmado', patient + ': a clínica confirmou o recebimento.', 'case_receipt', {
+  return await sendPushToUser(labOwner, dentalabCurrentSenderName(), patient + ': a clínica confirmou o recebimento.', 'case_receipt', {
     caseId: caseId,
     dedupeKey: 'receipt:' + caseId
   });

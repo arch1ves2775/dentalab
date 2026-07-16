@@ -290,3 +290,4 @@ Ainda recomendado testar/polir:
 - deduplicacao de notificacoes em todos os cenarios
 - abrir detalhe exato do caso a partir de notificacao de alerta
 - seguranca final da Edge Function antes de vender/apresentar formalmente
+- O titulo do push identifica o remetente real: nome do laboratorio para envios do laboratorio e nome do dentista/clinica para envios da clinica. O iOS ainda mostra `from DentaLab` como identificacao fixa da PWA.
